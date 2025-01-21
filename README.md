@@ -6,8 +6,8 @@ Code repository from the official team RoBorregos in VSSS 2025
 ## Authors
 
 
-- [@JocelynVelarde](https://github.com/JocelynVelarde) (ejemplo, lo borran cuando se agreguen)
-
+- [@JocelynVelarde](https://github.com/JocelynVelarde) 
+- [@Bandarcrono](https://github.com/Bandarcrono)
 
 ## Features
 
