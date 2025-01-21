@@ -6,7 +6,6 @@ Code repository from the official team RoBorregos in VSSS 2025
 ## Authors
 
 
-- [@JocelynVelarde](https://github.com/JocelynVelarde) 
 - [@Bandarcrono](https://github.com/Bandarcrono)
 - [@EfrainH2O](https://github.com/EfrainH2O)
 - [@DanHeGa](https://github.com/DanHeGa)
