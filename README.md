@@ -10,6 +10,7 @@ Code repository from the official team RoBorregos in VSSS 2025
 - [@EfrainH2O](https://github.com/EfrainH2O)
 - [@DanHeGa](https://github.com/DanHeGa)
 - [@Melanie0005](https://github.com/Melanie0005)
+- [@TaniPech](https://github.com/TaniaPech)
 
 ## Features
 
