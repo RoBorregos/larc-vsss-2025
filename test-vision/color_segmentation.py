@@ -23,20 +23,18 @@ def findContours(img, copy):
     
 
 #In HSV
-colorParams = [136, 52, 94, 179, 255, 255] #test color
+colorParams = [0, 62, 178, 138, 255, 255] #test color
 
 def findColor(image, copy):
     imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV) 
-    lower = np.array([129, 57, 187])
-    upper = np.array([179, 255, 255])
+    lower = np.array(colorParams[0:3])
+    upper = np.array(colorParams[3:6])
     mask = cv2.inRange(imgHSV, lower, upper) #create a mask with an accepted range of HSV values
     a, p, x, w, y, h = findContours(mask, copy) #returns bounding box coordinates
     cv2.rectangle(copy, (x, y), (x + w, y + h), (0, 255, 0), 5) 
     cv2.putText(copy, "Ball",(x + (w // 2) + 10, y + h - 10), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,0,0), 2)
-    print(f"Area: {a} Perimeter: {p}")
-    
-
-
+    if a > 100 and p > 100:
+        print(f"Area: {a} Perimeter: {p}")
 
 while True:
     success, img = cap.read()
@@ -47,3 +45,6 @@ while True:
     cv2.imshow("Test", img_copy)
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
+
+cap.release()
+cv2.destroyAllWindows()
