@@ -7,7 +7,7 @@ cap.set(4, 480) #height
 cap.set(10, 20) #brightness
 
 def findContours(img, copy):
-    area, peri = 0, 0
+    area, peri, radius = 0, 0, 0
     x, y, w, h = 0, 0, 0, 0
     #contours is a list of all shapes found in a frame
     contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
@@ -19,7 +19,8 @@ def findContours(img, copy):
             #Approximate the number of corners of the shape
             approx = cv2.approxPolyDP(cnt, 0.02 * peri, True)
             x,y,w,h = cv2.boundingRect(approx) #Bounding rectangle for reduced points in countour
-    return area, peri, x, w, y, h
+            radius = np.sqrt(area/np.pi) 
+    return radius, area, peri, x, w, y, h
     
 
 #In HSV
@@ -30,11 +31,11 @@ def findColor(image, copy):
     lower = np.array(colorParams[0:3])
     upper = np.array(colorParams[3:6])
     mask = cv2.inRange(imgHSV, lower, upper) #create a mask with an accepted range of HSV values
-    a, p, x, w, y, h = findContours(mask, copy) #returns bounding box coordinates
+    r, a, p, x, w, y, h = findContours(mask, copy) #returns bounding box coordinates
     cv2.rectangle(copy, (x, y), (x + w, y + h), (0, 255, 0), 5) 
     cv2.putText(copy, "Ball",(x + (w // 2) + 10, y + h - 10), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0,0,0), 2)
-    if a > 100 and p > 100:
-        print(f"Area: {a} Perimeter: {p}")
+    if a > 100: # just to see test objects
+        print(f"Area: {a} Perimeter: {p} Radius: {r}")
 
 while True:
     success, img = cap.read()
