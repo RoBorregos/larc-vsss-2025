@@ -1,0 +1,15 @@
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\bin\Debug\net8.0\Strategist.exe
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\bin\Debug\net8.0\Strategist.deps.json
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\bin\Debug\net8.0\Strategist.runtimeconfig.json
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\bin\Debug\net8.0\Strategist.dll
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\bin\Debug\net8.0\Strategist.pdb
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\Strategist.GeneratedMSBuildEditorConfig.editorconfig
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\Strategist.AssemblyInfoInputs.cache
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\Strategist.AssemblyInfo.cs
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\Strategist.csproj.CoreCompileInputs.cache
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\Strategist.sourcelink.json
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\Strategist.dll
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\refint\Strategist.dll
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\Strategist.pdb
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\Strategist.genruntimeconfig.cache
+e:\Codigos_Grandes\Gits\larc-vsss-2025\Tests\Python_C#COM\Strategist\obj\Debug\net8.0\ref\Strategist.dll
