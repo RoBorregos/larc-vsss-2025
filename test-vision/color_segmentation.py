@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import imutils #computer vision tools
 from imutils import contours
+from scipy.spatial import distance as dist
 from size_measure import clockwise_pts
 from size_measure import middle
 
@@ -13,9 +14,41 @@ cap.set(10, 20) #brightness
 
 #In HSV
 colorParams = [0,97,129,179,249,255] #most accurate HSV values for test ball (bright orange)
+referenceWidth = 10 #test width
 
-def drawMidLines(tl, tr, br, bl):
-    pass
+def mids(img, pm, tl, tr, br, bl): #image, pixelspermetric, topleft, topright, bottomright, bottomleft
+    box = (tl, tr, br, bl)
+    #midpoint between tl and tr coordinates
+    (topX, topY) = middle(tl, tr)
+    #midpoint between bk and br coordinates
+    (bottomX, bottomY) = middle(bl, br)
+    #midpoint between tl and bl
+    (leftX, leftY) = middle(tl, bl)
+    #midpoint between tr and br
+    (rightX, rightY) = middle(tr, br)
+
+    cv2.circle(img, (int(topX), int(topY)), 5, (0,0,255), -1)
+    cv2.circle(img, (int(bottomX), int(bottomY)), 5, (0,0,255), -1)
+    cv2.circle(img, (int(rightX), int(rightY)), 5, (0,0,255), -1)
+    cv2.circle(img, (int(leftX), int(leftY)), 5, (0,0,255), -1)
+
+    cv2.line(img, (int(topX), int(topY)), (int(bottomX), int(bottomY)), (255,255,255), 2)
+    cv2.line(img, (int(leftX), int(leftY)), (int(rightX), int(rightY)), (255,255,255), 2)
+
+    distTop2Bott= dist.euclidean((int(topX), int(topY)), (int(bottomX), int(bottomY)))
+    distLeft2Right = dist.euclidean((int(leftX), int(leftY)), (int(rightX), int(rightY))) 
+
+    if pm is None:
+        pm = distLeft2Right / referenceWidth
+
+    #get real size of object
+    szVert = distTop2Bott / pm
+    szHori = distLeft2Right / pm
+    
+    print(f"vert: {szVert}, hor: {szHori}")
+    #FALTA PONER EN TEXTO LAS DIMENSIONES
+    #cv2.putText(img, "{:.1f}cm".format(szVert), )
+
 
 def findContours(img, copy):
     area, peri, radius = 0, 0, 0
@@ -41,7 +74,7 @@ def findContours(img, copy):
             cv2.drawContours(copy, [clockCoor.astype("int")], -1, (255,255,0), 2)
             for (x,y) in clockCoor:
                 cv2.circle(copy, (int(x), int(y)), 5, (0,0,255), -1) #circles in edges
-
+            mids(copy, ppm, clockCoor[0], clockCoor[1], clockCoor[2], clockCoor[3])
             topLeft = tuple(clockCoor[0])
             bottomRight = tuple(clockCoor[2])
             radius = np.sqrt(area/np.pi) 
@@ -58,9 +91,6 @@ def findColor(image, copy):
     if a > 100: # just to see test objects
         print(f"Area: {a} Perimeter: {p} Radius: {r}")
     cv2.imshow("mask", mask)
-
-#PARA OBTENER LOS CUATRO PUNTOS PUEDES USAR BOX = CV2.MINAREARECT(CNT), CV2.CV.BOXPOINTS(BOX)
-#eso lo usas en findColor, despues de sacar los contornos, dentro del ciclo for
 
 while True:
     success, img = cap.read()
