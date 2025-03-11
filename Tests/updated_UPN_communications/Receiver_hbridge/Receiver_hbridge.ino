@@ -6,7 +6,7 @@ WiFiUDP udp;
 
 // Wi-Fi credentials
 const char* ssid = "RoBorregos2";
-const char* password = "RoBorregos2024";
+const char* password = "RoBorregos2025";
 
 unsigned int localUdpPort = 1111;  // Port to listen on
 char incomingPacket[255];          // Buffer for incoming packets
@@ -24,7 +24,7 @@ const int motorSpeed = 255;
 #define MotorB_PWM 25
 
 // Defining constants for control
-#define MOTOR_MAX_RPM 90        // motor's maximum rpm
+#define MOTOR_MAX_RPM 12        // motor's maximum rpm
 #define WHEEL_DIAMETER 0.06      // robot's wheel diameter expressed in meters
 #define FR_WHEEL_DISTANCE 0   // distance between front wheel and rear wheel
 #define LR_WHEEL_DISTANCE 0.08    // distance between left wheel and right wheel
@@ -33,8 +33,8 @@ const int motorSpeed = 255;
   //Variables de Vel para los motores
   Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, FR_WHEEL_DISTANCE, LR_WHEEL_DISTANCE, PWM_BITS);
   float linear_vel_x = 0;  // 1 m/s
-  float linear_vel_y = 0;  // 0 m/s
-  float angular_vel_z = 0; // 1 m/s
+  float linear_vel_y = 1;  // 0 m/s
+  float angular_vel_z = 1; // 1 m/s
 
 void setup() {
   Serial.begin(115200);
@@ -52,6 +52,7 @@ void setup() {
   Drive(0, 0);
 
   while (WiFi.status() != WL_CONNECTED) {
+    Serial.println(WiFi.status());
     delay(500);
     Serial.print(".");
   }
@@ -147,5 +148,6 @@ void loop() {
   }
   Kinematics::output pwm = kinematics.getPWM(linear_vel_x, linear_vel_y, angular_vel_z);
   Drive(pwm.motor1, pwm.motor2);
+
   Kinematics::velocities vel = kinematics.getVelocities(pwm.motor1, pwm.motor2);
 }
