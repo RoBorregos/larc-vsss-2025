@@ -6,7 +6,7 @@ import argparse #for console arguments **Not necessary**
 import imutils
 import cv2
 
-REFOBJ_WIDTH = 1 #cm, CHECK IF U ARE MANAGING METRICS CORRECTLY, OR DO I HAVE TO PASS FROM FT TO IN OR SMTNG
+REFOBJ_WIDTH = 25 #cm, CHECK IF U ARE MANAGING METRICS CORRECTLY, OR DO I HAVE TO PASS FROM FT TO IN OR SMTNG
 color = (255,255,255) #white
 
 #returns the middle of two points
@@ -62,13 +62,13 @@ def measure_size(img, copy):
          #   cv2.circle(copy, (int(x), int(y)), 2, (255, 0, 0), 2)
 
 #Returns a refObject, calculates distance between two objects if refObj already exist
-def distance(imgCopy, refObj,objCoor,  objCenter): #objCoorX and Y are teh center of other object that is NOT the reference one, for example, the ball
+def distance(imgCopy, refCenter,objCoor,  objCenter): #objCoorX and Y are teh center of other object that is NOT the reference one, for example, the ball
     #these three lines are not used when refObj is None
-    centerX = np.average(objCoor[:,0])
-    centerY = np.average(objCoor[:,1])
+    '''centerX = np.average(objCoor[:,0])
+    centerY = np.average(objCoor[:,1])'''
     ballCenter = objCenter
 
-    if refObj is None:
+    '''if refObj is None:
         #if NO refObj, creates one with the actual taken coordinates (while in a for loop)
         tl, tr, br, bl = objCoor
         centerLeftX, centerLeftY = middle(tl, bl)
@@ -78,25 +78,21 @@ def distance(imgCopy, refObj,objCoor,  objCenter): #objCoorX and Y are teh cente
         #declare reference object with it's box, it's center and ppm.
         refObj = (objCoor, (centerX, centerY), distHorizon / REFOBJ_WIDTH)
     else:
-        refBox, refCenter, ppm = refObj
-    
-        cv2.drawContours(imgCopy, [refBox.astype("int")], -1, (255,0,255), 2)
-        cv2.drawContours(imgCopy, [objCoor.astype("int")], -1, (0,0,0), 2)
+    refBox, refCenter, ppm = refObj
+    cv2.drawContours(imgCopy, [refBox.astype("int")], -1, (255,0,255), 2)'''
 
-        #circles to create connections
-        cv2.circle(imgCopy,(int(refCenter[0]),int(refCenter[1])), 5, color, -1)
-        cv2.circle(imgCopy, (int(ballCenter[0]), int(ballCenter[1])), 5, color, -1)
-        cv2.line(imgCopy, (int(refCenter[0]),int(refCenter[1])), (int(ballCenter[0]), int(ballCenter[1])), color, 2)
+    cv2.drawContours(imgCopy, [objCoor.astype("int")], -1, (0,0,0), 2)
 
-        #get the distance (in  pixels) from one pt to another
-        distAB = dist.euclidean(refCenter, objCenter) #falta poner en ppm, antes lo dividias entre ppm del refObj
-        midX, midY = middle(refCenter, objCenter)
-        cv2.putText(imgCopy, "{:.1f}cm(IN)".format(distAB), (int(midX), int(midY) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7, (255,255,255), 2)
-    
-    return refObj
-    
-        
+    #circles to create connections
+    cv2.circle(imgCopy,(int(refCenter[0]),int(refCenter[1])), 5, color, -1)
+    cv2.circle(imgCopy, (int(ballCenter[0]), int(ballCenter[1])), 5, color, -1)
+    cv2.line(imgCopy, (int(refCenter[0]),int(refCenter[1])), (int(ballCenter[0]), int(ballCenter[1])), color, 2)
 
+    #get the distance (in  pixels) from one pt to another
+    distAB = dist.euclidean(refCenter, objCenter) / REFOBJ_WIDTH #falta poner en ppm, antes lo dividias entre ppm del refObj
+    midX, midY = middle(refCenter, objCenter)
+    cv2.putText(imgCopy, "{:.1f}cm".format(distAB), (int(midX), int(midY) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7, (255,255,255), 2)
+    
 
 
 

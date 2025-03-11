@@ -12,7 +12,8 @@ cap.set(10, 20) #brightness
 
 #in HSV 
 colorParams = [0,97,129,179,249,255]  #most accurate HSV values for test ball (bright orange) 0, 63, 255, 179, 255, 255
-refColorParams = [0, 0, 0, 0, 0, 0]  # white 
+
+#refColorParams = [0, 0, 0, 0, 0, 0]  # white 
 refCenter = (320, 240) #in pixels
 referenceWidth = 2.9  # Test width
 
@@ -51,14 +52,15 @@ def mids(img, ppm, tl, tr, br, bl):
     cv2.putText(img, f"{szHori:.1f}cm", (int(rightX + 10), int(rightY)), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
 
 #this function is preferable to be used when refOnj is NOT None
-def findContoursAndSize(img, copy, referenceObj=None, ppm=None):
+def findContoursAndSize(img, copy, ppm=None):
     area, peri, radius = 0, 0, 0
-    topLeft, bottomRight = (0, 0), (0, 0)
+    topLeft, bottomRight, (cX, cY) = (0, 0), (0, 0), (0,0)
+    objCenter = 0
     #contours is a list of all shapes found in a frame
     contours, hierarchy = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     
     if not contours:
-        return 0, 0, 0, (0, 0), (0, 0), referenceObj, ppm
+        return 0, 0, 0, (0, 0), (0, 0), (0,0), ppm
     
     #contours = imutils.grab_contours(contours)
     
@@ -78,7 +80,7 @@ def findContoursAndSize(img, copy, referenceObj=None, ppm=None):
         cX = np.average(clockCoor[:, 0])
         cY = np.average(clockCoor[:, 1]) #np.average(clockCoor[:, 1])
         #if distance has refObj as NOT none, it will calculate the distance between the refOnj and the Obj (ball in this case)
-        referenceObj = distance(copy, referenceObj, clockCoor, (cX, cY))
+        distance(copy, refCenter, clockCoor, (cX, cY))
         cv2.drawContours(copy, [clockCoor.astype("int")], -1, (255, 255, 0), 2)
         for (x, y) in clockCoor:
             cv2.circle(copy, (int(x), int(y)), 5, (0, 0, 255), -1) # circles in edges
@@ -87,13 +89,13 @@ def findContoursAndSize(img, copy, referenceObj=None, ppm=None):
         bottomRight = tuple(clockCoor[2])
         radius = np.sqrt(area / np.pi)
     
-    return radius, area, peri, topLeft, bottomRight, referenceObj, ppm
+    return radius, area, peri, topLeft, bottomRight, (cX, cY), ppm
 
 def findColor(image, copy, referenceObj=None, ppm=None):
     imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     # Detect reference object, used section in case of going with objects rather than center of image
     # Mask for refreence object
-    lower_ref = np.array(refColorParams[0:3])
+    '''lower_ref = np.array(refColorParams[0:3])
     upper_ref = np.array(refColorParams[3:6])
     mask_ref = cv2.inRange(imgHSV, lower_ref, upper_ref) #create a mask with an accepted range of HSV values
       
@@ -114,7 +116,8 @@ def findColor(image, copy, referenceObj=None, ppm=None):
                 referenceObj = distance(copy, None, clockCoor_ref, (cX_ref, cY_ref))
                 cv2.drawContours(copy, [clockCoor_ref.astype("int")], -1, (255, 0, 255), 2)
                 cv2.circle(copy, (int(cX_ref), int(cY_ref)), 5, (0, 255, 255), -1)
-                break
+                break'''
+    
     # Ball mask, already have refObj
     lower = np.array(colorParams[0:3])
     upper = np.array(colorParams[3:6])
@@ -124,11 +127,11 @@ def findColor(image, copy, referenceObj=None, ppm=None):
     mask = cv2.erode(mask, None, iterations=1)
     mask = cv2.dilate(mask, None, iterations=1)
 
-    r, a, p, top_left, bottom_right, referenceObj, ppm = findContoursAndSize(mask, copy, referenceObj, ppm)
+    r, a, p, top_left, bottom_right, objCenter, ppm = findContoursAndSize(mask, copy, ppm)
 
     cv2.imshow("mask", mask)
     #returns refObj(if object used) and ppm for those global variables to be in constant and correct changing state.
-    return referenceObj, ppm
+    return objCenter, ppm
 
 referenceObj = None
 ppm = None
@@ -140,7 +143,8 @@ while True:
         #image preprocessing
         img_blur = cv2.GaussianBlur(img, (5, 5), 0)
 
-        referenceObj, ppm = findColor(img_blur, img_copy, referenceObj, ppm)
+        objCenter, ppm = findColor(img_blur, img_copy, referenceObj, ppm)
+        #objCenter are the coordinates we want for the robot to make decisions
 
         cv2.imshow("Test", img_copy)
     if cv2.waitKey(1) & 0xFF == ord('q'):
