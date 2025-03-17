@@ -1,17 +1,17 @@
 // Device with motor control (ESP32 receiver)
-#include <WiFi.h>
-#include <WiFiUdp.h>
-#include <Kinematics.h>
-#include <PID.h>
-WiFiUDP udp;
+/*#include "WiFi.h"
+#include "WiFiUdp.h"*/
+#include "Kinematics.h"
+#include "PID.h"
+/*WiFiUDP udp;
 
 // Wi-Fi credentials
 const char* ssid = "RoBorregos2";
-const char* password = "RoBorregos2025";
+const char* password = "RoBorregos2025";*/
 
-unsigned int localUdpPort = 1111;  // Port to listen on
+/*unsigned int localUdpPort = 1111;  // Port to listen on
 char incomingPacket[255];          // Buffer for incoming packets
-IPAddress otherDeviceIP(192,168,1,110); // Replace with other device's IP
+IPAddress otherDeviceIP(192,168,1,110); // Replace with other device's IP*/
 const int otherDevicePort = 1234;
 const int motorSpeed = 255;
 
@@ -25,21 +25,23 @@ const int motorSpeed = 255;
 #define MotorB_PWM 25
 
 // Defining constants for control
-#define MOTOR_MAX_RPM 12        // motor's maximum rpm
+#define MOTOR_MAX_RPM 240        // motor's maximum rpm
 #define WHEEL_DIAMETER 0.06  // distance between front wheel and rear wheel
 #define LR_WHEEL_DISTANCE 0.08    // distance between left wheel and right wheel
 #define PWM_BITS 8              // microcontroller's PWM pin resolution. Arduino Uno/Mega Teensy is using 8 bits(0-255)
 //Faltar medir los valores despues con exactitud
   //Variables de Vel para los motores
   Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS);
-  Kinematics::velocities Force;
+  velocities Force;
+  
+
 //Definir PID
   PID RWheelPID(0,0,0);
   PID LWheelPID(0,0,0);
 
 void setup() {
   Serial.begin(115200);
-  WiFi.begin(ssid, password);
+  //WiFi.begin(ssid, password);
 
   // Configure motor pins
   pinMode(MotorA1, OUTPUT);
@@ -52,19 +54,18 @@ void setup() {
   // Initialize motors to stop
   Drive(0, 0);
 
-  while (WiFi.status() != WL_CONNECTED) {
+ /* while (WiFi.status() != WL_CONNECTED) {
     Serial.println(WiFi.status());
-    delay(500);
     Serial.print(".");
   }
   Serial.println("\nConnected to Wi-Fi");
   Serial.printf("Device IP: %s, UDP port: %d\n", WiFi.localIP().toString().c_str(), localUdpPort);
   
-  udp.begin(localUdpPort);  // Start UDP
+  udp.begin(localUdpPort);  // Start UDP*/
 }
 
 void handleCommand(const char* command) {
-  Serial.printf("Received command: %s\n", command);
+  //Serial.printf("Received command: %s\n", command);
   
   if(strcmp(command, "W") == 0) {
     Serial.println("Moving forward");
@@ -134,7 +135,7 @@ void Drive(int MotorL, int MotorR){
 
 void loop() {
   // Check for incoming packets
-  int packetSize = udp.parsePacket();
+  /*int packetSize = udp.parsePacket();
   if (packetSize) {
     int len = udp.read(incomingPacket, sizeof(incomingPacket));
     if (len > 0) {
@@ -142,12 +143,22 @@ void loop() {
       Serial.printf("Received packet from %s: %s\n", udp.remoteIP().toString().c_str(), incomingPacket);
       handleCommand(incomingPacket);
     }
-  }
-  Kinematics::output pwm = kinematics.getPWM(Force);
+  }*/
+  Force._x = 0.045;
+  Force._y = -0.045;
+  output pwm = kinematics.getPWM(Force);
+  Force.setAngule();
   //GetRPM
   // float Rdif = RWheelPID.GetCorrection(RGetRPM - Force.motor1);
   // float Ldif = LWheelPID.GetCorrection(LGetRPM - Force.motor2);
-  Drive(pwm.motor1, pwm.motor2); //pwm.motor1 + Rdif , pwm.motor2 + dif;
-
+  //Drive(pwm.motor1, pwm.motor2); //pwm.motor1 + Rdif , pwm.motor2 + dif;
+  Force._z = Force.getThetaDif(Force._z, PI/2);
+  Serial.print(Force._x); Serial.print(" "); Serial.print(Force._y); Serial.print(" "); Serial.println(Force._z);
+  Serial.println(kinematics.max_vel);
+  output rpm = kinematics.getRPM(Force);
+  Serial.print("                ");Serial.print(rpm.motor1); Serial.print(" "); Serial.println(rpm.motor2);
+  Serial.print("                ");Serial.print(pwm.motor1); Serial.print(" ");Serial.println(pwm.motor2);
+  Drive(255,255);
+  delay(3000);
   //Kinematics::velocities vel = kinematics.getVelocities(pwm.motor1, pwm.motor2);
 }

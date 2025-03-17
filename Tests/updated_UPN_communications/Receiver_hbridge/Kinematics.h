@@ -1,75 +1,91 @@
-/*
-  Copyright (c) 2016, Juan Jimeno
-  Source: http://research.ijcaonline.org/volume113/number3/pxc3901586.pdf
-  All rights reserved.
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions are met:
-   Redistributions of source code must retain the above copyright notice,
-  this list of conditions and the following disclaimer.
-   Redistributions in binary form must reproduce the above copyright
-  notice, this list of conditions and the following disclaimer in the
-  documentation and/or other materials provided with the distribution.
-   Neither the name of  nor the names of its contributors may be used to
-  endorse or promote products derived from this software without specific
-  prior written permission.
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-  ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-  CONTRACT, STRICT LIABILITY, OR TORTPPIPI (INCLUDING NEGLIGENCE OR OTHERWISE)
-  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-  POSSIBILITY OF SUCH DAMAGE.
-*/
 
 #ifndef KINEMATICS_H
 #define KINEMATICS_H
 
 #include "Arduino.h"
 
+
+class output
+{
+  public:
+  float motor1; //left
+  float motor2; //right
+  void Scale(float MaxRPM){
+    if(abs(motor1) > MaxRPM || abs(motor2) > MaxRPM){
+      if(abs(motor1) > abs(motor2)){
+        float scale = MaxRPM/abs(motor1);
+        motor1 = MaxRPM * (signbit(motor1) ? -1 : 1);
+        motor2 = motor2 * scale;
+      }else{
+        float scale = MaxRPM/abs(motor2);
+        motor2 = MaxRPM * (signbit(motor2) ? -1 : 1);
+        motor1 = motor1 * scale;
+      }
+    }
+  }
+};
+class velocities
+{
+  public:
+  float _x;
+  float _y;
+  float _z;
+  float Magnitude()
+  {
+    return sqrt(pow (_x, 2) + pow(_y, 2));
+  }
+  void setAngule(){
+    if(_x  == 0) {
+      _z = _y > 0 ? PI/2 : 3*PI/2;
+    }else if(_y == 0){
+      _z = _x > 0 ? 0 : PI;
+    }else{
+        _z = atan(_y/_x);                 //To get the direction of the 
+        _z = _x > 0? (_z < 0? 2*PI + _z : _z) : PI + _z;   
+        //   mayor a 0
+                  // negativo :360 + theta
+                    //else : theta          
+                                              //x < 0
+                                                //sumale 180; 
+    }
+
+  }
+  float getThetaDif(float desire, float actual){
+      float dif = desire - actual;
+      while(abs(dif) > 2*PI){
+        dif /= 2*PI;
+      }
+      if(abs(dif) < PI){
+        return dif;
+      }else{
+        return (signbit(dif) ? 1 : -1) * 2*PI + dif;
+      }
+  }
+  
+
+};
+
+
 class Kinematics
 {
   public:
-    struct output
-    {
-      int motor1; //left
-      int motor2; //right
-    };
-    class velocities
-    {
-      public:
-      float _x;
-      float _y;
-      float _z;
-      float Magnitude()
-      {
-        return sqrt(pow (_x, 2) + pow(_y, 2));
-      }
-      
-
-    };
-    Kinematics(int motor_max_rpm, float wheel_diameter, float lr_wheels_dist, int pwm_bits);
+    
+    Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheels_dist, int pwm_bits);
     velocities getVelocities(output actualVel, float theta);
     output getRPM(velocities);
     output getPWM(velocities);
-    int rpmToPWM(int rpm);
+    float rpmToPWM(float rpm);
+    float max_vel;
 
   private:
-    float linear_vel_x_mins_;
-    float linear_vel_y_mins_;
-    float angular_vel_z_mins_;
     float radius;
     float circumference_;
-    float tangential_vel_;
-    float x_rpm_;
-    float y_rpm_;
-    float tan_rpm_;
     int max_rpm_;
     float lr_wheels_dist_;
     float pwm_res_;
 };
+
+
+
 
 #endif
