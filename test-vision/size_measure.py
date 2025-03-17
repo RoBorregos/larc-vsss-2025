@@ -30,56 +30,10 @@ def clockwise_pts(pts):
 
     return np.array([tl, tr, br, bl])
 
-#not used yet
-def measure_size(img, copy): 
-    '''gray_image = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blur_gray = cv2.GaussianBlur(gray_image, (7, 7), 0)
-    #img preprocessing'''
-    #edge detection
-    edge = cv2.Canny(img, 50, 100)
-    edge = cv2.dilate(edge, None, iterations = 1)
-    edge = cv2.erode(edge, None, iterations = 1)
-    cv2.imshow("edge", edge)
+#calculates distance between the center of the image and the object
+def distance(imgCopy, refCenter,objCoor,  objCenter): 
 
-    #contouring
-    fcontours, _ = cv2.findContours(edge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
-
-    #useful for left reference objects, sorts them from left to right
-    (fcontours, _) = contours.sort_contours(fcontours)
-    ppm = None #pixels per metric
-
-    #box analysis
-    for cnt in fcontours:
-        if cv2.contourArea(cnt) < 500:
-            continue #jump to next iteration
-        box = cv2.minAreaRect(cnt) #most accurate rectangle surrounding of a contour
-        box_pts = cv2.boxPoints(box) #retrieve the coordinates of bounding boxes
-        box_pts = np.array(box_pts, dtype="int")
-        #print(box_pts)
-        clockCoor = clockwise_pts(box_pts)#order coordinates in a clockwise manner for easier manipulation
-        cv2.drawContours(copy, [clockCoor.astype("int")], -1, (255, 255, 0), 2) #draw clockwise coordinates based surrounding box
-        #for (x, y) in cnt:
-         #   cv2.circle(copy, (int(x), int(y)), 2, (255, 0, 0), 2)
-
-#Returns a refObject, calculates distance between two objects if refObj already exist
-def distance(imgCopy, refCenter,objCoor,  objCenter): #objCoorX and Y are teh center of other object that is NOT the reference one, for example, the ball
-    #these three lines are not used when refObj is None
-    '''centerX = np.average(objCoor[:,0])
-    centerY = np.average(objCoor[:,1])'''
     ballCenter = objCenter
-
-    '''if refObj is None:
-        #if NO refObj, creates one with the actual taken coordinates (while in a for loop)
-        tl, tr, br, bl = objCoor
-        centerLeftX, centerLeftY = middle(tl, bl)
-        centerRightX, centerRightY = middle(tr, br)
-
-        distHorizon = dist.euclidean((centerLeftX, centerLeftY), (centerRightX, centerRightY))
-        #declare reference object with it's box, it's center and ppm.
-        refObj = (objCoor, (centerX, centerY), distHorizon / REFOBJ_WIDTH)
-    else:
-    refBox, refCenter, ppm = refObj
-    cv2.drawContours(imgCopy, [refBox.astype("int")], -1, (255,0,255), 2)'''
 
     cv2.drawContours(imgCopy, [objCoor.astype("int")], -1, (0,0,0), 2)
 
@@ -92,31 +46,4 @@ def distance(imgCopy, refCenter,objCoor,  objCenter): #objCoorX and Y are teh ce
     distAB = dist.euclidean(refCenter, objCenter) / REFOBJ_WIDTH #falta poner en ppm, antes lo dividias entre ppm del refObj
     midX, midY = middle(refCenter, objCenter)
     cv2.putText(imgCopy, "{:.1f}cm".format(distAB), (int(midX), int(midY) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7, (255,255,255), 2)
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#**if run in terminal**
-#To use these arguments, you just put of_arg["image"] or of_arg["width"]
-'''argument = argparse.ArgumentParser()
-argument.add_argument("-i", "--image", required = True, help = "Image path")
-argument.add_argument("-w", "--width", required = True, help = "Reference object width", type = float)
-#return a dictionary with the arguments
-of_arg = vars(argument.parse_args()) #ofitial arguments'''
 
