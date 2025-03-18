@@ -34,22 +34,19 @@ class velocities
   {
     return sqrt(pow (_x, 2) + pow(_y, 2));
   }
+  //Funcion para setear el angulo entre 360 y 0
   void setAngule(){
     if(_x  == 0) {
       _z = _y > 0 ? PI/2 : 3*PI/2;
     }else if(_y == 0){
       _z = _x > 0 ? 0 : PI;
     }else{
-        _z = atan(_y/_x);                 //To get the direction of the 
+        _z = atan(_y/_x);                
         _z = _x > 0? (_z < 0? 2*PI + _z : _z) : PI + _z;   
-        //   mayor a 0
-                  // negativo :360 + theta
-                    //else : theta          
-                                              //x < 0
-                                                //sumale 180; 
     }
 
   }
+  //Menor diferencia entre angulos
   float getThetaDif(float desire, float actual){
       float dif = desire - actual;
       while(abs(dif) > 2*PI){
@@ -74,7 +71,7 @@ class Kinematics
     velocities getVelocities(output actualVel, float theta);
     output getRPM(velocities);
     output getPWM(velocities);
-    float rpmToPWM(float rpm);
+    output rpmToPWM(output);
     float max_vel;
 
   private:

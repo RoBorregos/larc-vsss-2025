@@ -134,31 +134,29 @@ void Drive(int MotorL, int MotorR){
 }
 
 void loop() {
-  // Check for incoming packets
-  /*int packetSize = udp.parsePacket();
-  if (packetSize) {
-    int len = udp.read(incomingPacket, sizeof(incomingPacket));
-    if (len > 0) {
-      incomingPacket[len] = '\0'; // Null-terminate the string
-      Serial.printf("Received packet from %s: %s\n", udp.remoteIP().toString().c_str(), incomingPacket);
-      handleCommand(incomingPacket);
-    }
-  }*/
-  Force._x = 0.045;
-  Force._y = -0.045;
+
+  Force._x = -0.02;
+  Force._y = -0.02;
+
   output pwm = kinematics.getPWM(Force);
   Force.setAngule();
-  //GetRPM
-  // float Rdif = RWheelPID.GetCorrection(RGetRPM - Force.motor1);
-  // float Ldif = LWheelPID.GetCorrection(LGetRPM - Force.motor2);
-  //Drive(pwm.motor1, pwm.motor2); //pwm.motor1 + Rdif , pwm.motor2 + dif;
+  //GetRPM();
+  // float Rcorrection = RPID.GetCorrection(RGetRPM - Force.motor1);
+  // float Ldif = LPID.GetCorrection(LGetRPM - Force.motor2);
+  //Drive(rpm.motor1 + Rdif, rpm.motor2 + Ldif); 
+  /*
+  rpm.motor1 += Rcorrection;
+  rpm.motor2 += Lcorrection;
+  kinematics.rpmToPWM(rpm);
+
+  */
   Force._z = Force.getThetaDif(Force._z, PI/2);
   Serial.print(Force._x); Serial.print(" "); Serial.print(Force._y); Serial.print(" "); Serial.println(Force._z);
   Serial.println(kinematics.max_vel);
   output rpm = kinematics.getRPM(Force);
   Serial.print("                ");Serial.print(rpm.motor1); Serial.print(" "); Serial.println(rpm.motor2);
   Serial.print("                ");Serial.print(pwm.motor1); Serial.print(" ");Serial.println(pwm.motor2);
-  Drive(255,255);
+  Drive(pwm.motor1,pwm.motor2);
   delay(3000);
-  //Kinematics::velocities vel = kinematics.getVelocities(pwm.motor1, pwm.motor2);
+  //velocities vel = kinematics.getVelocities(pwm.motor1, pwm.motor2);
 }

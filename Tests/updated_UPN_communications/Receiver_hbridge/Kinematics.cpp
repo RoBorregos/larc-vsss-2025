@@ -41,11 +41,11 @@ Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheel
 
 output Kinematics::getRPM(velocities ObVel) // the objective velocityes x,y,theta
 {
-
+//For now it is that x is the force and z the angule. However this would change depending on the development we could do later (odometry)
   
-  float ObVelMagnitude = ObVel.Magnitude(); //ToGet the magnitude of the force
-  ObVel.setAngule();
-  ObVel._z = ObVel.getThetaDif(ObVel._z, PI/2);
+  float ObVelMagnitude = ObVel._x;    //ObVel.Magnitude(); //ToGet the magnitude of the force
+  //ObVel.setAngule();
+  //ObVel._z = ObVel.getThetaDif(ObVel._z, PI/2);
 
   float leftVel = ObVelMagnitude/ radius - lr_wheels_dist_ / (2*radius) * ObVel._z; 
   float rightVel = ObVelMagnitude/ radius + lr_wheels_dist_ / (2*radius) * ObVel._z;
@@ -67,9 +67,7 @@ output Kinematics::getPWM(velocities ObVel)
 
   //convert from RPM to PWM
   //front-left motor
-  pwm.motor1 = rpmToPWM(rpm.motor1);
-  //rear-left motor
-  pwm.motor2 = rpmToPWM(rpm.motor2);
+  pwm = rpmToPWM(rpm);
 
   return pwm;
 }
@@ -95,9 +93,10 @@ velocities Kinematics::getVelocities(output actualRPM, float theta)
 
 
 
-float Kinematics::rpmToPWM(float rpm)
+output Kinematics::rpmToPWM(output rpm)
 {
   //remap scale of target RPM vs MAX_RPM to PWM
-
-  return ((rpm /  max_rpm_) * pwm_res_);
+  rpm.motor1 = ((rpm.motor1 /  max_rpm_) * pwm_res_);
+  rpm.motor2 = ((rpm.motor2 /  max_rpm_) * pwm_res_);
+  return rpm;
 }
