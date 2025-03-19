@@ -84,7 +84,7 @@ def findContoursAndSize(img, copy, ppm=None):
         cX = np.average(clockCoor[:, 0])
         cY = np.average(clockCoor[:, 1]) 
         #calculate the distance between the center and the Obj (ball in this case)
-        distance(copy, refCenter, clockCoor, (cX, cY)) #draws distances from ball's and ref's centers
+        distance(copy, refCenter, clockCoor, (cX, cY), H) #draws distances from ball's and ref's centers
         cv2.drawContours(copy, [clockCoor.astype("int")], -1, (255, 255, 0), 2) #draw ball's bounding box
         for (x, y) in clockCoor: 
             cv2.circle(copy, (int(x), int(y)), 5, (0, 0, 255), -1) # circles in edges
@@ -95,6 +95,7 @@ def findContoursAndSize(img, copy, ppm=None):
     
     return topLeft, bottomRight, (cX, cY), ppm
 
+#main function
 def findObject(image, copy, ppm=None):
     imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
     # Detect reference object, used section in case of going with objects rather than center of image
@@ -141,10 +142,10 @@ def findObject(image, copy, ppm=None):
         cv2.putText(copy, f"Real: ({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
     cv2.imshow("mask", mask)
     #returns refObj(if object used) and ppm for those global variables to be in constant and correct changing state.
-    return objCenter, ppm
+    return objCenter
 
 
-cap = cv2.VideoCapture(0)
+cap = cv2.VideoCapture(0) #2 for external devices
 cap.set(3, 640) #width
 cap.set(4, 480) #height
 cap.set(10, 20) #brightness
@@ -161,7 +162,7 @@ while True:
         #image preprocessing
         img_blur = cv2.GaussianBlur(img, (5, 5), 0)
         
-        objCenter, ppm = findObject(img_blur, img_copy, ppm)
+        objCenter = findObject(img_blur, img_copy, ppm)
         #objCenter are the coordinates we want for the robot to make decisions
 
         cv2.imshow("Test", img_copy)
