@@ -29,11 +29,24 @@ const int motorSpeed = 255;
 #define WHEEL_DIAMETER 0.06  // distance between front wheel and rear wheel
 #define LR_WHEEL_DISTANCE 0.08    // distance between left wheel and right wheel
 #define PWM_BITS 8              // microcontroller's PWM pin resolution. Arduino Uno/Mega Teensy is using 8 bits(0-255)
+#define VelConst 1
+#define ThetaConst 1
 //Faltar medir los valores despues con exactitud
   //Variables de Vel para los motores
-  Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS);
+  Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
   velocities Force;
-  
+// Definir variables de Motores
+/*
+#define rkp 1
+#define rkd 0 
+#define rki 0
+#define lkp 1
+#define lki 0 
+#define lkd 0
+  RPID = PID(rkp, rkd, rki);
+  LPID = PID(lkp, lkd, lki);
+
+*/
 
 //Definir PID
   PID RWheelPID(0,0,0);
@@ -135,8 +148,8 @@ void Drive(int MotorL, int MotorR){
 
 void loop() {
 
-  Force._x = -0.02;
-  Force._y = -0.02;
+  Force._x = -0.2;
+  Force._y = 0.2;
 
   output pwm = kinematics.getPWM(Force);
   Force.setAngule();

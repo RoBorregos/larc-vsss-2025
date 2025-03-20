@@ -28,13 +28,15 @@
 #include "Arduino.h"
 #include "Kinematics.h"
 
-Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheels_dist, int pwm_bits){
+Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheels_dist, int pwm_bits, int vel, int theta){
   circumference_ = PI * wheel_diameter;
   max_rpm_ = motor_max_rpm;
   lr_wheels_dist_ = lr_wheels_dist;
   pwm_res_  = pow ( 2, pwm_bits) - 1;
   max_vel = (float)motor_max_rpm * circumference_;
   radius = wheel_diameter/2;
+  ConstThetaDiff = theta;
+  ConstVelDiff = vel;
 }
   
   
@@ -43,9 +45,9 @@ output Kinematics::getRPM(velocities ObVel) // the objective velocityes x,y,thet
 {
 //For now it is that x is the force and z the angule. However this would change depending on the development we could do later (odometry)
   
-  float ObVelMagnitude = ObVel._x;    //ObVel.Magnitude(); //ToGet the magnitude of the force
-  //ObVel.setAngule();
-  //ObVel._z = ObVel.getThetaDif(ObVel._z, PI/2);
+  float ObVelMagnitude = ObVel.Magnitude() * ConstVelDiff; //ToGet the magnitude of the force
+  ObVel.setAngule();
+  ObVel._z = ObVel.getThetaDif(ObVel._z, PI/2) * ConstThetaDiff;
 
   float leftVel = ObVelMagnitude/ radius - lr_wheels_dist_ / (2*radius) * ObVel._z; 
   float rightVel = ObVelMagnitude/ radius + lr_wheels_dist_ / (2*radius) * ObVel._z;
