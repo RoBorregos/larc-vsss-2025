@@ -10,6 +10,7 @@ class output
   public:
   float motor1; //left
   float motor2; //right
+  //Scale function to Chanage the maximum value and continue to have the proportion of the force
   void Scale(float MaxRPM){
     if(abs(motor1) > MaxRPM || abs(motor2) > MaxRPM){
       if(abs(motor1) > abs(motor2)){
@@ -34,7 +35,7 @@ class velocities
   {
     return sqrt(pow (_x, 2) + pow(_y, 2));
   }
-  //Funcion para setear el angulo entre 360 y 0
+  //Get the angle of a vector if it is in a x y form
   void setAngule(){
     if(_x  == 0) {
       _z = _y > 0 ? PI/2 : 3*PI/2;
@@ -46,7 +47,7 @@ class velocities
     }
 
   }
-  //Menor diferencia entre angulos
+  //Get the least difference between angles
   float getThetaDif(float desire, float actual){
       float dif = desire - actual;
       while(abs(dif) > 2*PI){

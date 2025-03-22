@@ -1,17 +1,28 @@
+// Add this near the top of your ESP32 sketch, after your existing declarations
+float x_coord = 0.0;
+float y_coord = 0.0;
+
+//DeltaTime
+unsigned long previousTime = 0;
+unsigned long currentTime;
+float deltaTime;
+
+
 // Device with motor control (ESP32 receiver)
-/*#include "WiFi.h"
-#include "WiFiUdp.h"*/
-#include "Kinematics.h"
-#include "PID.h"
-/*WiFiUDP udp;
+#include <WiFi.h>
+#include <WiFiUdp.h>
+WiFiUDP udp;
+//Kinematics library
+#include <Kinematics.h>
+#include <PID.h>
 
 // Wi-Fi credentials
-const char* ssid = "RoBorregos2";
-const char* password = "RoBorregos2025";*/
+const char* ssid = "danielaASUS05";
+const char* password = "Dw8619a6";
 
-/*unsigned int localUdpPort = 1111;  // Port to listen on
+unsigned int localUdpPort = 1111;  // Port to listen on
 char incomingPacket[255];          // Buffer for incoming packets
-IPAddress otherDeviceIP(192,168,1,110); // Replace with other device's IP*/
+IPAddress otherDeviceIP(192,168,1,110); // Replace with other device's IP
 const int otherDevicePort = 1234;
 const int motorSpeed = 255;
 
@@ -24,6 +35,7 @@ const int motorSpeed = 255;
 #define MotorB2 12
 #define MotorB_PWM 25
 
+
 // Defining constants for control
 #define MOTOR_MAX_RPM 240        // motor's maximum rpm
 #define WHEEL_DIAMETER 0.06  // distance between front wheel and rear wheel
@@ -31,30 +43,16 @@ const int motorSpeed = 255;
 #define PWM_BITS 8              // microcontroller's PWM pin resolution. Arduino Uno/Mega Teensy is using 8 bits(0-255)
 #define VelConst 1
 #define ThetaConst 1
-//Faltar medir los valores despues con exactitud
-  //Variables de Vel para los motores
+
+
+
+//Kinematics
   Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
   velocities Force;
-// Definir variables de Motores
-/*
-#define rkp 1
-#define rkd 0 
-#define rki 0
-#define lkp 1
-#define lki 0 
-#define lkd 0
-  RPID = PID(rkp, rkd, rki);
-  LPID = PID(lkp, lkd, lki);
-
-*/
-
-//Definir PID
-  PID RWheelPID(0,0,0);
-  PID LWheelPID(0,0,0);
 
 void setup() {
   Serial.begin(115200);
-  //WiFi.begin(ssid, password);
+  WiFi.begin(ssid, password);
 
   // Configure motor pins
   pinMode(MotorA1, OUTPUT);
@@ -67,53 +65,49 @@ void setup() {
   // Initialize motors to stop
   Drive(0, 0);
 
- /* while (WiFi.status() != WL_CONNECTED) {
-    Serial.println(WiFi.status());
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
     Serial.print(".");
   }
   Serial.println("\nConnected to Wi-Fi");
   Serial.printf("Device IP: %s, UDP port: %d\n", WiFi.localIP().toString().c_str(), localUdpPort);
   
-  udp.begin(localUdpPort);  // Start UDP*/
+  udp.begin(localUdpPort);  // Start UDP
 }
 
 void handleCommand(const char* command) {
-  //Serial.printf("Received command: %s\n", command);
+  Serial.printf("Received command: %s\n", command);
   
   if(strcmp(command, "W") == 0) {
     Serial.println("Moving forward");
-    Force._x = 1;
-    Force._y = 0;
-    //Drive(motorSpeed, motorSpeed);
+    Drive(motorSpeed, motorSpeed);
   }
   else if(strcmp(command, "S") == 0) {
     Serial.println("Moving backward");
-    Force._x = -1;
-    Force._y = 0;
-    //Drive(-motorSpeed, -motorSpeed);
+    Drive(-motorSpeed, -motorSpeed);
   }
   else if(strcmp(command, "A") == 0) {
     Serial.println("Turning left");
-    Force._x = 0;
-    Force._y = -1;
-    //Drive(-motorSpeed, motorSpeed);  // Pivot left
+    Drive(-motorSpeed, motorSpeed);  // Pivot left
   }
   else if(strcmp(command, "D") == 0) {
-    Force._x = 0;
-    Force._y = 1;
     Serial.println("Turning right");
-    //Drive(motorSpeed, -motorSpeed);  // Pivot right
+    Drive(motorSpeed, -motorSpeed);  // Pivot right
   }
   else if(strcmp(command, " ") == 0 || strcmp(command, "STOP") == 0) {
     Serial.println("Stopping");
-    //Drive(0, 0);
+    Drive(0, 0);
   }
   else {
     Serial.println("Unknown command");
   }
-
-  
 }
+
+//Actual Data
+float x = 0;
+float y = 0;
+float z = PI/2;
+//
 
 // Motor control function for TB6612FNG
 void Drive(int MotorL, int MotorR){
@@ -147,29 +141,52 @@ void Drive(int MotorL, int MotorR){
 }
 
 void loop() {
-
-  Force._x = -0.2;
-  Force._y = 0.2;
-
-  output pwm = kinematics.getPWM(Force);
+  //Time count
+  currentTime = micros();
+  deltaTime = (currentTime - previousTime) / 1000000.0;
+  // Check for incoming packets
+  int packetSize = udp.parsePacket();
+  if (packetSize) {
+    // Read the packet
+    int len = udp.read(incomingPacket, sizeof(incomingPacket));
+    
+    // Check if we received exactly 8 bytes (two floats, 4 bytes each)
+    if (len == 8) {
+      // Extract the two float values from the packet
+      memcpy(&x_coord, incomingPacket, 4);
+      memcpy(&y_coord, incomingPacket + 4, 4);
+      
+      // Print the received coordinates
+      Serial.printf("Received coordinates: x=%.2f, y=%.2f from %s\n", 
+                    x_coord, y_coord, 
+                    udp.remoteIP().toString().c_str());
+    }
+    else {
+      Serial.println("Received packet with unexpected size");
+    }
+  }
+  Force._x = x_coord - x;
+  Force._y = y_coord - y;
   Force.setAngule();
-  //GetRPM();
-  // float Rcorrection = RPID.GetCorrection(RGetRPM - Force.motor1);
-  // float Ldif = LPID.GetCorrection(LGetRPM - Force.motor2);
-  //Drive(rpm.motor1 + Rdif, rpm.motor2 + Ldif); 
-  /*
-  rpm.motor1 += Rcorrection;
-  rpm.motor2 += Lcorrection;
-  kinematics.rpmToPWM(rpm);
-
-  */
-  Force._z = Force.getThetaDif(Force._z, PI/2);
-  Serial.print(Force._x); Serial.print(" "); Serial.print(Force._y); Serial.print(" "); Serial.println(Force._z);
-  Serial.println(kinematics.max_vel);
+  Force._z = Force.getThetaDif(Force._z,z) ;
+  output pwm = kinematics.getPWM(Force);
   output rpm = kinematics.getRPM(Force);
-  Serial.print("                ");Serial.print(rpm.motor1); Serial.print(" "); Serial.println(rpm.motor2);
-  Serial.print("                ");Serial.print(pwm.motor1); Serial.print(" ");Serial.println(pwm.motor2);
   Drive(pwm.motor1,pwm.motor2);
-  delay(3000);
-  //velocities vel = kinematics.getVelocities(pwm.motor1, pwm.motor2);
+  velocities vel = kinematics.getVelocities(pwm , z);
+  //Time count
+  currentTime = micros();
+  deltaTime = (currentTime - previousTime) / 1000000.0;
+  x += deltaTime * vel._x;
+  y += deltaTime * vel._y;
+  z += deltaTime * vel._z;
+  previousTime = currentTime;
+
+
+  
+
+
+
+
+
 }
+
