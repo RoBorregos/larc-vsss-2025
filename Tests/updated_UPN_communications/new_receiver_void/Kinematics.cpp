@@ -20,6 +20,7 @@ output Kinematics::getRPM(velocities ObVel) // the objective velocityes x,y,thet
   
   float ObVelMagnitude = ObVel.Magnitude() * ConstVelDiff; //ToGet the magnitude of the force
   ObVel.setAngule();
+  ObVel._z *= ConstThetaDiff;
   
   //Funciton to determine the vel of each wheel with the values of vel and theta dif
   float leftVel = ObVelMagnitude/ radius - lr_wheels_dist_ / (2*radius) * ObVel._z; 
