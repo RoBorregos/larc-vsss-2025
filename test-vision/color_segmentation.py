@@ -9,8 +9,8 @@ from homography import getHomography
 import time
 
 #in HSV 
-colorParams = [0,97,129,179,249,255] #most accurate HSV values for test ball (bright orange) 0, 63, 255, 179, 255, 255
-
+colorParams = [0,103,31,20,255,255] #most accurate HSV values for test ball (bright orange) 0, 63, 255, 179, 255, 255
+#checa la foto donde esta la terminal meio cubierta con los valores HSV que probaste con Alberto
 #refColorParams = [0, 0, 0, 0, 0, 0]  # white 
 refCenter = (320, 240) #in pixels
 referenceWidth = 2.9  # Test width
@@ -58,15 +58,15 @@ def mids(img, ppm, tl, tr, br, bl):
     cv2.putText(img, f"{szVert:.1f}cm", (int(topX - 15), int(topY - 10)), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
     cv2.putText(img, f"{szHori:.1f}cm", (int(rightX + 10), int(rightY)), cv2.FONT_HERSHEY_COMPLEX, 0.5, (0, 0, 255), 2)
 
-def findContoursAndSize(img, copy, ppm=None):
-    area, peri, radius = 0, 0, 0
-    topLeft, bottomRight, (cX, cY) = (0, 0), (0, 0), (0,0)
+def findContoursAndSize(img, copy):
+    area = 0
+    (cX, cY) = (0, 0)
     objCenter = 0
     #contours is a list of all shapes found in a frame
     contours, _ = cv2.findContours(img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)
     
     if not contours:
-        return 0, 0, 0, (0, 0), (0, 0), (0,0), ppm
+        return (0, 0)
         
     # Select biggest contour
     contours = sorted(contours, key=cv2.contourArea, reverse=True)
@@ -74,8 +74,6 @@ def findContoursAndSize(img, copy, ppm=None):
     
     area = cv2.contourArea(cnt)
     if area > 500:
-        #cv2.drawContours(copy, cnt, -1, (0, 255, 0), 2)
-        #peri = cv2.arcLength(cnt, True) #True indicates the shape is closed
         #Approximate the number of corners of the shape
         box = cv2.minAreaRect(cnt)
         box_pts = cv2.boxPoints(box)
@@ -89,11 +87,10 @@ def findContoursAndSize(img, copy, ppm=None):
         for (x, y) in clockCoor: 
             cv2.circle(copy, (int(x), int(y)), 5, (0, 0, 255), -1) # circles in edges
         mids(copy, ppm, clockCoor[0], clockCoor[1], clockCoor[2], clockCoor[3]) #mid lines in shape, includes size
-        topLeft = tuple(clockCoor[0])
-        bottomRight = tuple(clockCoor[2])
-        #radius = np.sqrt(area / np.pi)
+        #topLeft = tuple(clockCoor[0])
+        #bottomRight = tuple(clockCoor[2])
     
-    return topLeft, bottomRight, (cX, cY), ppm
+    return (cX, cY)
 
 #main function
 def findObject(image, copy, ppm=None): 
@@ -132,7 +129,7 @@ def findObject(image, copy, ppm=None):
     mask = cv2.erode(mask, None, iterations=1)
     mask = cv2.dilate(mask, None, iterations=1)
 
-    top_left, bottom_right, objCenter, ppm = findContoursAndSize(mask, copy, ppm)
+    objCenter = findContoursAndSize(mask, copy)
     #if the center is detected, get it's coordinates in real field coordinates
     if objCenter:
         #give the correct format to the pt for use in perspectiveTransform
@@ -145,7 +142,7 @@ def findObject(image, copy, ppm=None):
     return realFldCoors #regresar coordenadas REALES
 
 
-cap = cv2.VideoCapture(0) #2 for external devices
+cap = cv2.VideoCapture(2) #2 for external devices
 cap.set(3, 640) #width
 cap.set(4, 480) #height
 cap.set(10, 20) #brightness
@@ -160,7 +157,7 @@ while True:
     img_copy = img.copy()
     if success:
         #image preprocessing
-        img_blur = cv2.GaussianBlur(img, (5, 5), 0)
+        img_blur = cv2.GaussianBlur(img, (7, 7), 0)
         
         objCoors = findObject(img_blur, img_copy, ppm)
         #objCenter are the coordinates we want for the robot to make decisions
@@ -173,7 +170,7 @@ while True:
     tnow = time.time()
     totalTime = tnow - tpast
     fps = 1 / totalTime
-    print(f"Tiempo de ejecución: {totalTime}")
+    #print(f"Tiempo de ejecución: {totalTime}")
 
 cap.release()
 cv2.destroyAllWindows()
