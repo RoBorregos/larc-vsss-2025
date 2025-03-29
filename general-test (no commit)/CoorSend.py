@@ -34,7 +34,7 @@ def send_coordinates(x_coord, y_coord, esp32_ip, esp32_port=1111):
     sock.close()
 
 # ESP32 IP address - update this to match your ESP32's IP
-ESP32_IP = "192.168.137.207"  # Replace with your ESP32's actual IP
+ESP32_IP = "10.42.0.189"  # Replace with your ESP32's actual IP
 ESP32_PORT = 1111
 
 #in HSV 
