@@ -68,7 +68,7 @@ class Kinematics
 {
   public:
     
-    Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheels_dist, int pwm_bits, int ConstVelDiff, int  ConstThetaDiff);
+    Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheels_dist, int pwm_bits, float ConstVelDiff, float  ConstThetaDiff);
     velocities getVelocities(output actualVel, float theta);
     output getRPM(velocities);
     output getPWM(velocities);
@@ -78,11 +78,11 @@ class Kinematics
   private:
     float radius;
     float circumference_;
-    int max_rpm_;
+    float max_rpm_;
     float lr_wheels_dist_;
     float pwm_res_;
-    int ConstThetaDiff;
-    int ConstVelDiff;
+    float ConstThetaDiff;
+    float ConstVelDiff;
 };
 
 

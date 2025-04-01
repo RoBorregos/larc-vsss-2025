@@ -1,7 +1,7 @@
 #include "Arduino.h"
 #include "Kinematics.h"
 
-Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheels_dist, int pwm_bits, int vel, int theta){
+Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheels_dist, int pwm_bits, float vel, float theta){
   circumference_ = PI * wheel_diameter;
   max_rpm_ = motor_max_rpm;
   lr_wheels_dist_ = lr_wheels_dist;
@@ -19,7 +19,6 @@ output Kinematics::getRPM(velocities ObVel) // the objective velocityes x,y,thet
 //For now it is that x is the force and z the angule. However this would change depending on the development we could do later (odometry)
   
   float ObVelMagnitude = ObVel.Magnitude() * ConstVelDiff; //ToGet the magnitude of the force
-  ObVel.setAngule();
   ObVel._z *= ConstThetaDiff;
   
   //Funciton to determine the vel of each wheel with the values of vel and theta dif
@@ -72,6 +71,7 @@ output Kinematics::rpmToPWM(output rpm)
 {
   //remap scale of target RPM vs MAX_RPM to PWM
   rpm.motor1 = ((rpm.motor1 /  max_rpm_) * pwm_res_);
+
   rpm.motor2 = ((rpm.motor2 /  max_rpm_) * pwm_res_);
   return rpm;
 }

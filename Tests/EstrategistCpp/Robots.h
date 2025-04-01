@@ -8,30 +8,32 @@ using namespace std;
 
 
 class force{
-    public :
+public :
     force(float, float);
     force();
     float x;
     float y;
     force& operator += (const force&);
+    force operator * (const float&);
+    force operator +(const force&);
 };
 
-class position{
+class robot{
 public:
     float x;
     float y;
     float z;
     float impact;
-    position();
-    position(float,float, float, float);
-    virtual force GetForce(position);
-    bool operator==( const position &);
+    robot();
+    robot(float,float, float, float);
+    virtual force GetForce(robot);
+    bool operator==( const robot &);
     
 };
-class allie : public position{
+class allie : public robot{
     public :
     int rol;
-    force GetForce (position) override;
+    force GetForce (robot) override;
     allie(float, float, float, float, int);
     allie();
 
