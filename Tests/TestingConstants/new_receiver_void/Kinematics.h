@@ -24,6 +24,10 @@ class output
       }
     }
   }
+
+  void Print(){
+    Serial.print(motor1); Serial.print(" ");Serial.print(motor2);
+  }
 };
 class velocities
 {
@@ -58,6 +62,16 @@ class velocities
       }else{
         return (signbit(dif) ? 1 : -1) * 2*PI + dif;
       }
+  }
+
+  void Print(){
+    Serial.print(_x);Serial.print(" ");Serial.print(_y);Serial.print(" ");Serial.print(_z);
+  }
+
+  velocities(){
+    _x = 0;
+    _y = 0;
+    _z = 0;
   }
   
 

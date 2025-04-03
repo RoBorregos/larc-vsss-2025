@@ -28,18 +28,18 @@ const int motorSpeed = 255;
 
 // TB6612FNG Motor Driver pins
 
-#define MotorA1 18
-#define MotorA2 5
+#define MotorA1 5
+#define MotorA2 18
 #define MotorA_PWM 22
 
 #define MotorB1 19
-#define MotorB2 21
+#define MotorB2 17
 #define MotorB_PWM 23
 
 //Encoders Pins
-#define rEncoder 25
-#define lEncoder 33
-#define NoTicks 20
+#define rEncoder 34
+#define lEncoder 32
+#define NoTicks 350.0
 
 //Encoders variables
 unsigned long lastRPMTime = 0;
@@ -49,7 +49,7 @@ volatile int rpulses;
 volatile int lpulses;
 
 // Defining constants for control
-#define MOTOR_MAX_RPM 240       // motor's maximum rpm
+#define MOTOR_MAX_RPM 230       // motor's maximum rpm
 #define WHEEL_DIAMETER 0.06     // distance between front wheel and rear wheel
 #define LR_WHEEL_DISTANCE 0.08  // distance between left wheel and right wheel
 #define PWM_BITS 8              // microcontroller's PWM pin resolution. Arduino Uno/Mega Teensy is using 8 bits(0-255)
@@ -67,7 +67,7 @@ volatile int lpulses;
 
 //Kinematics
 Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
-velocities Force;
+
 //PID
 PID RPID = PID(Rightkp, Rightkd, Rightki);
 PID LPID = PID(Leftkp, Leftkd, Leftki);
@@ -78,12 +78,10 @@ void setup() {
   //WiFi.begin(ssid, password);
 
   // Configure motor pins
-  pinMode(MotorA1, OUTPUT);
-  pinMode(MotorA2, OUTPUT);
-  ledcAttach(MotorA_PWM, 10000, 8);
-  pinMode(MotorB1, OUTPUT);
-  pinMode(MotorB2, OUTPUT);
-  ledcAttach(MotorB_PWM, 10000, 8);
+  ledcAttach(MotorA1, 10000,8);
+  ledcAttach(MotorA2, 10000,8);
+  ledcAttach(MotorB1, 10000,8);
+  ledcAttach(MotorB2, 10000,8);
 
   // Initialize motors to stop
   //Drive(0, 0);
@@ -111,32 +109,11 @@ void Lpulses() {
   lpulses++;
 }
 
-void handleCommand(const char* command) {
-  Serial.printf("Received command: %s\n", command);
 
-  if (strcmp(command, "W") == 0) {
-    Serial.println("Moving forward");
-    Drive(motorSpeed, motorSpeed);
-  } else if (strcmp(command, "S") == 0) {
-    Serial.println("Moving backward");
-    Drive(-motorSpeed, -motorSpeed);
-  } else if (strcmp(command, "A") == 0) {
-    Serial.println("Turning left");
-    Drive(-motorSpeed, motorSpeed);  // Pivot left
-  } else if (strcmp(command, "D") == 0) {
-    Serial.println("Turning right");
-    Drive(motorSpeed, -motorSpeed);  // Pivot right
-  } else if (strcmp(command, " ") == 0 || strcmp(command, "STOP") == 0) {
-    Serial.println("Stopping");
-    Drive(0, 0);
-  } else {
-    Serial.println("Unknown command");
-  }
-}
 
 
 // Motor control function for TB6612FNG
-void Drive(int MotorL, int MotorR) {
+/*void Drive(int MotorL, int MotorR) {
   // Control left motor (Motor A)
   if (MotorL > 0) {
     digitalWrite(MotorA1, HIGH);
@@ -161,9 +138,34 @@ void Drive(int MotorL, int MotorR) {
     digitalWrite(MotorB2, LOW);
   }
 
-  // Set motor speeds
+//  // Set motor speeds
   ledcWrite(MotorA_PWM, abs(MotorL));
   ledcWrite(MotorB_PWM, abs(MotorR));
+}*/
+
+//Temp
+void Drive2(int a, int b){
+  if (a > 0){
+    ledcWrite(MotorA1, a);
+    ledcWrite(MotorA2, 0);
+  }else if(a < 0){
+    ledcWrite(MotorA1, 0);
+    ledcWrite(MotorA2, abs(a));
+  }else{
+    ledcWrite(MotorA1,0);
+    ledcWrite(MotorA2,0);
+  }
+
+  if (b> 0){
+    ledcWrite(MotorB1, b);
+    ledcWrite(MotorB2, 0);
+  }else if(b< 0){
+    ledcWrite(MotorB1, 0);
+    ledcWrite(MotorB2, abs(b));
+  }else{
+    ledcWrite(MotorB1,0);
+    ledcWrite(MotorB2,0);
+  }
 }
 
 //GetRPM
@@ -171,8 +173,9 @@ output GetRPM() {
   output rpm;
   currentRPMTime = millis();
   noInterrupts();
-  rpm.motor2 = (rpulses / NoTicks) * (currentRPMTime - lastRPMTime) / 1000.0 * 60;  // number of revolutions * deltaTime * 60 secs to get min
-  rpm.motor1 = (lpulses / NoTicks) * (currentRPMTime - lastRPMTime) / 1000.0 * 60;
+  //Serial.print("                 ");Serial.print((float)rpulses/NoTicks);Serial.print("    ");
+  rpm.motor2 = ((float)rpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;  // number of revolutions * deltaTime * 60 secs to get min
+  rpm.motor1 = ((float)lpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;
   lpulses = 0;
   rpulses = 0;
   lastRPMTime = currentRPMTime;
@@ -186,11 +189,12 @@ float x = 0;
 float y = 0;
 float z = PI / 2;
 velocities vel;
+velocities Force;
 output Orpm, rpm;
-
 void loop() {
 
   // Check for incoming packets
+  /*
   int packetSize = udp.parsePacket();
   if (packetSize) {
     // Read the packet
@@ -209,11 +213,10 @@ void loop() {
     } else {
       Serial.println("Received packet with unexpected size");
     }
-  }
+  }*/
 
   z = z < 0 ? 2 * PI + z : z;
   z = z > 2 * PI ? z - 2 * PI : z;
-
   // Time
   currentTime = micros();
   if (currentTime > previousTime) {
@@ -230,26 +233,16 @@ void loop() {
   Orpm = kinematics.getRPM(Force);
   //Get Real Vel
   rpm = GetRPM();
+  Orpm.Print();Serial.print("         ");rpm.Print();Serial.print("         ");
   vel = kinematics.getVelocities(rpm, z);                      //Vel in coord x y and z
   float Lcorr = LPID.GetCorrection(Orpm.motor1 - rpm.motor1);  // add correction from PID
   float Rcorr = RPID.GetCorrection(Orpm.motor2 - rpm.motor2);
-  rpm.motor1 += Lcorr - Rcorr * 0.5;
-  rpm.motor2 += Rcorr - Lcorr * 0.5;
-  output pwm = kinematics.rpmToPWM(Orpm);
-  digitalWrite(MotorB1, HIGH);
-  digitalWrite(MotorB2, LOW);
-  ledcWrite(MotorB_PWM, 255);
+  rpm.motor1 += Lcorr ;
+  rpm.motor2 += Rcorr ;
+  output pwm = kinematics.rpmToPWM(rpm);
+  velocities Pos;
+  Pos._x = x; Pos._y = y; Pos._z = z;
+  pwm.Print();Serial.print("          "); Pos.Print();Serial.print("\n");
+  Drive2(pwm.motor1, pwm.motor2);
 
-  digitalWrite(MotorA1, HIGH);
-  digitalWrite(MotorA2, LOW);
-  ledcWrite(MotorA_PWM, 255);
-
-  Serial.print("                   ");
-  Serial.print(x);
-  Serial.print(" ");
-  Serial.print(y);
-  Serial.print(" ");
-  Serial.println(z);
-
-  //Drive(255,255);
 }

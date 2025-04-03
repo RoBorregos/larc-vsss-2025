@@ -16,7 +16,7 @@ Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheel
 
 output Kinematics::getRPM(velocities ObVel) // the objective velocityes x,y,theta
 {
-//For now it is that x is the force and z the angule. However this would change depending on the development we could do later (odometry)
+//However this would change depending on the development we could do later (odometry)
   
   float ObVelMagnitude = ObVel.Magnitude() * ConstVelDiff; //ToGet the magnitude of the force
   ObVel._z *= ConstThetaDiff;
