@@ -10,7 +10,7 @@ import time
 
 #in HSV 
 colorParams = [0,103,31,20,255,255] #most accurate HSV values for test ball (bright orange) 0, 63, 255, 179, 255, 255
-#checa la foto donde esta la terminal meio cubierta con los valores HSV que probaste con Alberto
+#checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
 #refColorParams = [0, 0, 0, 0, 0, 0]  # white 
 refCenter = (320, 240) #in pixels
 referenceWidth = 2.9  # Test width
