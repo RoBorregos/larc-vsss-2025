@@ -1,6 +1,8 @@
 // Add this near the top of your ESP32 sketch, after your existing declarations
-float x_coord = 0.5;
-float y_coord = 0.5;
+//destiny data
+float x_coord = 0.30;
+float y_coord = 0.30;
+
 
 //deltaPositionTime
 unsigned long previousTime = 0;
@@ -28,42 +30,42 @@ const int motorSpeed = 255;
 
 // TB6612FNG Motor Driver pins
 
-#define MotorA1 5
+#define MotorA1 19
 #define MotorA2 18
 #define MotorA_PWM 22
 
-#define MotorB1 19
-#define MotorB2 17
+#define MotorB1 27
+#define MotorB2 26
 #define MotorB_PWM 23
 
 //Encoders Pins
-#define rEncoder 34
-#define lEncoder 32
+#define rEncoder 23
+#define lEncoder 4
 #define NoTicks 350.0
 
 //Encoders variables
 unsigned long lastRPMTime = 0;
 unsigned long currentRPMTime;
 float deltaRPMTime;
-volatile int rpulses;
-volatile int lpulses;
+volatile unsigned int rpulses;
+volatile unsigned int lpulses;
 
 // Defining constants for control
-#define MOTOR_MAX_RPM 230       // motor's maximum rpm
+#define MOTOR_MAX_RPM 320      // motor's maximum rpm
 #define WHEEL_DIAMETER 0.06     // distance between front wheel and rear wheel
-#define LR_WHEEL_DISTANCE 0.08  // distance between left wheel and right wheel
+#define LR_WHEEL_DISTANCE 0.076  // distance between left wheel and right wheel
 #define PWM_BITS 8              // microcontroller's PWM pin resolution. Arduino Uno/Mega Teensy is using 8 bits(0-255)
-#define VelConst 0.7
-#define ThetaConst 3.5
+#define VelConst 0.5
+#define ThetaConst 1
 
 //Constants for PID
-#define Rightkp 1
-#define Rightki 0
-#define Rightkd 0
+#define Rightkp 0.7
+#define Rightki 0.0
+#define Rightkd 0.000
 
-#define Leftkp 1
-#define Leftki 0
-#define Leftkd 0
+#define Leftkp 0.7
+#define Leftki 0.0
+#define Leftkd 0.000
 
 //Kinematics
 Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
@@ -71,6 +73,14 @@ Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS
 //PID
 PID RPID = PID(Rightkp, Rightkd, Rightki);
 PID LPID = PID(Leftkp, Leftkd, Leftki);
+
+//Position Data
+float x = 0;
+float y = 0;
+float z = PI / 2;
+velocities vel;
+velocities Force;
+output Opwm, rpm, pwm;
 
 void setup() {
 
@@ -89,6 +99,7 @@ void setup() {
   // Sets the encoders
   attachInterrupt(digitalPinToInterrupt(rEncoder), Rpulses, RISING);
   attachInterrupt(digitalPinToInterrupt(lEncoder), Lpulses, RISING);
+
   /*
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -98,7 +109,9 @@ void setup() {
   Serial.printf("Device IP: %s, UDP port: %d\n", WiFi.localIP().toString().c_str(), localUdpPort);
   
   udp.begin(localUdpPort);  // Start UDP*/
-
+  rpulses = 0;
+  lpulses = 0;
+  lastRPMTime = millis();
   previousTime = micros();
 }
 
@@ -144,7 +157,9 @@ void Lpulses() {
 }*/
 
 //Temp
-void Drive2(int a, int b){
+void Drive2(int b, int a){
+
+  //Serial.print("\n                H:");Serial.print(a);Serial.print(" ");Serial.println(b);
   if (a > 0){
     ledcWrite(MotorA1, a);
     ledcWrite(MotorA2, 0);
@@ -170,29 +185,29 @@ void Drive2(int a, int b){
 
 //GetRPM
 output GetRPM() {
-  output rpm;
+  output temp;
   currentRPMTime = millis();
   noInterrupts();
+  //Serial.println(rpulses);
+  if(currentRPMTime - lastRPMTime > 0){
   //Serial.print("                 ");Serial.print((float)rpulses/NoTicks);Serial.print("    ");
-  rpm.motor2 = ((float)rpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;  // number of revolutions * deltaTime * 60 secs to get min
-  rpm.motor1 = ((float)lpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;
+    temp.motor2 = ((float)rpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;  // number of revolutions * deltaTime * 60 secs to get min
+    temp.motor1 = ((float)lpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;
+    //temp.Print();Serial.print("\n");
+  }
+  temp.motor1 *= signbit(pwm.motor1) ? -1 : 1;
+  temp.motor2 *= signbit(pwm.motor2) ? -1 : 1;
   lpulses = 0;
   rpulses = 0;
   lastRPMTime = currentRPMTime;
   interrupts();
-  return rpm;
+  return temp;
 }
 
 
-//Position Data
-float x = 0;
-float y = 0;
-float z = PI / 2;
-velocities vel;
-velocities Force;
-output Orpm, rpm;
-void loop() {
 
+
+void loop() {
   // Check for incoming packets
   /*
   int packetSize = udp.parsePacket();
@@ -214,35 +229,40 @@ void loop() {
       Serial.println("Received packet with unexpected size");
     }
   }*/
-
-  z = z < 0 ? 2 * PI + z : z;
-  z = z > 2 * PI ? z - 2 * PI : z;
+  rpm = GetRPM();
+  vel = kinematics.getVelocities(rpm, z);  
   // Time
   currentTime = micros();
-  if (currentTime > previousTime) {
-    deltaTime = (currentTime - previousTime) / 1000000.0;
-    x += deltaTime * vel._x;
-    y += deltaTime * vel._y;
-    z += deltaTime * vel._z;
-    previousTime = currentTime;
-  }
+  deltaTime = (currentTime - previousTime) / 1000000.0;
+  x += deltaTime * vel._x;
+  y += deltaTime * vel._y;
+  z += deltaTime * vel._z;
+  previousTime = currentTime;
+  velocities Pos;
+  Pos._x = x; Pos._y = y; Pos._z = z;
+  z = z < 0 ? 2 * PI + z : z;
+  z = z > 2 * PI ? z - 2 * PI : z;
+  //vel.Print(); Serial.print("\n                             ");Pos.Print();Serial.print("\n             ");
+
   Force._x = x_coord - x;
   Force._y = y_coord - y;
   Force.setAngule();
-  Force._z = Force.getThetaDif(Force._z, z);
-  Orpm = kinematics.getRPM(Force);
-  //Get Real Vel
-  rpm = GetRPM();
-  Orpm.Print();Serial.print("         ");rpm.Print();Serial.print("         ");
-  vel = kinematics.getVelocities(rpm, z);                      //Vel in coord x y and z
-  float Lcorr = LPID.GetCorrection(Orpm.motor1 - rpm.motor1);  // add correction from PID
-  float Rcorr = RPID.GetCorrection(Orpm.motor2 - rpm.motor2);
-  rpm.motor1 += Lcorr ;
-  rpm.motor2 += Rcorr ;
-  output pwm = kinematics.rpmToPWM(rpm);
-  velocities Pos;
-  Pos._x = x; Pos._y = y; Pos._z = z;
-  pwm.Print();Serial.print("          "); Pos.Print();Serial.print("\n");
-  Drive2(pwm.motor1, pwm.motor2);
+  Force._z = Force.getThetaDif(Force._z, z);/*
+  Force._x = 0.25;
+  Force._y = 0.25;*/
+  rpm.Print();Serial.print("\n                   ");       
+  Opwm = kinematics.getPWM(Force);
+  Opwm.Scale(255);
+  Opwm.Print();
+  float Lcorr = LPID.GetCorrection(Opwm.motor1 - pwm.motor1 );  // add correction from PID
+  float Rcorr = RPID.GetCorrection(Opwm.motor2 - pwm.motor2);
+  pwm.motor1 += Lcorr ;
+  pwm.motor2 += Rcorr ;
+  pwm.Scale(255);
+  
+  Serial.print("\n                                            ");pwm.Print();Serial.print("\n                                                              "); Pos.Print();Serial.print("\n");
+  Drive2(pwm.motor1,pwm.motor2);
+  //delay(20);
+
 
 }

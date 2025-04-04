@@ -29,7 +29,6 @@ output Kinematics::getRPM(velocities ObVel) // the objective velocityes x,y,thet
   output rpm;
   rpm.motor1 = leftVel/circumference_  * 60;
   rpm.motor2  = rightVel / circumference_ * 60;
-  rpm.Scale(max_rpm_);
   return rpm;
 }
 
@@ -49,19 +48,15 @@ output Kinematics::getPWM(velocities ObVel)
 velocities Kinematics::getVelocities(output actualRPM, float theta)
 {
   velocities vel;
-  //Change from rpm to m/s
-  actualRPM.motor1 = (actualRPM.motor1 *circumference_ / 60);
-  actualRPM.motor2 = (actualRPM.motor2 *circumference_ / 60);
-
+  //Change from rpm to rad/s
+  actualRPM.motor1 = (actualRPM.motor1 *2 *PI/ 60);
+  actualRPM.motor2 = (actualRPM.motor2 *2 *PI/ 60);
   //With the formulas we determine the velocities and send them;
 
-  vel._x = (radius * actualRPM.motor1)/2 *cos(theta) + (radius * actualRPM.motor2) /2 *cos(theta);
-  vel._y = (radius * actualRPM.motor1)/2 *sin(theta) + (radius * actualRPM.motor2) /2 *sin(theta);
-  vel._z = -radius / lr_wheels_dist_ * actualRPM.motor1 +  radius / lr_wheels_dist_ * actualRPM.motor2; 
-
-
+  vel._x = radius * (actualRPM.motor1 + actualRPM.motor2)/2 *cos(theta);
+  vel._y = radius * (actualRPM.motor1 + actualRPM.motor2)/2 *sin(theta);
+  vel._z = radius / lr_wheels_dist_ *(actualRPM.motor2 - actualRPM.motor1); 
   return vel;
-
 
 }
 

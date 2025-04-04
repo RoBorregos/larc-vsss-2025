@@ -65,7 +65,7 @@ class velocities
   }
 
   void Print(){
-    Serial.print(_x);Serial.print(" ");Serial.print(_y);Serial.print(" ");Serial.print(_z);
+    Serial.print(_x,4);Serial.print(" ");Serial.print(_y,4);Serial.print(" ");Serial.print(_z,4);
   }
 
   velocities(){
