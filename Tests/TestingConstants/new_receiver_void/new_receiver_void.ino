@@ -81,7 +81,7 @@ PID LPID = PID(Leftkp, Leftkd, Leftki);
 float x = 0;
 float y = 0;
 float z = PI / 2;
-velocities vel;
+velocities vel, fin;
 velocities Force;
 output Opwm, rpm, pwm;
 
@@ -212,7 +212,7 @@ output GetRPM() {
 }
 
 
-
+bool inic = true;
 
 void loop() {
   // Check for incoming packets
@@ -236,28 +236,29 @@ void loop() {
       Serial.println("Received packet with unexpected size");
     }
   }*/
+  if(inic){
+    inic = false;
+    delay(5000);
+  }
 
   int packetSize = udp.parsePacket();
   currentUDPTime = millis();
-  if (packetSize && (currentUDPTime - previousUDPTime) > 30) {
+  bool deltaUDP = (currentUDPTime - deltaUDP ) > 35;
+  if (packetSize && deltaUDP ) {
     // Read the packet into the buffer
     udp.read(packetBuffer, sizeof(packetBuffer));
-    
+
     // Convert bytes to floats
-    float x_coord, y_coord;
     memcpy(&x_coord, &packetBuffer[0], sizeof(float));
     memcpy(&y_coord, &packetBuffer[4], sizeof(float));
-    x_coord /= 100;
+    x_coord /= -100;
     y_coord /= 100;
-    
-    // Print received coordinates
-    // Do something with the coordinates here
-    // For example, control servos, motors, etc.
-    Serial.print(x_coord);
+
     previousUDPTime = currentUDPTime;
   }
 
-
+  fin._x = x_coord;
+  fin._y = y_coord;
   //Serial.print("                        ");Serial.print(x_coord,6); Serial.print("  "); Serial.println(y_coord,6);
   rpm = GetRPM();
   vel = kinematics.getVelocities(rpm, z);  
@@ -272,25 +273,22 @@ void loop() {
   Pos._x = x; Pos._y = y; Pos._z = z;
   z = z < 0 ? 2 * PI + z : z;
   z = z > 2 * PI ? z - 2 * PI : z;
-  //Serial.print("                 ");vel.Print(); Serial.print("\n                                        ");Pos.Print();Serial.print("\n");
-
   Force._x = x_coord - x;
   Force._y = y_coord - y;
   Force.setAngule();
-  Force._z = Force.getThetaDif(Force._z, z);/*
-  Force._x = 0.25;
-  Force._y = 0.25;*/
-  //rpm.Print();Serial.print("\n                   ");       
+  Force._z = Force.getThetaDif(Force._z, z);   
   Opwm = kinematics.getPWM(Force);
   Opwm.Scale(255);
-  //Opwm.Print();
   float Lcorr = LPID.GetCorrection(Opwm.motor1 - pwm.motor1 );  // add correction from PID
   float Rcorr = RPID.GetCorrection(Opwm.motor2 - pwm.motor2);
   pwm.motor1 += Lcorr ;
   pwm.motor2 += Rcorr ;
   pwm.Scale(255);
+  Opwm.Print(); Serial.print("\n              ");
+  pwm.Print(); Serial.print("\n                               ");
+  Pos.Print(); Serial.print("\n                                                       ");
+  fin.Print(); Serial.print("\n");
   
-  //Serial.print("\n                                            ");pwm.Print();Serial.print("\n                                                              "); Pos.Print();Serial.print("\n");
   Drive2(pwm.motor1,pwm.motor2);
   //delay(20);
 
