@@ -1,7 +1,7 @@
 // Add this near the top of your ESP32 sketch, after your existing declarations
 //destiny data
-float x_coord = 0.30;
-float y_coord = 0.30;
+float x_coord;
+float y_coord;
 
 
 //deltaPositionTime
@@ -9,6 +9,9 @@ unsigned long previousTime = 0;
 unsigned long currentTime;
 float deltaTime;
 
+//Connection Delta Time
+unsigned long previousUDPTime = 0;
+unsigned long currentUDPTime = 0;
 
 // Device with motor control (ESP32 receiver)
 #include <WiFi.h>
@@ -22,21 +25,21 @@ WiFiUDP udp;
 const char* ssid = "danielaASUS05";
 const char* password = "Dw8619a6";
 
-unsigned int localUdpPort = 1111;           // Port to listen on
-char incomingPacket[255];                   // Buffer for incoming packets
-IPAddress otherDeviceIP(192, 168, 1, 110);  // Replace with other device's IP
-const int otherDevicePort = 1234;
+unsigned int localUdpPort = 1234;           // Port to listen on
+const int packetSize = 8;       // Size of 2 floats (4 bytes each)
+byte packetBuffer[packetSize];  // Buffer to hold incoming packet
+              // Buffer for incoming packets
 const int motorSpeed = 255;
 
 // TB6612FNG Motor Driver pins
 
 #define MotorA1 19
 #define MotorA2 18
-#define MotorA_PWM 22
+#define MotorA_PWM 0
 
 #define MotorB1 27
 #define MotorB2 26
-#define MotorB_PWM 23
+#define MotorB_PWM 1
 
 //Encoders Pins
 #define rEncoder 23
@@ -85,7 +88,7 @@ output Opwm, rpm, pwm;
 void setup() {
 
   Serial.begin(115200);
-  //WiFi.begin(ssid, password);
+  WiFi.begin(ssid, password);
 
   // Configure motor pins
   ledcAttach(MotorA1, 10000,8);
@@ -100,7 +103,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(rEncoder), Rpulses, RISING);
   attachInterrupt(digitalPinToInterrupt(lEncoder), Lpulses, RISING);
 
-  /*
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -112,7 +115,11 @@ void setup() {
   rpulses = 0;
   lpulses = 0;
   lastRPMTime = millis();
+  currentRPMTime = millis();
   previousTime = micros();
+  currentTime = micros();
+  previousUDPTime = millis();
+  currentUDPTime = millis();
 }
 
 void Rpulses() {
@@ -229,6 +236,29 @@ void loop() {
       Serial.println("Received packet with unexpected size");
     }
   }*/
+
+  int packetSize = udp.parsePacket();
+  currentUDPTime = millis();
+  if (packetSize && (currentUDPTime - previousUDPTime) > 30) {
+    // Read the packet into the buffer
+    udp.read(packetBuffer, sizeof(packetBuffer));
+    
+    // Convert bytes to floats
+    float x_coord, y_coord;
+    memcpy(&x_coord, &packetBuffer[0], sizeof(float));
+    memcpy(&y_coord, &packetBuffer[4], sizeof(float));
+    x_coord /= 100;
+    y_coord /= 100;
+    
+    // Print received coordinates
+    // Do something with the coordinates here
+    // For example, control servos, motors, etc.
+    Serial.print(x_coord);
+    previousUDPTime = currentUDPTime;
+  }
+
+
+  //Serial.print("                        ");Serial.print(x_coord,6); Serial.print("  "); Serial.println(y_coord,6);
   rpm = GetRPM();
   vel = kinematics.getVelocities(rpm, z);  
   // Time
@@ -242,7 +272,7 @@ void loop() {
   Pos._x = x; Pos._y = y; Pos._z = z;
   z = z < 0 ? 2 * PI + z : z;
   z = z > 2 * PI ? z - 2 * PI : z;
-  //vel.Print(); Serial.print("\n                             ");Pos.Print();Serial.print("\n             ");
+  //Serial.print("                 ");vel.Print(); Serial.print("\n                                        ");Pos.Print();Serial.print("\n");
 
   Force._x = x_coord - x;
   Force._y = y_coord - y;
@@ -250,19 +280,21 @@ void loop() {
   Force._z = Force.getThetaDif(Force._z, z);/*
   Force._x = 0.25;
   Force._y = 0.25;*/
-  rpm.Print();Serial.print("\n                   ");       
+  //rpm.Print();Serial.print("\n                   ");       
   Opwm = kinematics.getPWM(Force);
   Opwm.Scale(255);
-  Opwm.Print();
+  //Opwm.Print();
   float Lcorr = LPID.GetCorrection(Opwm.motor1 - pwm.motor1 );  // add correction from PID
   float Rcorr = RPID.GetCorrection(Opwm.motor2 - pwm.motor2);
   pwm.motor1 += Lcorr ;
   pwm.motor2 += Rcorr ;
   pwm.Scale(255);
   
-  Serial.print("\n                                            ");pwm.Print();Serial.print("\n                                                              "); Pos.Print();Serial.print("\n");
+  //Serial.print("\n                                            ");pwm.Print();Serial.print("\n                                                              "); Pos.Print();Serial.print("\n");
   Drive2(pwm.motor1,pwm.motor2);
   //delay(20);
+
+  
 
 
 }

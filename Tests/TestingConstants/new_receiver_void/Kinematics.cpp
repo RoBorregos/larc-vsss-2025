@@ -17,16 +17,19 @@ Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheel
 output Kinematics::getRPM(velocities ObVel) // the objective velocityes x,y,theta
 {
 //However this would change depending on the development we could do later (odometry)
-  
+    output rpm;
   float ObVelMagnitude = ObVel.Magnitude() * ConstVelDiff; //ToGet the magnitude of the force
   ObVel._z *= ConstThetaDiff;
-  
+
+  if(ObVelMagnitude == 0){
+    return rpm;
+  }
   //Funciton to determine the vel of each wheel with the values of vel and theta dif
   float leftVel = ObVelMagnitude/ radius - lr_wheels_dist_ / (2*radius) * ObVel._z; 
   float rightVel = ObVelMagnitude/ radius + lr_wheels_dist_ / (2*radius) * ObVel._z;
 
   //Change the data to rpm insted of m/s;
-  output rpm;
+
   rpm.motor1 = leftVel/circumference_  * 60;
   rpm.motor2  = rightVel / circumference_ * 60;
   return rpm;
