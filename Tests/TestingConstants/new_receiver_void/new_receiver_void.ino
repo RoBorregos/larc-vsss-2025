@@ -1,7 +1,7 @@
 // Add this near the top of your ESP32 sketch, after your existing declarations
 //destiny data
-float x_coord;
-float y_coord;
+float x_coord = -0.3;
+float y_coord = 0.3;
 
 
 //deltaPositionTime
@@ -59,7 +59,7 @@ volatile unsigned int lpulses;
 #define LR_WHEEL_DISTANCE 0.076  // distance between left wheel and right wheel
 #define PWM_BITS 8              // microcontroller's PWM pin resolution. Arduino Uno/Mega Teensy is using 8 bits(0-255)
 #define VelConst 0.5
-#define ThetaConst 1
+#define ThetaConst 1.3
 
 //Constants for PID
 #define Rightkp 0.7
@@ -104,7 +104,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(lEncoder), Lpulses, RISING);
 
   
-  while (WiFi.status() != WL_CONNECTED) {
+ /* while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
@@ -239,7 +239,7 @@ void loop() {
   if(inic){
     inic = false;
     delay(5000);
-  }
+  }/*
 
   int packetSize = udp.parsePacket();
   currentUDPTime = millis();
@@ -255,7 +255,7 @@ void loop() {
     y_coord /= 100;
 
     previousUDPTime = currentUDPTime;
-  }
+  }*/
 
   fin._x = x_coord;
   fin._y = y_coord;
