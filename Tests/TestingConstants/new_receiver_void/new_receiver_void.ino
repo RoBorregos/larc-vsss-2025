@@ -1,7 +1,7 @@
 // Add this near the top of your ESP32 sketch, after your existing declarations
 //destiny data
-float x_coord = -0.3;
-float y_coord = 0.3;
+float x_coord ;
+float y_coord ;
 
 
 //deltaPositionTime
@@ -58,17 +58,17 @@ volatile unsigned int lpulses;
 #define WHEEL_DIAMETER 0.06     // distance between front wheel and rear wheel
 #define LR_WHEEL_DISTANCE 0.076  // distance between left wheel and right wheel
 #define PWM_BITS 8              // microcontroller's PWM pin resolution. Arduino Uno/Mega Teensy is using 8 bits(0-255)
-#define VelConst 0.5
-#define ThetaConst 1.3
+#define VelConst 0.33
+#define ThetaConst 0.66
 
 //Constants for PID
-#define Rightkp 0.7
-#define Rightki 0.0
-#define Rightkd 0.000
+#define Rightkp 1.4
+#define Rightki 0.3
+#define Rightkd 0.001
 
-#define Leftkp 0.7
-#define Leftki 0.0
-#define Leftkd 0.000
+#define Leftkp 1.4
+#define Leftki 0.3
+#define Leftkd 0.001
 
 //Kinematics
 Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
@@ -104,7 +104,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(lEncoder), Lpulses, RISING);
 
   
- /* while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
@@ -239,7 +239,7 @@ void loop() {
   if(inic){
     inic = false;
     delay(5000);
-  }/*
+  }
 
   int packetSize = udp.parsePacket();
   currentUDPTime = millis();
@@ -255,7 +255,7 @@ void loop() {
     y_coord /= 100;
 
     previousUDPTime = currentUDPTime;
-  }*/
+  }
 
   fin._x = x_coord;
   fin._y = y_coord;
@@ -279,7 +279,7 @@ void loop() {
   Force._z = Force.getThetaDif(Force._z, z);   
   Opwm = kinematics.getPWM(Force);
   Opwm.Scale(255);
-  float Lcorr = LPID.GetCorrection(Opwm.motor1 - pwm.motor1 );  // add correction from PID
+  float Lcorr = LPID.GetCorrection(Opwm.motor1 - pwm.motor1);  // add correction from PID
   float Rcorr = RPID.GetCorrection(Opwm.motor2 - pwm.motor2);
   pwm.motor1 += Lcorr ;
   pwm.motor2 += Rcorr ;
@@ -288,9 +288,7 @@ void loop() {
   pwm.Print(); Serial.print("\n                               ");
   Pos.Print(); Serial.print("\n                                                       ");
   fin.Print(); Serial.print("\n");
-  
   Drive2(pwm.motor1,pwm.motor2);
-  //delay(20);
 
   
 
