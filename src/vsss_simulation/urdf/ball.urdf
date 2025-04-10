@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<robot name="simple_sphere">
+    <material name="blue">
+        <color rgba="0.2 0.2 1 1"/>
+    </material>
+    <link name="sphere_link">
+        <!-- Inertial properties -->
+        <inertial>
+            <mass value="0.1"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <inertia ixx="0.0002" ixy="0.0" ixz="0.0" iyy="0.0002" iyz="0.0" izz="0.0002"/>
+        </inertial>
+
+        <!-- Collision shape -->
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+                <sphere radius="0.1"/>
+            </geometry>
+        </collision>
+
+        <!-- Visual shape with red material -->
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <geometry>
+              <sphere radius="0.1"/>
+            </geometry>
+            <material name="blue">
+              <color rgba="0.2 0.2 1 1"/>
+            </material>
+          </visual>
+
+
+    </link>
+
+    <gazebo reference="sphere_link">
+        <material>Gazebo/Orange</material>
+    </gazebo>
+
+</robot>

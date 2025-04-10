@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="camera_robot">
+
+    <!-- World Link -->
+    <link name="world"/>
+
+    <!-- Camera Links -->
+    <link name="camera_link">
+        <visual>
+            <geometry>
+                <box size="0.010 0.03 0.03"/>
+            </geometry>
+            <material name="Gazebo/Black"/>
+        </visual>
+        <visual>
+            <origin xyz="0 0 -0.05"/>
+            <geometry>
+                <cylinder radius="0.002" length="0.1"/>
+            </geometry>
+            <material name="Gazebo/Black"/>
+        </visual>
+        <collision>
+            <geometry>
+                <box size="0.010 0.03 0.03"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="0.1"/>
+            <inertia ixx="1e-5" ixy="0.0" ixz="0.0" iyy="1e-5" iyz="0.0" izz="1e-5"/>
+        </inertial>
+    </link>
+
+    <link name="camera_link_optical"/>
+
+    <!-- Joints -->
+    <joint name="world_camera" type="fixed">
+        <parent link="world"/>
+        <child link="camera_link"/>
+        <origin xyz="0.0 0.0 11.0" rpy="0.0 1.57 -1.57"/>
+    </joint>
+
+    <joint name="camera_optical_joint" type="fixed">
+        <parent link="camera_link"/>
+        <child link="camera_link_optical"/>
+        <origin xyz="0 0 0" rpy="-1.5708 0 -1.5708"/>
+    </joint>
+
+    <!-- Gazebo Camera Plugin -->
+    <gazebo reference="camera_link">
+        <material>Gazebo/Black</material>
+        <sensor name="camera" type="camera">
+            <pose>0 0 0 0 0 0</pose>            <!-- Camera placed 5 meters above the ground -->
+            <visualize>true</visualize>
+            <update_rate>10</update_rate>
+            <camera>
+                <!-- Horizontal FOV adjusted to 45 degrees (0.785 radians) -->
+                <horizontal_fov>0.785</horizontal_fov>
+                <!-- Vertical FOV adjusted to approximately 38.66 degrees (0.675 radians) -->
+                <vertical_fov>0.675</vertical_fov>
+                <image>
+                    <width>640</width>
+                    <height>480</height>
+                    <format>R8G8B8</format>
+                </image>
+                <clip>
+                    <near>0.1</near>                    <!-- Adjusted near clipping plane -->
+                    <far>25.0</far>                    <!-- Adjusted far clipping plane -->
+                </clip>
+            </camera>
+            <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+                <frame_name>camera_link_optical</frame_name>
+            </plugin>
+        </sensor>
+    </gazebo>
+
+
+</robot>
