@@ -58,5 +58,14 @@ ros2 run rqt_image_view rqt_image_view
 
 Or you can use the topi **`/camera/image_raw`**
 
+## 🛞 How to move the robot
+The robot uses internally the **`diff_drive`** gazebo tags to perform the differential motion in its motors. In order to communicate with the driver, use the **`cmd_vel`** topic
+
+A simple example to publish velocities to the robot's controller is to activate the **`teleop_twist_keyboard`** executable
+
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+
 ## 🛠️ Notes
 Feel free to modify or extend this package to fit your specific simulation needs.
