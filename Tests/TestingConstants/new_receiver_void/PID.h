@@ -14,6 +14,5 @@ class PID{
   float diferencial;
   PID(float kp, float ki, float kd);
   float GetCorrection(float actuError);
-  void Reset();
 };
 #endif

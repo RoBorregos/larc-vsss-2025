@@ -14,14 +14,8 @@ PID::PID(float kp_, float ki_, float kd_){
 float PID::GetCorrection(float error){
   acumulativo += error; // Integral
   if ((error*acumulativo)<0) acumulativo=0;  // corrige el overshooting 
-  diferencial = error - previo; // dif
+  diferencial = error - previo; // diferential
   previo = error;             
   return kp * error + ki * acumulativo + kd * diferencial;
 }
 
-//It will be used when the robot recives a new signal
-void PID::Reset(){
-  acumulativo = 0;
-  diferencial = 0;
-  previo = 0;
-}

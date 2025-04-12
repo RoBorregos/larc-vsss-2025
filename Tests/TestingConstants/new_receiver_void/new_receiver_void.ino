@@ -58,7 +58,7 @@ volatile unsigned int lpulses;
 #define WHEEL_DIAMETER 0.06     // distance between front wheel and rear wheel
 #define LR_WHEEL_DISTANCE 0.076  // distance between left wheel and right wheel
 #define PWM_BITS 8              // microcontroller's PWM pin resolution. Arduino Uno/Mega Teensy is using 8 bits(0-255)
-#define VelConst 0.33
+#define VelConst 0.33         
 #define ThetaConst 0.66
 
 //Constants for PID
@@ -163,10 +163,9 @@ void Lpulses() {
   ledcWrite(MotorB_PWM, abs(MotorR));
 }*/
 
-//Temp
+//Funcion actual para usar el puente H
 void Drive2(int b, int a){
 
-  //Serial.print("\n                H:");Serial.print(a);Serial.print(" ");Serial.println(b);
   if (a > 0){
     ledcWrite(MotorA1, a);
     ledcWrite(MotorA2, 0);
@@ -195,13 +194,13 @@ output GetRPM() {
   output temp;
   currentRPMTime = millis();
   noInterrupts();
-  //Serial.println(rpulses);
   if(currentRPMTime - lastRPMTime > 0){
-  //Serial.print("                 ");Serial.print((float)rpulses/NoTicks);Serial.print("    ");
-    temp.motor2 = ((float)rpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;  // number of revolutions * deltaTime * 60 secs to get min
+    temp.motor2 = ((float)rpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;  // number of revolutions * deltaTime(in milis) * 60sec = to get rpm
     temp.motor1 = ((float)lpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;
-    //temp.Print();Serial.print("\n");
   }
+  //Debido a que solo tenemos un pin para poder medir el rpm,
+  // la forma en la que se determina si es positivo o negativo el rpm
+  // es si es dandole el signo del pwm que se dio.
   temp.motor1 *= signbit(pwm.motor1) ? -1 : 1;
   temp.motor2 *= signbit(pwm.motor2) ? -1 : 1;
   lpulses = 0;
@@ -215,75 +214,68 @@ output GetRPM() {
 bool inic = true;
 
 void loop() {
-  // Check for incoming packets
-  /*
-  int packetSize = udp.parsePacket();
-  if (packetSize) {
-    // Read the packet
-    int len = udp.read(incomingPacket, sizeof(incomingPacket));
+  // Mini delay
 
-    // Check if we received exactly 8 bytes (two floats, 4 bytes each)
-    if (len == 8) {
-      // Extract the two float values from the packet
-      memcpy(&x_coord, incomingPacket, 4);
-      memcpy(&y_coord, incomingPacket + 4, 4);
-
-      // Print the received coordinates
-      Serial.printf("Received coordinates: x=%.2f, y=%.2f from %s\n",
-                    x_coord, y_coord,
-                    udp.remoteIP().toString().c_str());
-    } else {
-      Serial.println("Received packet with unexpected size");
-    }
-  }*/
   if(inic){
     inic = false;
     delay(5000);
   }
+  //Codigo para recivir la informacion por parte de vision
+      int packetSize = udp.parsePacket();
+      currentUDPTime = millis();
+      bool deltaUDP = (currentUDPTime - deltaUDP ) > 35;
+      if (packetSize && deltaUDP ) {
+        // Read the packet into the buffer
+        udp.read(packetBuffer, sizeof(packetBuffer));
 
-  int packetSize = udp.parsePacket();
-  currentUDPTime = millis();
-  bool deltaUDP = (currentUDPTime - deltaUDP ) > 35;
-  if (packetSize && deltaUDP ) {
-    // Read the packet into the buffer
-    udp.read(packetBuffer, sizeof(packetBuffer));
-
-    // Convert bytes to floats
-    memcpy(&x_coord, &packetBuffer[0], sizeof(float));
-    memcpy(&y_coord, &packetBuffer[4], sizeof(float));
-    x_coord /= -100;
-    y_coord /= 100;
-
-    previousUDPTime = currentUDPTime;
-  }
+        // Convert bytes to floats
+        memcpy(&x_coord, &packetBuffer[0], sizeof(float));
+        memcpy(&y_coord, &packetBuffer[4], sizeof(float));
+        x_coord /= -100; //Debido a que el eje x de vision esta invertido, 
+                          // se decidio optar por invertir este valor para solucionar el problema
+        y_coord /= 100;
+        previousUDPTime = currentUDPTime;
+      }
 
   fin._x = x_coord;
-  fin._y = y_coord;
-  //Serial.print("                        ");Serial.print(x_coord,6); Serial.print("  "); Serial.println(y_coord,6);
+  fin._y = y_coord; //Info a recivir
   rpm = GetRPM();
-  vel = kinematics.getVelocities(rpm, z);  
-  // Time
+  vel = kinematics.getVelocities(rpm, z);  //Obtener la velocidad del robot en las coordenadas globales
+  // Update Position
   currentTime = micros();
   deltaTime = (currentTime - previousTime) / 1000000.0;
   x += deltaTime * vel._x;
   y += deltaTime * vel._y;
   z += deltaTime * vel._z;
   previousTime = currentTime;
-  velocities Pos;
+
+  velocities Pos; //Facilidad de Manejo
   Pos._x = x; Pos._y = y; Pos._z = z;
+  //Verificacion que el angulo este entre 0<theta<2*pi
   z = z < 0 ? 2 * PI + z : z;
   z = z > 2 * PI ? z - 2 * PI : z;
+  //Encontrar el vector de diferencia
   Force._x = x_coord - x;
   Force._y = y_coord - y;
+  //Encontrar el angulo de este vector diferencia
   Force.setAngule();
+  //Diferencia de angulos
   Force._z = Force.getThetaDif(Force._z, z);   
+  //Consigue las velocidades (en pwm) necesarias para cada uno de los motores
   Opwm = kinematics.getPWM(Force);
+  //Los escala para que las velocidades de las llantas siempre sean proporcionales
+  // entre si. O sea de que 510 y 420 seran 255 y 210 en vez de solo 255 255
   Opwm.Scale(255);
-  float Lcorr = LPID.GetCorrection(Opwm.motor1 - pwm.motor1);  // add correction from PID
+  //Clase basica de PID en donde se considera el error la diferencia 
+  //entre el pwm que se tienen actualmente las llantas y el pwm objetivo
+  // para luego ser sumados al pwm actual
+  float Lcorr = LPID.GetCorrection(Opwm.motor1 - pwm.motor1);  
   float Rcorr = RPID.GetCorrection(Opwm.motor2 - pwm.motor2);
   pwm.motor1 += Lcorr ;
   pwm.motor2 += Rcorr ;
+  //Volver a escalar por si acaso
   pwm.Scale(255);
+  //Impresion de Info
   Opwm.Print(); Serial.print("\n              ");
   pwm.Print(); Serial.print("\n                               ");
   Pos.Print(); Serial.print("\n                                                       ");

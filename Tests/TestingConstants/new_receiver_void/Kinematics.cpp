@@ -14,22 +14,18 @@ Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheel
   
   
 
-output Kinematics::getRPM(velocities ObVel) // the objective velocityes x,y,theta
+output Kinematics::getRPM(velocities ObVel) //Obtener las velocidades de las llantas con el angulo y la velocidad
 {
-//However this would change depending on the development we could do later (odometry)
-    output rpm;
-  float ObVelMagnitude = ObVel.Magnitude() * ConstVelDiff; //ToGet the magnitude of the force
+  output rpm;
+  float ObVelMagnitude = ObVel.Magnitude() * ConstVelDiff; //ToGet the magnitude of the vel
   ObVel._z *= ConstThetaDiff;
 
-  if(ObVelMagnitude == 0){
-    return rpm;
-  }
-  //Funciton to determine the vel of each wheel with the values of vel and theta dif
+
+  //Funciton to determine the vel of each wheel with the values of the robot
   float leftVel = ObVelMagnitude/ radius - lr_wheels_dist_ / (2*radius) * ObVel._z; 
   float rightVel = ObVelMagnitude/ radius + lr_wheels_dist_ / (2*radius) * ObVel._z;
 
   //Change the data to rpm insted of m/s;
-
   rpm.motor1 = leftVel/circumference_  * 60;
   rpm.motor2  = rightVel / circumference_ * 60;
   return rpm;
@@ -54,8 +50,8 @@ velocities Kinematics::getVelocities(output actualRPM, float theta)
   //Change from rpm to rad/s
   actualRPM.motor1 = (actualRPM.motor1 *2 *PI/ 60);
   actualRPM.motor2 = (actualRPM.motor2 *2 *PI/ 60);
+  
   //With the formulas we determine the velocities and send them;
-
   vel._x = radius * (actualRPM.motor1 + actualRPM.motor2)/2 *cos(theta);
   vel._y = radius * (actualRPM.motor1 + actualRPM.motor2)/2 *sin(theta);
   vel._z = radius / lr_wheels_dist_ *(actualRPM.motor2 - actualRPM.motor1); 
@@ -69,7 +65,6 @@ output Kinematics::rpmToPWM(output rpm)
 {
   //remap scale of target RPM vs MAX_RPM to PWM
   rpm.motor1 = ((rpm.motor1 /  max_rpm_) * pwm_res_);
-
   rpm.motor2 = ((rpm.motor2 /  max_rpm_) * pwm_res_);
   return rpm;
 }
