@@ -1,6 +1,7 @@
 #ifndef TRANSFORM_H
 #define TRANSFORM_H
 #include "Vector2.h"
+#include <iostream>
 class Transform
 {
     public :
@@ -10,6 +11,7 @@ class Transform
         Transform(Vector2 p, float r) ;
         Transform() ;
         Transform operator-(const Transform& b) const;
+        friend std::ostream& operator<<(std::ostream& os, const Transform& t) ;
         void SetAngule() const;
         void CheckAngle() const;
         float GetRotationalDifference(float objective) const;

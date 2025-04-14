@@ -12,6 +12,7 @@ Transform::Transform() {
 Transform::Transform(float x, float y, float r) {
     position = Vector2(x, y);
     rotation = r;
+    CheckAngle();
 }
 
 Transform::Transform(Vector2 p, float r) {
@@ -56,4 +57,9 @@ float Transform::GetRotationalDifference(float objective) const{
     }else{
         return (signbit(dif) ? 1 : -1) * 2*M_PI + dif;
     }
+}
+
+ostream& operator<<(ostream& os, const Transform& t) {
+    os << "Position: " << t.position << " Angle: " << t.rotation;
+    return os;
 }

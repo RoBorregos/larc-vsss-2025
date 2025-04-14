@@ -11,15 +11,15 @@ Output::Output(float a_, float b_){
     b = b_;
 }
 // This function serves as a way to normalize the output of the robot to a certain scale
-void Output::Scale(float scale){
-    if(abs(a) > scale || abs(b) > scale){
+void Output::Scale(float MAX){
+    if(abs(a) > MAX || abs(b) > MAX){
         if(abs(a) > abs(b)){
-            float scale = scale/abs(a);
-            a = scale * (signbit(a) ? -1 : 1);
+            float scale = MAX/abs(a);
+            a = MAX * (signbit(a) ? -1 : 1);
             b = b * scale;
         }else{
-            float scale = scale/abs(b);
-            b = scale * (signbit(b) ? -1 : 1);
+            float scale = MAX/abs(b);
+            b = MAX * (signbit(b) ? -1 : 1);
             a = a * scale;
         }
     }
