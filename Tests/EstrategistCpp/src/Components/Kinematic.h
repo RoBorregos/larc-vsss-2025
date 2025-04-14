@@ -12,9 +12,12 @@ class Kinematic
         float RADIUS = 0.03f;
         float WHEEL_DISTANCE = 0.076f;
         float CIRCUMFERENCE;
-        Kinematic();
         Kinematic(Transform &t);
         Output GetVelocities(Transform target);
+        Output GetVelocities(Vector2 target);
+
+        Kinematic(const Kinematic& other) ;
+        Kinematic& operator=(const Kinematic& other) ;
         //Optionaly I can add odometry function to not just send an static rpm
 
 

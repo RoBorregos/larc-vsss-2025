@@ -26,12 +26,12 @@ Transform Transform::operator-(const Transform& b) const {
     b.CheckAngle();
     //Get Vector between the two origins
     Transform t;
-    t.position = this->position - b.position;
+    t.position =  b.position - this->position ;
     t.SetAngule();
     //Verify Integrity again
     t.CheckAngle();
     //Set the angle to be the difference between the two angles
-    t.rotation = this->rotation - t.rotation;
+    t.rotation = GetRotationalDifference(b.rotation); ;
     return t;
 }
 // This function is to check the angle so that is always 0<theta<2pi
@@ -45,6 +45,15 @@ void Transform::CheckAngle() const {
 }
 
 void Transform::SetAngule() const {
-    rotation = atan2(position.y, position.x);
+    rotation = position.GetAngle();
     CheckAngle();
+}
+
+float Transform::GetRotationalDifference(float objective) const{
+    float dif = objective - rotation;
+    if(abs(dif) < M_PI){
+        return dif;
+    }else{
+        return (signbit(dif) ? 1 : -1) * 2*M_PI + dif;
+    }
 }

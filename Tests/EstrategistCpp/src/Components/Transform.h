@@ -12,6 +12,7 @@ class Transform
         Transform operator-(const Transform& b) const;
         void SetAngule() const;
         void CheckAngle() const;
+        float GetRotationalDifference(float objective) const;
 
 
 };
