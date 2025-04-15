@@ -15,7 +15,7 @@ float magneticConstant = 1.0f;
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
 float x_ball;
 float y_ball;
-void Ballpos(float& x,float&y);
+void Ballpos(float& x,float&y); // function to receive the ball position from python
 
 int main()
 {
