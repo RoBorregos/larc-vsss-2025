@@ -59,6 +59,13 @@ float Transform::GetRotationalDifference(float objective) const{
     }
 }
 
+void Transform::SetTransform(float x, float y, float r) {
+    position.x = x;
+    position.y = y;
+    rotation = r;
+    CheckAngle();
+}
+
 ostream& operator<<(ostream& os, const Transform& t) {
     os << "Position: " << t.position << " Angle: " << t.rotation;
     return os;

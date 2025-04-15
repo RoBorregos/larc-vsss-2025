@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-Communication::Communication(int& id) : robotID(id) {
+Communication::Communication(int& id, int port) : robotID(id), port(port) {
     // Constructor implementation
 }
 

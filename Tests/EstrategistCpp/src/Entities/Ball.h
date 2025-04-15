@@ -2,7 +2,7 @@
 #define BALL_H
 
 #include "Entity.h"
-
+//entidad de pelota
 class Ball: public Entity{
     public:
         Transform& goal;

@@ -2,12 +2,14 @@
 #define TRANSFORM_H
 #include "Vector2.h"
 #include <iostream>
+//clase definida para poder tener la posicion, angulo y datos adicionales de la situacion del objeto
+//en un futuro espero guardar aqui mismo la velocidad del objeto o algo similar
 class Transform
 {
     public :
         Vector2 position;
         mutable float rotation;
-        Transform(float x, float y, float r) ;
+        Transform(float x, float y, float r) ; // x,y,rotation
         Transform(Vector2 p, float r) ;
         Transform() ;
         Transform operator-(const Transform& b) const;
@@ -15,6 +17,7 @@ class Transform
         void SetAngule() const;
         void CheckAngle() const;
         float GetRotationalDifference(float objective) const;
+        void SetTransform(float, float, float);
 
 
 };

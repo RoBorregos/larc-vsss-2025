@@ -6,7 +6,7 @@
 class Robot :public Entity{
     public :
         Communication communication;
-        Robot(Transform& t, int i, float f);
+        Robot(Transform& t, int i, float f, int port); // transform, ID, impact, port
 };
 
 

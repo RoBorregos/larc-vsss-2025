@@ -2,7 +2,7 @@
 #define VECTOR2_H
 
 #include <iostream>
-
+//Tipo de variable que uso en varios lugares para almacenar informacion en pares
 class Vector2 
 {
     public:

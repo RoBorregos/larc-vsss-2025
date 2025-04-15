@@ -8,6 +8,10 @@ using namespace std;
 float vortexConstant = 0.02f;
 float repelentConstant = 0.02f;
 float magneticConstant = 1.0f;
+//Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
+//Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
+//El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
+
 
 int main()
 {
@@ -22,28 +26,31 @@ int main()
     transforms[4] = Transform (5, 3, 2);
     transforms[5] = Transform (6, 5, 3);
     transforms[6] = Transform (2, 0, 0);//ball
-    transforms[7] = Transform (5, 0, 0);//goal
-    //Create each of the robots and add it also in the robot map
-    robots[1] = new Robot(transforms[0], 1, vortexConstant);
-    robots[2] = new Robot(transforms[1], 2, vortexConstant);
-    robots[3] = new Robot(transforms[2], 3, vortexConstant);
-    robots[-1] = new Robot(transforms[3], -1, repelentConstant);
-    robots[-2] = new Robot(transforms[4], -2, repelentConstant);
-    robots[-3] = new Robot(transforms[5], -3, repelentConstant);
-    //Add the robots to the entities vector
+    transforms[7] = Transform (5, 0, 0);//goal Porteria
+    //Create each of the robots and add it in the robot map
+    robots[1] = new Robot(transforms[0], 1, vortexConstant, 1000);
+    robots[2] = new Robot(transforms[1], 2, vortexConstant, 1001);
+    robots[3] = new Robot(transforms[2], 3, vortexConstant, 1002);
+    robots[-1] = new Robot(transforms[3], -1, repelentConstant,0);
+    robots[-2] = new Robot(transforms[4], -2, repelentConstant,0);
+    robots[-3] = new Robot(transforms[5], -3, repelentConstant,0);
+    //Add the robots to the entities map
     for(auto robot: robots){
         entities[robot.first] = robot.second;
     }
     //Create the ball and add it to the entities map
     Ball b (transforms[6], transforms[7], 0, magneticConstant);
     entities[0] = &b;
-    float minDIST = 15.0f, dist ;
-    int minID = 0;
+//ALL Entities Transform
     for (auto entiti : entities)
     {
         cout << "ID: " << entiti.second->ID << " Transform: " << entiti.second->transform << endl;
     }
-    for (auto entiti : entities)
+//MINIDISTANCE Robot find
+    float minDIST = 15.0f, dist ;
+    int minID = 0;
+    
+    for (auto entiti : robots)
     {
         if (entiti.first > 0)
         {
@@ -57,6 +64,7 @@ int main()
         }
     }
     cout << "The closest robot is: " << minID << endl;
+//VECTOR Determination
     Vector2 tforce, result;
     for (auto entitie: entities)
     {
@@ -82,7 +90,9 @@ int main()
         result += tforce;
     }
     cout << "Resultant Force: " << result << endl;
+    //Kinematics output
     Output output = robots[minID]->kinematic.GetVelocities(result);
     output.Scale(200.0f);
+    //Communication
     robots[minID]->communication.SendData(output);
 }
