@@ -2,6 +2,8 @@
 
 #include <iostream>
 
+
+
 Communication::Communication(int& id, int port) : robotID(id), port(port) {
     // Constructor implementation
 }
@@ -18,5 +20,5 @@ void Communication::SendData(Output data) {
 void Communication::SendData(Transform data) {
     // Send the transform data to the robot
     std::cout << "Sending transform data: " << data.position.x << ", " << data.position.y << ", " << data.rotation << std::endl;
-}
 
+}

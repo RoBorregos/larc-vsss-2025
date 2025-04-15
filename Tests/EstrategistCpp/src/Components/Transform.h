@@ -18,8 +18,6 @@ class Transform
         void CheckAngle() const;
         float GetRotationalDifference(float objective) const;
         void SetTransform(float, float, float);
-
-
 };
 
 #endif

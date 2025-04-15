@@ -1,8 +1,10 @@
 #include "src/Entities/Robot.h"
 #include "src/Entities/Ball.h"
+#include "src/Vision_data/Ballpos.h"
 #include <vector>
 #include <iomanip>
 #include <iostream>
+#include <unordered_map>
 using namespace std;
 
 float vortexConstant = 0.02f;
@@ -11,24 +13,27 @@ float magneticConstant = 1.0f;
 //Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
 //Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
-
+float x_ball;
+float y_ball;
+void Ballpos(float& x,float&y);
 
 int main()
 {
     unordered_map<int, Entity*> entities;
     unordered_map<int, Robot*> robots;
-    // create transforms for each of the entities;
+    // create transforms for each of the entities;    
     vector<Transform> transforms(7,Transform());
+    Ballpos(x_ball, y_ball);
     transforms[0] = Transform (4, 1, 6);// robot 1
     transforms[1] = Transform (2, 4, 9);
     transforms[2] = Transform (3, 6, 4);
     transforms[3] = Transform (4, 2, 1);// robot -1
     transforms[4] = Transform (5, 3, 2);
     transforms[5] = Transform (6, 5, 3);
-    transforms[6] = Transform (2, 0, 0);//ball
+    transforms[6] = Transform (x_ball, y_ball, 0); //ball positions received from python
     transforms[7] = Transform (5, 0, 0);//goal Porteria
     //Create each of the robots and add it in the robot map
-    robots[1] = new Robot(transforms[0], 1, vortexConstant, 1000);
+    robots[1] = new Robot(transforms[0], 1, vortexConstant, 1000); // ports of the robot (,,,port)
     robots[2] = new Robot(transforms[1], 2, vortexConstant, 1001);
     robots[3] = new Robot(transforms[2], 3, vortexConstant, 1002);
     robots[-1] = new Robot(transforms[3], -1, repelentConstant,0);
@@ -48,7 +53,7 @@ int main()
     }
 //MINIDISTANCE Robot find
     float minDIST = 15.0f, dist ;
-    int minID = 0;
+    int minID = 0; // Modify this to the ID of the robot you want to execute an RPM based on the distance to the ball
     
     for (auto entiti : robots)
     {
@@ -64,6 +69,7 @@ int main()
         }
     }
     cout << "The closest robot is: " << minID << endl;
+    
 //VECTOR Determination
     Vector2 tforce, result;
     for (auto entitie: entities)
