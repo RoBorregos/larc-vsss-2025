@@ -29,7 +29,7 @@ realFieldCoors = [[0, 0], #tl
 CAMERA_HEIGHT = 200 #cm
 clicked_points = []
 
-#Communication python to esp32
+#Communication python to C++
 def send_coordinates(x_coord, y_coord, relay_ip, relay_port=1234):
     """
     Send two float coordinates to C++ relay via UDP
