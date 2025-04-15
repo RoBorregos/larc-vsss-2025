@@ -10,6 +10,6 @@
  * @param port The UDP port to listen on (default: 1234)
  * @return true if coordinates were successfully received and extracted, false otherwise
  */
-bool receivePosition(float& x, float& y, int port = 1234);
+void Ballpos(float& x, float& y, int port = 1234);
 
 #endif // POSITION_RECEIVER_H
