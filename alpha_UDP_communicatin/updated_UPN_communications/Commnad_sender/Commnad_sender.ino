@@ -4,8 +4,8 @@
 WiFiUDP udp;
 
 // Wi-Fi credentials
-const char* ssid = "RoBorregos2";
-const char* password = "RoBorregos2024";
+const char* ssid = "exampleSSID"; // Replace with your Wi-Fi SSID
+const char* password = "examplePassword"; // Replace with your Wi-Fi password
 
 // Ports
 unsigned int localUdpPort = 1234;  // Port to listen on
