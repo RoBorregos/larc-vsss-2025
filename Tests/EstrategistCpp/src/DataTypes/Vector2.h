@@ -2,7 +2,7 @@
 #define VECTOR2_H
 
 #include <iostream>
-//Tipo de variable que uso en varios lugares para almacenar informacion en pares
+//Data Type used as a way to store multiple varibles, such as position, force etc...
 class Vector2 
 {
     public:

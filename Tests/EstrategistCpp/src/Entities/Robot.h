@@ -3,9 +3,11 @@
 #include "Entity.h"
 #include "Communication.h"
 
+// Represents a robot entity in the system.
+// Inherits from the Entity class and adds kinematic properties for movement control.
 class Robot :public Entity{
     public :
-        Communication communication;
+        Kinematic kinematic; //Handles the robots kinematics. Generates the necesary rpm to achieve different objectives
         Robot(Transform& t, int i, float f, int port); // transform, ID, impact, port
 };
 

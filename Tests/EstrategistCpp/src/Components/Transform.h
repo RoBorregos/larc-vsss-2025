@@ -2,8 +2,9 @@
 #define TRANSFORM_H
 #include "Vector2.h"
 #include <iostream>
-//clase definida para poder tener la posicion, angulo y datos adicionales de la situacion del objeto
-//en un futuro espero guardar aqui mismo la velocidad del objeto o algo similar
+//class defined to store the position and rotational data of entities. 
+//In the future this class will store more than just the pose info
+//each of the functions are explained inside the Transforn.cpp file
 class Transform
 {
     public :

@@ -3,8 +3,8 @@
 #include "Transform.h"
 
 
-//Para decidir que tipo de fuerza aplicar
-// estoy usando un enum para que sea mas facil intercambiar funciones para un solo objeto
+// Represents the type of force to be applied to another robot.
+// This enum is used to easily switch between different force generation methods.
 enum class ForceType
 {
     ATRACT,
@@ -12,14 +12,16 @@ enum class ForceType
     VORTEX,
     MAGNETIC,
 };
-//componente que genera vectores para el robot
+
+// A component that generates force vectors for a robot based on its transform and other parameters.
+// This class is responsible for calculating forces such as attraction, repulsion, vortex, and magnetic forces.
 class ForceGenerator
 {
     public:
 
-    //Objeto al que se aplica la fuerza 
-    Transform& transform;
-    float& impact;
+    //Transform origin of the vectores
+    Transform& transform; // Reference to the Transform object which is the origin of the force vector
+    float& impact;          // Reference to the impact factor, which scales the generated force.
     ForceGenerator(Transform& t, float& i) ;
     ForceGenerator();
                     // Objeto que genera la fuerza 

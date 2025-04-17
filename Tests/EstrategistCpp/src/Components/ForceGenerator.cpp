@@ -2,50 +2,63 @@
 #include <cmath>
 #include <iostream>
 using namespace std;
-//functions depending on the case
+    //functions to generate forces depending on the Force.Type
+    // the origine variable defines the object that recives the force
+    // the target variable defines the object that creates the force
 
-Vector2 Repelent(Transform& origin, Transform& target, float impact){
-    Vector2 force, dif;
-    dif = origin.position - target.position;
-    float difMagnitude = dif.Magnitude();
-    dif.Normallize();
-    force.x = dif.x/ difMagnitude;
-    force.y = dif.y / difMagnitude;
-    force *= impact;
-    return force;
-}
+        Vector2 Repelent(Transform& origin, Transform& target, float impact){
+            Vector2 force, dif;
+            dif = origin.position - target.position;
+            float difMagnitude = dif.Magnitude();
+            dif.Normallize();
+            force.x = dif.x/ difMagnitude;
+            force.y = dif.y / difMagnitude;
+            force *= impact;
+            return force;
+        }
 
-Vector2 Atract(Transform& origin, Transform& target, float impact){
-    Vector2 force, dif;
-    dif = target.position - origin.position;
-    float difMagnitude = dif.Magnitude();
-    dif.Normallize();
-    force.x = dif.x / difMagnitude;
-    force.y = dif.y/ difMagnitude;
-    force *= (impact);
-    return force;
-}
+        Vector2 Atract(Transform& origin, Transform& target, float impact){
+            Vector2 force, dif;
+            dif = target.position - origin.position;
+            float difMagnitude = dif.Magnitude();
+            dif.Normallize();
+            force.x = dif.x / difMagnitude;
+            force.y = dif.y/ difMagnitude;
+            force *= (impact);
+            return force;
+        }
 
-Vector2 Vortex(Transform& origin, Transform& target, float impact){
-    Vector2 force, dif;
-    float difMagnitude = (origin.position - target.position).Magnitude();
-    force.x = (origin.position.y - target.position.y) / difMagnitude/difMagnitude;
-    force.y = (target.position.x - origin.position.x) / difMagnitude/difMagnitude;
-    force *= (impact);
-    return force;
-}
-
-Vector2 Magnetic(Transform& origin, Transform& target, Transform& goal, float impact, float dist){
-    float m = (goal.position.y - target.position.y)/(goal.position.x-target.position.x);
-    float d = sqrt(pow(dist,2) / (1+pow(m,2)));
-    Vector2 tempPos;
-    tempPos.x = target.position.x + d;
-    tempPos.y = m*tempPos.x- m*target.position.x + target.position.y;
-    Transform tempTransform(tempPos, 0);
-    Vector2 force;
-    force = Atract(origin, target, impact) + Repelent(origin, tempTransform, impact*0.5f);
-    return force;
-}
+        Vector2 Vortex(Transform& origin, Transform& target, float impact){
+            Vector2 force, dif;
+            float difMagnitude = (origin.position - target.position).Magnitude();
+            force.x = (origin.position.y - target.position.y) / difMagnitude/difMagnitude;
+            force.y = (target.position.x - origin.position.x) / difMagnitude/difMagnitude;
+            force *= (impact);
+            return force;
+        }
+        // In this case, to create a magnetic field, I have to set a second transform that would act as the position of the goal
+        // so at the end the the magnetic field will always target towards the goal
+        /* 
+            B######     ball
+            #\#####         
+            ##T####     tempPos
+            ###\###
+            ####\##
+            #####\#
+            ######G     Goal
+        */
+        Vector2 Magnetic(Transform& origin, Transform& target, Transform& goal, float impact, float dist){
+            float m = (goal.position.y - target.position.y)/(goal.position.x-target.position.x);
+            float d = sqrt(pow(dist,2) / (1+pow(m,2)));
+            Vector2 tempPos;
+            tempPos.x = target.position.x + d;
+            tempPos.y = m*tempPos.x- m*target.position.x + target.position.y;
+            Transform tempTransform(tempPos, 0);
+            Vector2 force;
+            force = Atract(origin, target, impact) + Repelent(origin, tempTransform, impact*0.5f); // combine the attractive and repelent forces to simulate a magnetic field
+            return force;
+        }
+    //
 
 ForceGenerator::ForceGenerator(Transform& t, float &i) : transform(t), impact(i) {
 }
@@ -53,6 +66,14 @@ ForceGenerator::ForceGenerator(Transform& t, float &i) : transform(t), impact(i)
 ForceGenerator::ForceGenerator() : transform(*new Transform()), impact(*new float(0)) {
 }
 
+
+// Function: GetForce
+// Calculates the force vector to be applied to the object based on the target Transform and force type.
+// Parameters:
+// - target: The Transform object creating the force.
+// - type: The type of force to be applied (e.g., attractive, repellent).
+// Returns:
+// - A Vector2 object representing the calculated force.
 Vector2 ForceGenerator::GetForce(Transform target, ForceType type){
     Vector2 force;
     enum ForceType myVar = type;
@@ -72,7 +93,7 @@ Vector2 ForceGenerator::GetForce(Transform target, ForceType type){
     }
     return force;
 }
-
+// same function as before, just used to select the magnetic force
 Vector2 ForceGenerator::GetForce(Transform target, Transform goal, ForceType type, float dist){
     Vector2 force;
     force = Magnetic(transform, target, goal, impact, dist);

@@ -2,20 +2,20 @@
 #define KINEMATIC_H
 #include "Transform.h"
 #include "Output.h"
-//clase para crear los outputs necesarios para el robot. 
-// La info que genera esta hecha para mandar directamente a el robot
+//class created to generate necessary info for the robot.
+// The output data is made specifically to use as rpm for the robot.
 class Kinematic
 {
     public:
         Transform &transform;
-        //Constantes 
+        //Constants
         float ANGULAR_CONSTANT = 0.66f;
         float LINEAR_CONSTANT = 0.33f;
         float RADIUS = 0.03f;
         float WHEEL_DISTANCE = 0.076f;
         float CIRCUMFERENCE;
         Kinematic(Transform &t);
-        //Funiones para obtener la velocidad de las llantas dependie si es objetivo o velocidad
+        //Functions to obtain the desaired rpm for the robot depending on the input (Transform or vector2)
         Output GetVelocities(Transform target);
         Output GetVelocities(Vector2 target);
 

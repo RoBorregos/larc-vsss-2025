@@ -4,13 +4,10 @@
 
 
 
-Communication::Communication(int& id, int port) : robotID(id), port(port) {
+Communication::Communication(Transform t, & id, int port) : robotID(id), port(port), transfrom(t) {
     // Constructor implementation
 }
 
-Communication::Communication() : robotID(*new int(0)) {
-    // Default constructor implementation
-}
 
 void Communication::SendData(Output data) {    
     {
