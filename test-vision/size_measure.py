@@ -30,8 +30,10 @@ def clockwise_pts(pts):
 
     return np.array([tl, tr, br, bl])
 
+
+
 #calculates distance between the center of the image and the object
-def distance(imgCopy, refCenter,objCoor,  objCenter, homography): 
+def distance(imgCopy, refCenter,objCoor,  objCenter, homography): #-----------------------------NOT NECESSARY---------------------------------------
 
     ballCenter = objCenter
     #adapt format
@@ -51,5 +53,5 @@ def distance(imgCopy, refCenter,objCoor,  objCenter, homography):
     #get the distance (in  pixels) from one pt to another
     distAB = dist.euclidean(refRlCoors, ballRlCoors) #falta poner en ppm, antes lo dividias entre ppm del refObj
     midX, midY = middle(refCenter, objCenter)
-    cv2.putText(imgCopy, "{:.1f}cm".format(distAB), (int(midX), int(midY) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7, (255,255,255), 2)
+    cv2.putText(imgCopy, "{:.1f}cm".format(distAB), (int(midX), int(midY) - 10), cv2.FONT_HERSHEY_COMPLEX, 0.7, (255,255,255), 2) #----------------------------
 
