@@ -28,7 +28,7 @@ cameraCoors = [[0,0],
 CAMERA_HEIGHT = 200 #cm
 clicked_points = []
 
-#Communication python to esp32
+#Communication python to C++
 def send_coordinates(x_coord, y_coord, relay_ip, relay_port=1234):
     """
     Send two float coordinates to C++ relay via UDP
@@ -186,9 +186,12 @@ cap.set(10, 20) #brightness
 print("Homography Calibration. Click the four corners of the field in order TL, TR, BR, BL")
 H = getHomography(cap, realFieldCoors)
 
-#Declaring relay port and ip of the esp32  
-RELAY_IP = "10.42.0.189"  # Replace with your esp
-PORT_IP = 1234
+#Declaring relay port and ip of the main computer  
+RELAY_IP = "10.42.0.189"  # IP of your current computer in the hotspot 
+PORT_IP = 1234 # UDP port of the position of the ball
+# Different ports for each type of message you want to receive
+#PORT_IP = 1235 # UDP port of the position of robots team#1 
+# commit
 
 while True:
     tpast = time.time()
