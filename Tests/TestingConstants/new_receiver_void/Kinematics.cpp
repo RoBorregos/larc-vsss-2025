@@ -39,7 +39,7 @@ output Kinematics::getPWM(velocities ObVel)
   rpm = getRPM(ObVel);
 
   //convert from RPM to PWM
-  pwm = rpmToPWM(rpm);
+  pwm = rpm.rpmToPWM(rpm);
 
   return pwm;
 }
@@ -60,11 +60,3 @@ velocities Kinematics::getVelocities(output actualRPM, float theta)
 }
 
 
-
-output Kinematics::rpmToPWM(output rpm)
-{
-  //remap scale of target RPM vs MAX_RPM to PWM
-  rpm.motor1 = ((rpm.motor1 /  max_rpm_) * pwm_res_);
-  rpm.motor2 = ((rpm.motor2 /  max_rpm_) * pwm_res_);
-  return rpm;
-}

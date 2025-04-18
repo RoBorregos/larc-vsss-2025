@@ -83,7 +83,7 @@ float y = 0;
 float z = PI / 2;
 velocities vel, fin;
 velocities Force;
-output Opwm, rpm, pwm;
+output Orpm, Opwm, rpm, pwm;
 
 void setup() {
 
@@ -231,14 +231,40 @@ void loop() {
         // Convert bytes to floats
         memcpy(&x_coord, &packetBuffer[0], sizeof(float));
         memcpy(&y_coord, &packetBuffer[4], sizeof(float));
-        x_coord /= -100; //Debido a que el eje x de vision esta invertido, 
-                          // se decidio optar por invertir este valor para solucionar el problema
-        y_coord /= 100;
         previousUDPTime = currentUDPTime;
       }
+    VelocityTracker();
 
-  fin._x = x_coord;
-  fin._y = y_coord; //Info a recivir
+}
+
+void VelocityTracker()
+{
+    Orpm.motor1 = x_coord;
+    Orpm.motor2 = y_coord;
+    rpm = GetRPM();
+    //Clase basica de PID en donde se considera el error la diferencia 
+    //entre el pwm que se tienen actualmente las llantas y el pwm objetivo
+    // para luego ser sumados al pwm actual
+    float Lcorr = LPID.GetCorrection(Orpm.motor1 - rpm.motor1);  
+    float Rcorr = RPID.GetCorrection(Orpm.motor2 - rpm.motor2);
+    pwm.motor1 += Lcorr ;
+    pwm.motor2 += Rcorr ;
+    //Volver a escalar por si acaso
+    pwm.Scale(255);
+    //Impresion de Info
+    Orpm.Print(); Serial.print("\n              ");
+    rpm.Print(); Serial.print("\n                               ");
+    Drive2(pwm.motor1,pwm.motor2);
+
+
+
+}
+
+
+void PositionTracker(){
+
+  fin._x = x_coord/-100;
+  fin._y = y_coord/100; //Info a recivir
   rpm = GetRPM();
   vel = kinematics.getVelocities(rpm, z);  //Obtener la velocidad del robot en las coordenadas globales
   // Update Position
@@ -283,6 +309,4 @@ void loop() {
   Drive2(pwm.motor1,pwm.motor2);
 
   
-
-
 }

@@ -15,7 +15,7 @@ class Kinematics
     velocities getVelocities(output actualVel, float theta);
     output getRPM(velocities);
     output getPWM(velocities);
-    output rpmToPWM(output);
+
     float max_vel;
 
   private:
