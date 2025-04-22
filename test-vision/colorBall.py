@@ -15,7 +15,7 @@ colorParams = [0, 203, 77, 9, 255, 228] #most accurate HSV values for test ball 
 #refColorParams = [0, 0, 0, 0, 0, 0]  # white 
 refCenter = (320, 240) #in pixels
 referenceWidth = 2.9  # Test width
-#changess
+
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
                   [150, 130], #br
@@ -30,7 +30,7 @@ CAMERA_HEIGHT = 200 #cm
 clicked_points = []
 
 #Communication python to esp32
-def send_coordinates(x_coord, y_coord, relay_ip, relay_port=1234):
+def send_coordinates(x, y, relay_ip, relay_port):
     """
     Send two float coordinates to C++ relay via UDP
     Args:
@@ -43,7 +43,7 @@ def send_coordinates(x_coord, y_coord, relay_ip, relay_port=1234):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Pack the two float values into bytes
     # 'ff' format means two 32-bit float values
-    data = struct.pack('ff', x_coord, y_coord) # Use 'e' for 16-bit floats 
+    data = struct.pack('ff', x, y) # Use 'e' for 16-bit floats 
     # Send the data
     sock.sendto(data, (relay_ip, relay_port))
     # Close the socket
@@ -179,6 +179,8 @@ def findObject(image, copy):
     else:
         return (0, 0)
         
+
+
 cap = cv2.VideoCapture(2) #2 for external devices
 cap.set(3, 640) #width
 cap.set(4, 480) #height
@@ -188,7 +190,7 @@ H = getHomography(cap, realFieldCoors)
 #save homography matrix for further use in robot localization
 
 #Declaring relay port and ip of the esp32  
-RELAY_IP = "10.42.0.45"  # Replace with your esp
+RELAY_IP = "192.168.0.171"  # Replace with your esp
 PORT_IP = 1234
 
 while True:
@@ -218,3 +220,4 @@ while True:
 
 cap.release()
 cv2.destroyAllWindows()
+
