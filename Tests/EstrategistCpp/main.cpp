@@ -25,14 +25,13 @@ int main()
     vector<Transform> transforms(7,Transform());
     
     transforms[0] = Transform (4, 1, 6);// robot 1
-
-    //transforms[1] = Transform (2, 4, 9);
-    //transforms[2] = Transform (3, 6, 4);
-    //transforms[3] = Transform (4, 2, 1);// robot -1
-    //transforms[4] = Transform (5, 3, 2);
-    //transforms[5] = Transform (6, 5, 3);
-    //transforms[6] = Transform (3, 0, 0); //ball positions received from python -> we can automate it in the communication component 
-    //transforms[7] = Transform (5, 0, 0);//goal -> Porteria
+    transforms[1] = Transform (2, 4, 9);
+    transforms[2] = Transform (3, 6, 4);
+    transforms[3] = Transform (4, 2, 1);// robot -1
+    transforms[4] = Transform (5, 3, 2);
+    transforms[5] = Transform (6, 5, 3);
+    transforms[6] = Transform (3, 0, 0); //ball positions received from python -> we can automate it in the communication component 
+    transforms[7] = Transform (5, 0, 0);//goal -> Porteria
     //Create each of the robots and add it in the robot map for easy and direct access
     
     //(position,         ID,    ForceImpactInVectorField,port)
