@@ -113,7 +113,7 @@ void Communication::ReceiveData() {
     }
     //struct sockaddr_in* local_addr = (struct sockaddr_in*)addr_result->ai_addr;
     //position_addr.sin_addr = local_addr->sin_addr; // Use the local IP address
-    position_addr.sin_addr.s_addr = inet_addr("131.178.54.1"); // Using an external python IP address
+    position_addr.sin_addr.s_addr = INADDR_ANY; // Using an external python IP address
     //freeaddrinfo(addr_result); // Free the addrinfo structure
 
     if (bind(receive_py, (struct sockaddr*)&position_addr, sizeof(position_addr)) == SOCKET_ERROR) { // Bind the socket to the address and port
@@ -131,6 +131,8 @@ void Communication::ReceiveData() {
     char buffer[BUFFER_SIZE];
     struct sockaddr_in python_addr;
     int python_addL = sizeof(python_addr);
+
+//////// 
 
     int received_bytes = recvfrom(receive_py, buffer, BUFFER_SIZE, 0, 
         (struct sockaddr*)&python_addr, &python_addL);
