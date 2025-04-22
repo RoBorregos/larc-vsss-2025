@@ -108,8 +108,9 @@ void Communication::ReceiveData() {
         WSACleanup();
         return;
     }
-    struct sockaddr_in* local_addr = (struct sockaddr_in*)addr_result->ai_addr;
-    position_addr.sin_addr = local_addr->sin_addr; // Use the local IP address
+    //struct sockaddr_in* local_addr = (struct sockaddr_in*)addr_result->ai_addr;
+    //position_addr.sin_addr = local_addr->sin_addr; // Use the local IP address
+    position_addr.sin_addr.s_addr = inet_addr("131.178.54.1"); // Using an external python IP address
     freeaddrinfo(addr_result); // Free the addrinfo structure
 
     if (bind(receive_py, (struct sockaddr*)&position_addr, sizeof(position_addr)) == SOCKET_ERROR) { // Bind the socket to the address and port

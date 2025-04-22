@@ -50,6 +50,8 @@ int main()
             cout << "Updated position - ID: " << entity.second->ID 
                  << " Position: " << entity.second->transform <<endl;
         }
+
+    
         //atacker;
         int minID = 0; 
         //Determine the velocity vector the robot should follow by checking each of the entities on the map
