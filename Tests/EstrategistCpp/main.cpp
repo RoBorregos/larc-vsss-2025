@@ -26,8 +26,10 @@ int main()
     transforms[2] = Transform(75, 55, 0 );
     //Create the ball and add it to the entities5 map
     //      BallPos         GoalPoss    ID   ForceImpactVectorF Port
-    Ball b (transforms[1], transforms[2], 0, magneticConstant , 1004);
+    
+    Ball b (transforms[1], transforms[2], 0, magneticConstant , 1234); 
     entities[0] = &b;
+    
     robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1001); //robot with the correct udpPOR
     entities[1] = robots[1];
 
