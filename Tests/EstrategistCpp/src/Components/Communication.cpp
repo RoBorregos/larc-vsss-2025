@@ -139,9 +139,24 @@ void Communication::ReceiveData() {
             
             std::cout << "Received coordinates from " << python_ip << ": x=" 
                       << x << ", y=" << y <<  "thehta=" << theta << std::endl;
-        } else {
+            transform.SetTransform(x,y,theta);
+        } 
+        else if(received_bytes == 8){ 
+            memcpy(&x, buffer, 4);
+            memcpy(&y, buffer + 4, 4);
+            
+            char python_ip[INET_ADDRSTRLEN];
+            inet_ntop(AF_INET, &python_addr.sin_addr, python_ip, INET_ADDRSTRLEN);
+            
+            std::cout << "Received coordinates from " << python_ip << ": x=" 
+                      << x << ", y=" << y << std::endl;
+            transform.SetTransform(x,y,0.0f); // theta is not used in this case
+
+        }
+        else {
             std::cerr << "Received unexpected data size: " << received_bytes << " bytes" << std::endl;
         }
+    
     //´procedimiento deone obtengas la info
-    transform.SetTransform(x,y,theta);
+    
     }

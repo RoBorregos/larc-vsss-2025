@@ -61,6 +61,8 @@ int main()
         // Add a small delay between updates
         this_thread::sleep_for(chrono::milliseconds(100));
     }
+
+
     //Add the robots to the entities map To use later in the Force Generation
     for(auto robot: robots){
         entities[robot.first] = robot.second;
@@ -136,11 +138,6 @@ int main()
     //Later the communication component will transmit this output information to the attacker robot
     robots[minID]->communication.SendData(output);
     cout << "Sending to Robot " << minID << " - Left: " << output.a << ", Right: " << output.b << endl;
-
-
-
-
-
 }
 
 
