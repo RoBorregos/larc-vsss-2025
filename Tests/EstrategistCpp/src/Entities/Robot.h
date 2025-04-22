@@ -2,6 +2,7 @@
 #define ROBOT_H
 #include "Entity.h"
 #include "Communication.h"
+#include <Kinematic.h>
 
 // Represents a robot entity in the system.
 // Inherits from the Entity class and adds kinematic properties for movement control.

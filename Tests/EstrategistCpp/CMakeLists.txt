@@ -11,6 +11,7 @@ PUBLIC
     Components
     DataTypes
     Entities
+    ws2_32
 )
 
 
