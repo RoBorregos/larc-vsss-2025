@@ -1,11 +1,13 @@
 #include "src/Entities/Robot.h"
 #include "src/Entities/Ball.h"
-#include "src/Vision_data/Ballpos.h"
 #include <vector>
 #include <iomanip>
 #include <iostream>
 #include <unordered_map>
 using namespace std;
+
+#include <chrono>
+#include <thread>
 
 float vortexConstant = 0.02f;
 float repelentConstant = 0.02f;
@@ -13,32 +15,53 @@ float magneticConstant = 1.0f;
 //Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
 //Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
-float x_ball;
-float y_ball;
+
 int main()
 {
-//Setting the environment
+    //Setting the environment
     unordered_map<int, Entity*> entities;
     unordered_map<int, Robot*> robots;
     // create transforms(position classes) for each of the entities;    
     vector<Transform> transforms(7,Transform());
-    Ballpos(x_ball, y_ball);
+    
     transforms[0] = Transform (4, 1, 6);// robot 1
-    transforms[1] = Transform (2, 4, 9);
-    transforms[2] = Transform (3, 6, 4);
-    transforms[3] = Transform (4, 2, 1);// robot -1
-    transforms[4] = Transform (5, 3, 2);
-    transforms[5] = Transform (6, 5, 3);
-    transforms[6] = Transform (x_ball, y_ball, 0); //ball positions received from python -> we can automate it in the communication component 
-    transforms[7] = Transform (5, 0, 0);//goal -> Porteria
+
+    //transforms[1] = Transform (2, 4, 9);
+    //transforms[2] = Transform (3, 6, 4);
+    //transforms[3] = Transform (4, 2, 1);// robot -1
+    //transforms[4] = Transform (5, 3, 2);
+    //transforms[5] = Transform (6, 5, 3);
+    //transforms[6] = Transform (3, 0, 0); //ball positions received from python -> we can automate it in the communication component 
+    //transforms[7] = Transform (5, 0, 0);//goal -> Porteria
     //Create each of the robots and add it in the robot map for easy and direct access
-                        //(position,         ID,    ForceImpactInVectorField,port)
-    robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1000); 
+    
+    //(position,         ID,    ForceImpactInVectorField,port)
+    
+    robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1001); //robot with the correct udpPOR
     robots[2] = new Robot(transforms[1],     2,     vortexConstant,         1001);
     robots[3] = new Robot(transforms[2],     3,     vortexConstant,         1002);
     robots[-1] = new Robot(transforms[3],    -1,    repelentConstant,       0);
     robots[-2] = new Robot(transforms[4],    -2,    repelentConstant,       0);
     robots[-3] = new Robot(transforms[5],    -3,    repelentConstant,       0);
+    
+
+    while (true) {        
+        // Loop through all entities and receive position updates
+        for (auto& entity : entities) {
+            cout << "Receiving data for ID: " << entity.second->ID << endl;
+            
+            // Call ReceiveData to update the entity's transform
+            entity.second->communication.ReceiveData();
+            
+            // Print the updated position
+            cout << "Updated position - ID: " << entity.second->ID 
+                 << " Position: (" << entity.second->transform.position.x << ", " 
+                 << entity.second->transform.position.y << ") "
+                 << "Rotation: " << entity.second->transform.rotation << endl;
+        }
+        // Add a small delay between updates
+        this_thread::sleep_for(chrono::milliseconds(100));
+    }
     //Add the robots to the entities map To use later in the Force Generation
     for(auto robot: robots){
         entities[robot.first] = robot.second;
@@ -52,6 +75,9 @@ int main()
     {
         cout << "ID: " << entiti.second->ID << " Transform: " << entiti.second->transform << endl;
     }
+
+
+
 //Find the robot with the least distance to the ball
     float minDIST = 15.0f, dist ;
     int minID = 0; //nearest robot to the ball
@@ -110,7 +136,15 @@ int main()
     output.Scale(200.0f);
     //Later the communication component will transmit this output information to the attacker robot
     robots[minID]->communication.SendData(output);
+    cout << "Sending to Robot " << minID << " - Left: " << output.a << ", Right: " << output.b << endl;
+
+
+
+
+
 }
+
+
 //Nota: Disculpa si de vez en cuando no uso el mismo termino para vector de velocidad (fuerza, vector) más que 
 //      nada es que yo me refiero a lo mismo pero uso diferentes palabras
 //Entonces para resumir

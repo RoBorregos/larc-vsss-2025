@@ -7,6 +7,9 @@
 #include <cstring>
 #include <winsock2.h>
 #include <ws2tcpip.h>
+#include <map>
+#include <unordered_map>
+using namespace std;
 
 // Link with Winsock library
 #pragma comment(lib, "ws2_32.lib")
@@ -19,16 +22,17 @@ public:
     int& robotID; // Reference to the robot's ID. Used to identify the robot when reciving data
     Transform & transform; // references to the entitie position
     int port;     // The port number used for communication with the robot.
+    
+    unordered_map<int, string> ips;
 
-    Communication(Transformn& t, int& id, int port);
+    Communication(Transform& t, int& id, int port);
 
     // Function: SendData
     // Sends wheel velocity data to the robot.
     void SendData(Output data);
 
-    // Function: SendData
-    // Sends position data to the robot.
-    void SendData(Transform data);
+
+    void ReceiveData();
 
     //Later you can set the recieve data from python here
     //and as the Transform variable is referenced, we can edit it here, and all the reset of the Components will notice 
