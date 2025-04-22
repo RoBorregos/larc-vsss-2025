@@ -29,7 +29,7 @@ int main()
     Ball b (transforms[1], transforms[2], 0, magneticConstant , 1004);
     entities[0] = &b;
     robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1001); //robot with the correct udpPOR
-    entities[1] = &robots[1];
+    entities[1] = robots[1];
 
     //Print all entities transform (position and rotation)
     for (auto entiti : entities)
@@ -40,7 +40,7 @@ int main()
     
     while (true) {        
         // Loop through all entities and receive position updates
-        for (auto& entity : entities) {
+        for (auto entity : entities) {
             cout << "Receiving data for ID: " << entity.second->ID << endl;
             
             // Call ReceiveData to update the entity's transform
@@ -48,7 +48,7 @@ int main()
             
             // Print the updated position
             cout << "Updated position - ID: " << entity.second->ID 
-                 << " Position: " << entity-> position <<end;
+                 << " Position: " << entity.second->transform <<endl;
         }
         //atacker;
         int minID = 0; 
