@@ -32,18 +32,18 @@ byte packetBuffer[packetSize];  // Buffer to hold incoming packet
 const int motorSpeed = 255;
 
 // TB6612FNG Motor Driver pins
-
-#define MotorA1 19
-#define MotorA2 18
+#define MotorA1 2 
+#define MotorA2 21 // new prototype 
 #define MotorA_PWM 0
 
-#define MotorB1 27
-#define MotorB2 26
+
+#define MotorB1 17
+#define MotorB2 19
 #define MotorB_PWM 1
 
 //Encoders Pins
 #define rEncoder 23
-#define lEncoder 4
+#define lEncoder 18
 #define NoTicks 350.0
 
 //Encoders variables
@@ -91,19 +91,23 @@ void setup() {
   WiFi.begin(ssid, password);
 
   // Configure motor pins
-  ledcAttach(MotorA1, 10000,8);
-  ledcAttach(MotorA2, 10000,8);
-  ledcAttach(MotorB1, 10000,8);
-  ledcAttach(MotorB2, 10000,8);
+  pinMode(MotorA1, OUTPUT);
+  pinMode(MotorA2, OUTPUT);
+  pinMode(MotorB1, OUTPUT);
+  pinMode(MotorB2, OUTPUT);
+  ledcAttach(MotorB_PWM, 10000,8);
+  ledcAttach(MotorA_PWM, 10000,8);
 
   // Initialize motors to stop
   //Drive(0, 0);
 
   // Sets the encoders
-  attachInterrupt(digitalPinToInterrupt(rEncoder), Rpulses, RISING);
-  attachInterrupt(digitalPinToInterrupt(lEncoder), Lpulses, RISING);
+  pinMode(rEncoder, INPUT_PULLUP);
+  pinMode(lEncoder, INPUT_PULLUP);
+  attachInterrupt(rEncoder, Rpulses, RISING);
+  attachInterrupt(lEncoder, Lpulses, RISING);
 
-  
+  /*
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
@@ -133,7 +137,7 @@ void Lpulses() {
 
 
 // Motor control function for TB6612FNG
-/*void Drive(int MotorL, int MotorR) {
+void Drive(int MotorL, int MotorR) {
   // Control left motor (Motor A)
   if (MotorL > 0) {
     digitalWrite(MotorA1, HIGH);
@@ -161,8 +165,8 @@ void Lpulses() {
 //  // Set motor speeds
   ledcWrite(MotorA_PWM, abs(MotorL));
   ledcWrite(MotorB_PWM, abs(MotorR));
-}*/
-
+}
+/*
 //Funcion actual para usar el puente H
 void Drive2(int b, int a){
 
@@ -187,13 +191,14 @@ void Drive2(int b, int a){
     ledcWrite(MotorB1,0);
     ledcWrite(MotorB2,0);
   }
-}
+}*/
 
 //GetRPM
 output GetRPM() {
   output temp;
   currentRPMTime = millis();
   noInterrupts();
+  //Serial.print(rpulses); Serial.print(" ");Serial.print(lpulses);
   if(currentRPMTime - lastRPMTime > 0){
     temp.motor2 = ((float)rpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;  // number of revolutions * deltaTime(in milis) * 60sec = to get rpm
     temp.motor1 = ((float)lpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;
@@ -220,7 +225,7 @@ void loop() {
     inic = false;
     delay(5000);
   }
-  //Codigo para recivir la informacion por parte de vision
+  /*//Codigo para recivir la informacion por parte de vision
       int packetSize = udp.parsePacket();
       currentUDPTime = millis();
       bool deltaUDP = (currentUDPTime - deltaUDP ) > 35;
@@ -232,8 +237,9 @@ void loop() {
         memcpy(&x_coord, &packetBuffer[0], sizeof(float));
         memcpy(&y_coord, &packetBuffer[4], sizeof(float));
         previousUDPTime = currentUDPTime;
-      }
-    VelocityTracker();
+      }*/
+    //VelocityTracker();
+
 
 }
 
@@ -254,9 +260,9 @@ void VelocityTracker()
     //Impresion de Info
     Orpm.Print(); Serial.print("\n              ");
     rpm.Print(); Serial.print("\n                               ");
-    Drive2(pwm.motor1,pwm.motor2);
+    Drive(pwm.motor1,pwm.motor2);
 
-
+  delay(20);
 
 }
 
@@ -306,7 +312,7 @@ void PositionTracker(){
   pwm.Print(); Serial.print("\n                               ");
   Pos.Print(); Serial.print("\n                                                       ");
   fin.Print(); Serial.print("\n");
-  Drive2(pwm.motor1,pwm.motor2);
+  Drive(pwm.motor1,pwm.motor2);
 
   
 }
