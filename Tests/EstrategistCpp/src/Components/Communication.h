@@ -19,13 +19,13 @@ using namespace std;
 // Usefull examples would be sending data to the robot or recive position data from python
 class Communication {
 public:
-    int& robotID; // Reference to the robot's ID. Used to identify the robot when reciving data
+    int robotID; // Reference to the robot's ID. Used to identify the robot when reciving data
     Transform & transform; // references to the entitie position
     int port;     // The port number used for communication with the robot.
     
     unordered_map<int, string> ips;
 
-    Communication(Transform& t, int& id, int port);
+    Communication(Transform& t, int id, int port);
 
     // Function: SendData
     // Sends wheel velocity data to the robot.

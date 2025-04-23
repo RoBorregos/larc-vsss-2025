@@ -11,7 +11,7 @@ using namespace std;
 
 float vortexConstant = 0.02f;
 float repelentConstant = 0.02f;
-float magneticConstant = 1.0f; // 1.0f basic 
+float magneticConstant = 1.0f;
 //Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
 //Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
@@ -23,15 +23,15 @@ int main()
     unordered_map<int, Robot*> robots;
     // create transforms(position classes) for each of the entities;    
     vector<Transform> transforms(3,Transform());
-    transforms[2] = Transform(75, 55, 0 );
+    transforms[2] = Transform(20,20 , 0 );
     //Create the ball and add it to the entities5 map
     //      BallPos         GoalPoss    ID   ForceImpactVectorF Port
     
     Ball b (transforms[1], transforms[2], 0, magneticConstant , 1234); 
     entities[0] = &b;
-    robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1235); //robot with the correct udpPOR
+    robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1001); //robot with the correct udpPOR
     entities[1] = robots[1];
-
+    robots[1]->transform.SetTransform(10,10,10);
     //Print all entities transform (position and rotation)
     for (auto entiti : entities)
     {
