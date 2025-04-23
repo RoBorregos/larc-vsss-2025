@@ -75,7 +75,7 @@ void Communication::SendData(Output data) {
 void Communication::ReceiveData() {
     #define BUFFER_SIZE 255 // Define the buffer size for receiving data
 
-
+    cout<<this->port<< endl;
     WSADATA wsaData;
     int result = WSAStartup(MAKEWORD(2, 2), &wsaData); // Initialize Winsock with version 2.2 
     if (result != 0) { // Check if WSAStartup was successful
@@ -110,7 +110,8 @@ void Communication::ReceiveData() {
     }
     //struct sockaddr_in* local_addr = (struct sockaddr_in*)addr_result->ai_addr;
     //position_addr.sin_addr = local_addr->sin_addr; // Use the local IP address
-    position_addr.sin_addr.s_addr = inet_addr("131.178.54.1"); // Using an external python IP address
+    //position_addr.sin_addr.s_addr = inet_addr("192.168.0.234"); // Using an external python IP address
+    position_addr.sin_addr.s_addr = INADDR_ANY; // Using an external python IP address
     freeaddrinfo(addr_result); // Free the addrinfo structure
 
     if (bind(receive_py, (struct sockaddr*)&position_addr, sizeof(position_addr)) == SOCKET_ERROR) { // Bind the socket to the address and port
