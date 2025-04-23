@@ -11,7 +11,7 @@ using namespace std;
 
 float vortexConstant = 0.02f;
 float repelentConstant = 0.02f;
-float magneticConstant = 1.0f;
+float magneticConstant = 1.0f; // 1.0f basic 
 //Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
 //Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
