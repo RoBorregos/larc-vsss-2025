@@ -29,9 +29,8 @@ int main()
     
     Ball b (transforms[1], transforms[2], 0, magneticConstant , 1234); 
     entities[0] = &b;
-    
-    /*robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1001); //robot with the correct udpPOR
-    entities[1] = robots[1];*/
+    robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1235); //robot with the correct udpPOR
+    entities[1] = robots[1];
 
     //Print all entities transform (position and rotation)
     for (auto entiti : entities)
@@ -43,7 +42,7 @@ int main()
     while (true) {        
         // Loop through all entities and receive position updates
         for (auto entity : entities) {
-            cout << "Receiving data for ID: " << entity.second->ID << endl;
+            cout << "------------------Receiving data for ID: " << entity.second->ID << endl;
             
             // Call ReceiveData to update the entity's transform
             entity.second->communication.ReceiveData();
@@ -55,7 +54,7 @@ int main()
 
     
         //atacker;
-        int minID = 0; 
+        int minID = 1; 
         //Determine the velocity vector the robot should follow by checking each of the entities on the map
         Vector2 tforce, result;
         for (auto entitie: entities)
@@ -87,14 +86,14 @@ int main()
             }
             result += tforce;
         }
-        cout << "Resultant Force: " << result << endl;
+        cout << "######Resultant Force: " << result << endl;
         //Generating the rpm and sending it to the robot
         //here the kinematic component will transform this velocitie vectore into rpm the robot should follow
-        /*Output output = robots[minID]->kinematic.GetVelocities(result);
+        Output output = robots[minID]->kinematic.GetVelocities(result);
         output.Scale(200.0f);
         //Later the communication component will transmit this output information to the attacker robot
-        //robots[minID]->communication.SendData(output);
-        cout << "Sending to Robot " << minID << " - Left: " << output.a << ", Right: " << output.b << endl;*/
+        robots[minID]->communication.SendData(output);
+        cout << "Sending to Robot " << minID << " - Left: " << output.a << ", Right: " << output.b << endl;
         // Add a small delay between updates
         this_thread::sleep_for(chrono::milliseconds(100));
     }
