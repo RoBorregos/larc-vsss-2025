@@ -4,8 +4,8 @@
 #include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
 
-Communication::Communication(Transform& t, int& id, int port) : robotID(id), port(port), transform(t) {
-    ips[1] = "192.168.137.210"; // change for each xiaoC6
+Communication::Communication(Transform& t, int id, int port) : robotID(id), port(port), transform(t) {
+    ips[1] = "192.168.0.216"; // change for each xiaoC6
     ips[2] = "192.168.137.212";
     ips[3] = "192.168.137.213";
 }
@@ -14,7 +14,8 @@ Communication::Communication(Transform& t, int& id, int port) : robotID(id), por
 void Communication::SendData(Output data) {   
     {
         // Init Winsock
-        const std::string ip = ips[robotID]; // Get the IP address for the robot ID
+        std::string ip = ips[robotID]; // Get the IP address for the robot ID
+        cout<< "Sending to Ip = "<<ip<<" For ID = "<<robotID<<endl;
         WSADATA wsaData;
         int startupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (startupResult != 0) {
@@ -32,7 +33,7 @@ void Communication::SendData(Output data) {
         // Define ESP32 address
         sockaddr_in esp32Addr;
         memset(&esp32Addr, 0, sizeof(esp32Addr));
-        esp32Addr.sin_family = AF_INET;
+        esp32Addr.sin_family = AF_INET; // IPV04
         esp32Addr.sin_port = htons(this->port);  // Use the port passed to the object
     
         // Set the ESP32 IP (replace with the real IP)
