@@ -240,7 +240,7 @@ void loop() {
         memcpy(&pwmM2, &packetBuffer[4], sizeof(float));
         previousUDPTime = currentUDPTime;
       }
-    //VelocityTracker();
+    VelocityTracker();
 
 
 }
