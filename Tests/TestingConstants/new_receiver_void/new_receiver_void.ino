@@ -1,8 +1,10 @@
 // Add this near the top of your ESP32 sketch, after your existing declarations
 //destiny data
-float x_coord ;
-float y_coord ;
+float pwmM1 ;
+float pwmM2 ;
 
+float x_coord;
+float y_coord;
 
 //deltaPositionTime
 unsigned long previousTime = 0;
@@ -22,10 +24,10 @@ WiFiUDP udp;
 #include <PID.h>
 
 // Wi-Fi credentials
-const char* ssid = "danielaASUS05";
-const char* password = "Dw8619a6";
+const char* ssid = "RoBorregos";
+const char* password = "RoBorregos2025";
 
-unsigned int localUdpPort = 1234;           // Port to listen on
+unsigned int localUdpPort = 1001;       // Port to listen on
 const int packetSize = 8;       // Size of 2 floats (4 bytes each)
 byte packetBuffer[packetSize];  // Buffer to hold incoming packet
               // Buffer for incoming packets
@@ -225,7 +227,7 @@ void loop() {
     inic = false;
     delay(5000);
   }
-  /*//Codigo para recivir la informacion por parte de vision
+  //Codigo para recivir la informacion por parte de vision
       int packetSize = udp.parsePacket();
       currentUDPTime = millis();
       bool deltaUDP = (currentUDPTime - deltaUDP ) > 35;
@@ -234,10 +236,10 @@ void loop() {
         udp.read(packetBuffer, sizeof(packetBuffer));
 
         // Convert bytes to floats
-        memcpy(&x_coord, &packetBuffer[0], sizeof(float));
-        memcpy(&y_coord, &packetBuffer[4], sizeof(float));
+        memcpy(&pwmM1, &packetBuffer[0], sizeof(float));
+        memcpy(&pwmM2, &packetBuffer[4], sizeof(float));
         previousUDPTime = currentUDPTime;
-      }*/
+      }
     //VelocityTracker();
 
 
@@ -245,8 +247,8 @@ void loop() {
 
 void VelocityTracker()
 {
-    Orpm.motor1 = x_coord;
-    Orpm.motor2 = y_coord;
+    Orpm.motor1 = pwmM1;
+    Orpm.motor2 = pwmM2;
     rpm = GetRPM();
     //Clase basica de PID en donde se considera el error la diferencia 
     //entre el pwm que se tienen actualmente las llantas y el pwm objetivo
