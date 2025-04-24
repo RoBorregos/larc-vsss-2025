@@ -126,13 +126,6 @@ int Communication::ReceiveData() {
         return 5;
     }
 
-
-
-    struct timeval timeout;
-    timeout.tv_sec = 3;
-    timeout.tv_usec = 0;
-    setsockopt(receive_py, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof(timeout));
-
     char buffer[BUFFER_SIZE] = {0};
     struct sockaddr_in python_addr;
     int python_addL = sizeof(python_addr);
