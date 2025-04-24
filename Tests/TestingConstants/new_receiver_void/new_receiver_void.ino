@@ -34,13 +34,13 @@ byte packetBuffer[packetSize];  // Buffer to hold incoming packet
 const int motorSpeed = 255;
 
 // TB6612FNG Motor Driver pins
-#define MotorA1 2 
-#define MotorA2 21 // new prototype 
+#define MotorA1 19 
+#define MotorA2 17 // new prototype 
 #define MotorA_PWM 0
 
 
-#define MotorB1 17
-#define MotorB2 19
+#define MotorB1 2
+#define MotorB2 21
 #define MotorB_PWM 1
 
 //Encoders Pins
@@ -64,13 +64,13 @@ volatile unsigned int lpulses;
 #define ThetaConst 0.66
 
 //Constants for PID
-#define Rightkp 1.4
-#define Rightki 0.001
-#define Rightkd 0.3
+#define Rightkp 0.07
+#define Rightki 0.0001
+#define Rightkd 0.05
 
-#define Leftkp 1.4
-#define Leftki 0.001
-#define Leftkd 0.3
+#define Leftkp 0.07
+#define Leftki 0.0001
+#define Leftkd 0.05
 
 //Kinematics
 Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
@@ -226,14 +226,14 @@ output GetRPM() {
 
 
 bool inic = true;
-
+unsigned long a = 0;
 void loop() {
   // Mini delay
-
+  
   if(inic){
     inic = false;
     delay(5000);
-  }
+  }/*
   //Codigo para recivir la informacion por parte de vision
       int packetSize = udp.parsePacket();
       currentUDPTime = millis();
@@ -247,8 +247,24 @@ void loop() {
         memcpy(&pwmM2, &packetBuffer[4], sizeof(float));
         previousUDPTime = currentUDPTime;
 
-      }
+      }*/
+    a++;
+    if(a < 200){
+      pwmM1 = 200;
+      pwmM2 = 200;
+    }else if(a < 600){
+
+      pwmM1 = 50;
+      pwmM2 = 180;
+    }else if ( a < 1000){
+      pwmM1 = 150;
+      pwmM2 = -150;
+    }
+    pwmM1 = 0;
+    pwmM2 = 0;
+    a %=1000;
     VelocityTracker();
+   
 
 
 }
@@ -265,12 +281,14 @@ void VelocityTracker()
     float Rcorr = RPID.GetCorrection(Orpm.motor2 - rpm.motor2);
     pwm.motor1 += Lcorr ;
     pwm.motor2 += Rcorr ;
-    //Volver a escalar por si acaso
-    pwm.Scale(255);
+    pwm.motor1 = abs(pwm.motor1) > 254  ? 254 * (signbit(pwm.motor1) ? -1 : 1): pwm.motor1; 
+    pwm.motor2 = abs(pwm.motor2) > 254 ? 254  * (signbit(pwm.motor2) ? -1 : 1) : pwm.motor2; 
+
     //Impresion de Info
-    Orpm.Print(); Serial.print("\n              ");
-    rpm.Print(); Serial.print("\n                               ");
-    Drive(pwm.motor1,pwm.motor2);
+    Orpm.Print(); Serial.print("\nR");
+    rpm.Print(); Serial.print("\n               P");
+    pwm.Print();Serial.print("\n                             O");
+    Drive((int)pwm.motor1,(int)pwm.motor2);
 
   delay(20);
 
