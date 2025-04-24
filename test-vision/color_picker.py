@@ -4,6 +4,9 @@ import numpy as np
 #Function for createTrackbars to work
 def empty(value):
     pass
+
+def autoHSVPicker():
+    pass
 #aplicar preprocess aqui
 def colorPicker(window):
     #Trackbars creation

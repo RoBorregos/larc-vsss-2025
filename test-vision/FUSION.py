@@ -1,4 +1,3 @@
-
 import cv2
 import numpy as np
 from size_measure import clockwise_pts, middle
@@ -7,7 +6,14 @@ import time
 import socket
 import struct
 from scipy.spatial import KDTree
+from ultralytics import YOLO
+from Model_use import bb_center_orien
 from kalman_filter import KalmanFilter
+#fusion 
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
+
+RELAY_IP = "192.168.0.171" 
+PORT_IP = 1200
 
 #in HSV 
 colorParams = [0, 203, 77, 9, 255, 228] #most accurate HSV values for test ball (bright orange) 0, 63, 255, 179, 255, 255
@@ -34,7 +40,7 @@ kf_y = KalmanFilter(initial_estimate=65.0,
                     initial_measure_error=2.0)
 
 #Communication python to esp32
-def send_coordinates(x, y, relay_ip, relay_port):
+def send_coordinates(x_coord, y_coord, relay_ip, relay_port):
     """
     Send two float coordinates to C++ relay via UDP
     Args:
@@ -47,7 +53,7 @@ def send_coordinates(x, y, relay_ip, relay_port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Pack the two float values into bytes
     # 'ff' format means two 32-bit float values
-    data = struct.pack('ff', x, y) # Use 'e' for 16-bit floats 
+    data = struct.pack('ff', x_coord, y_coord) # Use 'e' for 16-bit floats 
     # Send the data
     sock.sendto(data, (relay_ip, relay_port))
     # Close the socket
@@ -72,6 +78,7 @@ def filter_noise(pts, center, radius_factor=1.2):
     filtered_pts = pts[valid_index]
 
     return filtered_pts
+
 
 #draw mid lines and referal points
 def mids(img, tl, tr, br, bl):
@@ -141,18 +148,12 @@ def findContoursAndSize(img, copy):
             clockCoor = clockwise_pts(box_pts)
             cX = np.average(clockCoor[:, 0])
             cY = np.average(clockCoor[:, 1]) 
-            '''cv2.drawContours(copy, [clockCoor.astype("int")], -1, (255, 255, 0), 2) #draw ball's bounding box
-            for (x, y) in clockCoor: 
-                cv2.circle(copy, (int(x), int(y)), 5, (0, 0, 255), -1) # circles in edges
-            mids(copy, clockCoor[0], clockCoor[1], clockCoor[2], clockCoor[3]) #mid lines in shape
-            topLeft = tuple(clockCoor[0])
-            bottomRight = tuple(clockCoor[2])'''
             
             return (cX, cY), form_pts
     return (0, 0), None
 
 #main function. Returns object center with img preprocessing
-def findObject(image, copy, kf_x, kf_y): 
+def findObject(image, copy, H): 
     imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Ball mask, already have refObj
@@ -163,7 +164,7 @@ def findObject(image, copy, kf_x, kf_y):
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-    cv2.imshow("Better mask", mask)
+    #cv2.imshow("Better mask", mask)
 
     #kernel_dilate = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
     #mask = cv2.dilate(mask, kernel_dilate, iterations=2)
@@ -190,48 +191,73 @@ def findObject(image, copy, kf_x, kf_y):
         smoothed_y = kf_y.estimate
 
         print(f"smoothed: {smoothed_x}, {smoothed_y}")
-        cv2.circle(copy, (int(smoothed_x), int(smoothed_y)), 2, (0, 255, 0), 5)
+        #cv2.circle(copy, (int(smoothed_x), int(smoothed_y)), 2, (0, 255, 0), 5)
 
-        realFldCoors = cv2.perspectiveTransform(np.array([[[smoothed_x, smoothed_y]]], dtype="float32"), H)[0][0]
+        realFldCoors = cv2.perspectiveTransform(np.array([[[objCenterPt[0], objCenterPt[1]]]], dtype="float32"), H)[0][0]
         cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
     
         return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
     else:
         return (0, 0)
+        '''cv2.circle(copy, (int(objCenter[0]), int(objCenter[1])),2, (255,0,0), 5)
+        #give the correct format to the pt for use in perspectiveTransform
+        objCenterPt = np.array([[objCenter[0], objCenter[1]]], dtype="float32")
+        objCenterPt = np.array([objCenterPt])
+        realFldCoors = cv2.perspectiveTransform(objCenterPt, H)[0][0]
+        cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
+    if objCenter != None:
+        return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
+    else:
+        return (0, 0)'''
+
+
+#SERÁ POR EL USO DE MAIN()? PORQUE LLAMA A LA FUNCIÓN Y ESTA TIENE IMSHOW DENTRO O ALGO ASI?
+def main():       
+    cap = cv2.VideoCapture(0) #2 for external devices, sometimes 0 idkw
+    cap.set(3, 640) #width
+    cap.set(4, 480) #height
+
+    print("Homography " \
+    "Calibration. Click the four corners of the field in order TL, TR, BR, BL")
+    H = getHomography(cap, realFieldCoors)
+
+    window_name = "Detección"
+    #cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+
+    # Bucle principal
+    while True:
+        tpast = time.time()
         
-cap = cv2.VideoCapture(2) #2 for external devices
-cap.set(3, 640) #width
-cap.set(4, 480) #height
+        success, img = cap.read()
+        if success:
+            # Detección de robots con el modelo YOLO
+            img_copy = img.copy()  # Copia del frame para detección de la pelota
+            results = model.predict(img)
 
-print("Homography Calibration. Click the four corners of the field in order TL, TR, BR, BL")
-H = getHomography(cap, realFieldCoors)
+            # Detección de pelota
+            objCoorsCenter = findObject(img, img_copy, H)  # Coordenadas reales de la pelota
+            send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, PORT_IP)
+            print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
 
-#Declaring relay port and ip of the esp32  
-RELAY_IP = "192.168.0.171"  # Replace with your esp
-PORT_IP = 1234
+            #cv2.imshow("Test", img_copy)
+            #Detección de robots
+            if results:
+                #res_img = img.copy()   # Copia del frame para detección de robots
+                detect_img = results[0].plot()
+                bb_center_orien(results, img_copy, H)  # Procesar orientación y centro de los robots
+                cv2.imshow("Model", detect_img)
+                cv2.imshow("Detections", img_copy)
 
-while True:
-    tpast = time.time()
-
-    success, img = cap.read()
-    if success:
-        img_copy = img.copy()
-        #coordinates of the center 
-        objCoorsCenter = findObject(img, img_copy, kf_x, kf_y)
+            if cv2.waitKey(1) == ord('q'):
+                break
         
-        send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, PORT_IP)
-        print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
+        # Control de salida
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            #print(f"FPS: {fps:.2f}")
+            break
         
-        cv2.imshow("Test", img_copy)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        print(f"fps: {fps}")
-        break
-    #get execution time
-    tnow = time.time()
-    totalTime = tnow - tpast
-    fps = 1 / totalTime
-    #print(f"Tiempo de ejecución: {totalTime}")
+    cap.release()
+    cv2.destroyAllWindows()
 
-cap.release()
-cv2.destroyAllWindows()
-
+if __name__ == '__main__':
+    main()

@@ -8,8 +8,10 @@ from homography import getHomography
 import struct
 import socket
 
+#PORT_IP = 1234 #change port for robot data communication
+RELAY_IP = "192.168.0.171"  # Replace with your esp
 
-#changes
+'''#changes
 model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
 
 cap = cv2.VideoCapture(2)
@@ -20,14 +22,14 @@ realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
                   [150, 130], #br
                   [0, 130]] # bl
-
+'''
 hsvRanges = {
     'blue' : {'lower':[95, 122, 80], 'upper': [111, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
     'yellow' : {'lower': [4, 19, 51], 'upper':[55, 196, 255] } #h_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
 #Communication python to esp32
-def send_coordinates(x, y, orientation, relay_ip, relay_port):
+def send_coordinates_robot(x, y, orientation, relay_ip, relay_port):
     """
     Send two float coordinates to C++ relay via UDP
     Args:
@@ -40,11 +42,12 @@ def send_coordinates(x, y, orientation, relay_ip, relay_port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Pack the two float values into bytes
     # 'ff' format means two 32-bit float values
-    data = struct.pack('fff', x, y, orientation) # Use 'e' for 16-bit floats 
-    # Send the data
-    sock.sendto(data, (relay_ip, relay_port))
-    # Close the socket
-    sock.close()
+    if orientation != None and x != None:
+        data = struct.pack('fff', x, y, float(orientation)) # Use 'e' for 16-bit floats 
+        # Send the data
+        sock.sendto(data, (relay_ip, relay_port))
+        # Close the socket
+        sock.close()
 
 
 
@@ -80,7 +83,6 @@ def get_color_centroid(img):
                     cY = int(M['m01'] / M['m00']) #Y entre area
                     centroid = (cX, cY)
                     biggest_color = color
-                    print(f"Centro valido: {centroid}")
     
     #if not contours found, return None
     return centroid, biggest_color
@@ -92,13 +94,12 @@ def get_orientation(img, color_centroid):
         cX = float(bb_shape[0] / 2)
         cY = float(bb_shape[1] / 2)
         robot_centroid = (cX, cY)
-        print(f"SHAPE: {img.shape}")
 
         dx = robot_centroid[0] - color_centroid[0]
         dy = robot_centroid[1] - color_centroid[1]
         print(f"Robot: {robot_centroid}\n Color: {color_centroid}")
         #return orientation in degrees; change depending on control needs
-        orientation = math.degrees(math.atan2(dy, dx)) % 360
+        orientation = math.atan2(dy, dx) #use math.degrees() % 360 for degrees use
         cv2.line(img, (int(color_centroid[0]), int(color_centroid[1])), (int(robot_centroid[0]), int(robot_centroid[1])), (0,255, 0), 2)
         return orientation
     else:
@@ -107,10 +108,8 @@ def get_orientation(img, color_centroid):
 
 #returns list of (x, y) tuples for the center of each detected bb (bounding box)
 def bb_center_orien(results, img, H):
-    robots_data = {"robots" : []}
     robot_orien = 0
     robot_coors = (0.0, 0.0)
-    team = 0
 
     for res in results:
             boxes = res.boxes #variable with all the bb's detected in the frame
@@ -127,7 +126,6 @@ def bb_center_orien(results, img, H):
                 #robot's orientation based on largest area color
                 roi = img[int(y1):int(y2), int(x1):int(x2)]
                 
-                
                 color_centroid, _ = get_color_centroid(roi)
                 orien = get_orientation(roi, color_centroid)
                 if orien != None:
@@ -139,21 +137,17 @@ def bb_center_orien(results, img, H):
                 robot_coors = np.array([robot_coors])
                 real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
                 
-                send_coordinates(real_robot_coors[0], real_robot_coors[1], orien,  RELAY_IP, 1235)
-
+                send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien,  RELAY_IP, 1201)
+                print(f"mandado coordenadas: {real_robot_coors[0]}, y {real_robot_coors[1]}")
                 #make them int for cv2.circle
                 x_center = int(x_center)
                 y_center = int(y_center) 
                 #debug
                 cv2.circle(img, (x_center, y_center), 2, (0,0,255), -1)
-                #cv2.putText(res_img, f"({float(real_robot_coors[0]):.1f}, {float(real_robot_coors):.1f})", 
-                        #((x_center), (y_center)), 
-                        #cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                
 
-H = getHomography(cap, realFieldCoors)
+'''H = getHomography(cap, realFieldCoors)
 
-RELAY_IP = "192.168.0.161"  # Replace with your esp
-#PORT_IP = 1234 #change port for robot data communication
 
 #main loop
 while True:
@@ -176,4 +170,4 @@ while True:
     fps = 1 / totalTime
     if cv2.waitKey(1) == ord('q'):
         print(f"fps: {fps}")
-        break
+        break'''

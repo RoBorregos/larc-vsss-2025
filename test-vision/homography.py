@@ -8,15 +8,6 @@ def mouse_callback(event, x, y, _, __):
     if event == cv2.EVENT_LBUTTONDOWN:
         print(f"Clicked: {x}, {y}")
         clicked_points.append((x, y))
-    
-def autoGetHomography(cap, realCoors, cameraCoors):
-
-    pxCoors = np.array(cameraCoors, dtype = "float32")
-    realCoors = np.array(realCoors, dtype = "float32")
-
-    H, _ = cv2.findHomography(pxCoors, realCoors, cv2.RANSAC, 5.0)
-    
-    return H 
 
 
 def getHomography(cap, realCoor):
