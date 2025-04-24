@@ -25,6 +25,7 @@ WiFiUDP udp;
 
 // Wi-Fi credentials
 const char* ssid = "Roborregos";
+const char* ssid = "Roborregos";
 const char* password = "RoBorregos2025";
 
 unsigned int localUdpPort = 1001;       // Port to listen on
@@ -91,6 +92,13 @@ void setup() {
 
   Serial.begin(115200);
   WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nConnected to Wi-Fi");
+  Serial.printf("Device IP: %s, UDP port: %d\n", WiFi.localIP().toString().c_str(), localUdpPort);
+  udp.begin(localUdpPort);  // Start UDP
 
   // Configure motor pins
   pinMode(MotorA1, OUTPUT);
@@ -239,6 +247,7 @@ void loop() {
         memcpy(&pwmM1, &packetBuffer[0], sizeof(float));
         memcpy(&pwmM2, &packetBuffer[4], sizeof(float));
         previousUDPTime = currentUDPTime;
+
       }
     VelocityTracker();
 
