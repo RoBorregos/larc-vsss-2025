@@ -11,7 +11,7 @@ using namespace std;
 
 float vortexConstant = 0.02f;
 float repelentConstant = 0.02f;
-float magneticConstant = 500.0f;
+float magneticConstant = 1900000.0f;
 //Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
 //Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
@@ -25,13 +25,13 @@ int main()
     vector<Transform> transforms(3,Transform());
     transforms[2] = Transform(20,20 , 0 );
     //Create the ball and add it to the entities5 map
-    //      BallPos         GoalPoss    ID   ForceImpactVectorF Port
+    //      BallPos         GoalPoss    ID   ForceImpactVectorF PortR       PortS
     
-    Ball b (transforms[1], transforms[2], 0, magneticConstant , 1234); 
+    Ball b (transforms[1], transforms[2], 0, magneticConstant , 1200 ); 
     entities[0] = &b;
-    robots[1] = new Robot(transforms[0],     1,     vortexConstant,         1001); //robot with the correct udpPOR
+    robots[1] = new Robot(transforms[0],  1,     vortexConstant, 1201       ,1001); //robot with the correct udpPOR
     entities[1] = robots[1];
-    robots[1]->transform.SetTransform(10,10,10);
+    //robots[1]->transform.SetTransform(10,10,10);
     //Print all entities transform (position and rotation)
     for (auto entiti : entities)
     {
@@ -45,8 +45,11 @@ int main()
             cout << "------------------Receiving data for ID: " << entity.second->ID << endl;
             
             // Call ReceiveData to update the entity's transform
-            entity.second->communication.ReceiveData();
-            
+            int a = entity.second->communication.ReceiveData();
+            if(a != 0){
+                cout<<"                 Error: "<<a<<endl;
+                continue;
+            }
             // Print the updated position
             cout << "Updated position - ID: " << entity.second->ID 
                  << " Position: " << entity.second->transform <<endl;
@@ -81,7 +84,7 @@ int main()
             //This way the robot will always push the ball pointing to the goal
             else
             {
-                tforce = entities[minID]->forceGenerator.GetForce(entitie.second->transform, b.goal, ForceType::MAGNETIC, 0.4f);
+                tforce = entities[minID]->forceGenerator.GetForce(entitie.second->transform, ForceType::ATRACT);
                 cout << "Ball ID: " << entitie.first << " Force: " << tforce << endl;
             }
             result += tforce;
@@ -92,7 +95,8 @@ int main()
         Output output = robots[minID]->kinematic.GetVelocities(result);
         output.Scale(200.0f);
         //Later the communication component will transmit this output information to the attacker robot
-        robots[minID]->communication.SendData(output);
+        int a = robots[minID]->communication.SendData(output);
+        if(a != 0){cout<<"                  Error:"<<a<<endl;}
         cout << "Sending to Robot " << minID << " - Left: " << output.a << ", Right: " << output.b << endl;
         // Add a small delay between updates
         this_thread::sleep_for(chrono::milliseconds(100));

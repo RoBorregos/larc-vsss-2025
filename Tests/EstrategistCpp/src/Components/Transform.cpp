@@ -66,9 +66,9 @@ float Transform::GetRotationalDifference(float objective) const{
 // Sets the Transform's position and rotation.
 // Ensures the rotation is within the valid range [0, 2π].
 void Transform::SetTransform(float x, float y, float r) {
-    position.x = x;
+    position.x = -x;
     position.y = y;
-    rotation = r;
+    rotation = M_PI - r;
     CheckAngle();
 }
 

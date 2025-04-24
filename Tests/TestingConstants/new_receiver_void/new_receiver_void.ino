@@ -24,7 +24,7 @@ WiFiUDP udp;
 #include <PID.h>
 
 // Wi-Fi credentials
-const char* ssid = "RoBorregos";
+const char* ssid = "Roborregos";
 const char* password = "RoBorregos2025";
 
 unsigned int localUdpPort = 1001;       // Port to listen on
@@ -65,12 +65,12 @@ volatile unsigned int lpulses;
 
 //Constants for PID
 #define Rightkp 1.4
-#define Rightki 0.3
-#define Rightkd 0.001
+#define Rightki 0.001
+#define Rightkd 0.3
 
 #define Leftkp 1.4
-#define Leftki 0.3
-#define Leftkd 0.001
+#define Leftki 0.001
+#define Leftkd 0.3
 
 //Kinematics
 Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
@@ -109,7 +109,7 @@ void setup() {
   attachInterrupt(rEncoder, Rpulses, RISING);
   attachInterrupt(lEncoder, Lpulses, RISING);
 
-  /*
+  
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");

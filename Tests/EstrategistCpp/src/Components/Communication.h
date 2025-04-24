@@ -21,18 +21,19 @@ class Communication {
 public:
     int robotID; // Reference to the robot's ID. Used to identify the robot when reciving data
     Transform & transform; // references to the entitie position
-    int port;     // The port number used for communication with the robot.
+    int portS;     // The port number used for communication with the robot.9
+    int portR;
     
     unordered_map<int, string> ips;
 
-    Communication(Transform& t, int id, int port);
+    Communication(Transform& t, int id, int portA, int portB);
 
     // Function: SendData
     // Sends wheel velocity data to the robot.
-    void SendData(Output data);
+    int SendData(Output data);
 
 
-    void ReceiveData();
+    int ReceiveData();
 
     //Later you can set the recieve data from python here
     //and as the Transform variable is referenced, we can edit it here, and all the reset of the Components will notice 
