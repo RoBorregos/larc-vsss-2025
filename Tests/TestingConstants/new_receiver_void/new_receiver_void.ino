@@ -25,7 +25,6 @@ WiFiUDP udp;
 
 // Wi-Fi credentials
 const char* ssid = "Roborregos";
-const char* ssid = "Roborregos";
 const char* password = "RoBorregos2025";
 
 unsigned int localUdpPort = 1001;       // Port to listen on
