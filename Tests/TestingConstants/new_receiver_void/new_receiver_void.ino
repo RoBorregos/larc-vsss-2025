@@ -37,10 +37,12 @@ const int motorSpeed = 255;
 #define MotorA1 19 
 #define MotorA2 17 // new prototype 
 #define MotorA_PWM 1
+#define MotorA_PWM 1
 
 
 #define MotorB1 2
 #define MotorB2 21
+#define MotorB_PWM 0
 #define MotorB_PWM 0
 
 //Encoders Pins
@@ -147,7 +149,6 @@ void Lpulses() {
 
 // Motor control function for TB6612FNG
 void Drive(int MotorL, int MotorR) {
-  // Control left motor (Motor A)
   if (MotorL > 0) {
     digitalWrite(MotorA1, HIGH);
     digitalWrite(MotorA2, LOW);
@@ -234,6 +235,7 @@ void loop() {
     inic = false;
     delay(5000);
   }
+  }
   //Codigo para recivir la informacion por parte de vision
       int packetSize = udp.parsePacket();
       currentUDPTime = millis();
@@ -268,7 +270,7 @@ void VelocityTracker()
     pwm.motor1 += Lcorr ;
     pwm.motor2 += Rcorr ;
     pwm.motor1 = abs(pwm.motor1) > 254  ? 254 * (signbit(pwm.motor1) ? -1 : 1): pwm.motor1; 
-    pwm.motor2 = abs(pwm.motor2) > 254 ? 254  * (signbit(pwm.motor2) ? -1 : 1) : pwm.motor2; 
+    pwm.motor2 = abs(pwm.motor2) > 254  ? 254 * (signbit(pwm.motor2) ? -1 : 1) : pwm.motor2; 
 
     //Impresion de Info
     Orpm.Print(); Serial.print("\nR");
