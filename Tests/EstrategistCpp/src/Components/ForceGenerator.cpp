@@ -20,10 +20,9 @@ using namespace std;
         Vector2 Atract(Transform& origin, Transform& target, float impact){
             Vector2 force, dif;
             dif = target.position - origin.position;
-            float difMagnitude = dif.Magnitude();
             dif.Normallize();
-            force.x = dif.x / difMagnitude;
-            force.y = dif.y/ difMagnitude;
+            force.x = dif.x;
+            force.y = dif.y;
             force *= (impact);
             return force;
         }
