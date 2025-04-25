@@ -1,7 +1,3 @@
-#python common handmade files
-test1.py/
-test2.py/
-test3.py/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -174,3 +170,14 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+dataset-generator/dataset
+dataset-generator/Resources
+!dataset-generator/Resources/data.yaml
+
+VSSSModel/runs/detect
+!VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt
+VSSSModel/yolo11n.pt
+VSSSModel/yolov8s.pt
+
+/communication/udp communication_vsss

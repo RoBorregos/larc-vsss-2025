@@ -20,6 +20,6 @@ names:
 - pattern19
 - pattern20
 nc: 20
-test: /home/daniela/Desktop/VSSS/larc-vsss-2025/dataset-generator/Resources/finalOutput//valid/images
-train: /home/daniela/Desktop/VSSS/larc-vsss-2025/dataset-generator/Resources/finalOutput//train/images
-val: /home/daniela/Desktop/VSSS/larc-vsss-2025/dataset-generator/Resources/finalOutput//valid/images
+test: /home/daniela/Desktop/VSSS/larc-vsss-2025/dataset-generator/Resources/finalOutput/valid/images
+train: /home/daniela/Desktop/VSSS/larc-vsss-2025/dataset-generator/Resources/finalOutput/train/images
+val: /home/daniela/Desktop/VSSS/larc-vsss-2025/dataset-generator/Resources/finalOutput/valid/images
