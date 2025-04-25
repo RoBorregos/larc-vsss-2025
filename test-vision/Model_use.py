@@ -25,7 +25,7 @@ realFieldCoors = [[0, 0], #tl
 '''
 hsvRanges = {
     'blue' : {'lower':[95, 122, 80], 'upper': [111, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
-    'yellow' : {'lower': [4, 19, 51], 'upper':[55, 196, 255] } #h_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
+    'yellow' : {'lower': [14, 94, 0], 'upper':[37, 255, 255] } #h_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
 #Communication python to esp32

@@ -213,7 +213,7 @@ def findObject(image, copy, H):
 
 #SERÁ POR EL USO DE MAIN()? PORQUE LLAMA A LA FUNCIÓN Y ESTA TIENE IMSHOW DENTRO O ALGO ASI?
 def main():       
-    cap = cv2.VideoCapture(0) #2 for external devices, sometimes 0 idkw
+    cap = cv2.VideoCapture(2) #2 for external devices, sometimes 0 idkw
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
