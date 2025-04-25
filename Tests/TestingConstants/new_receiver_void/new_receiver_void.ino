@@ -36,12 +36,12 @@ const int motorSpeed = 255;
 // TB6612FNG Motor Driver pins
 #define MotorA1 19 
 #define MotorA2 17 // new prototype 
-#define MotorA_PWM 0
+#define MotorA_PWM 1
 
 
 #define MotorB1 2
 #define MotorB2 21
-#define MotorB_PWM 1
+#define MotorB_PWM 0
 
 //Encoders Pins
 #define rEncoder 23
@@ -64,12 +64,12 @@ volatile unsigned int lpulses;
 #define ThetaConst 0.66
 
 //Constants for PID
-#define Rightkp 0.07
-#define Rightki 0.0001
+#define Rightkp 0.1
+#define Rightki 0.000
 #define Rightkd 0.05
 
-#define Leftkp 0.07
-#define Leftki 0.0001
+#define Leftkp 0.1
+#define Leftki 0.000
 #define Leftkd 0.05
 
 //Kinematics
@@ -127,8 +127,8 @@ void setup() {
   udp.begin(localUdpPort);  // Start UDP*/
   rpulses = 0;
   lpulses = 0;
-  lastRPMTime = millis();
-  currentRPMTime = millis();
+  lastRPMTime = micros();
+  currentRPMTime = micros();
   previousTime = micros();
   currentTime = micros();
   previousUDPTime = millis();
@@ -205,12 +205,12 @@ void Drive2(int b, int a){
 //GetRPM
 output GetRPM() {
   output temp;
-  currentRPMTime = millis();
+  currentRPMTime = micros();
   noInterrupts();
   //Serial.print(rpulses); Serial.print(" ");Serial.print(lpulses);
   if(currentRPMTime - lastRPMTime > 0){
-    temp.motor2 = ((float)rpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;  // number of revolutions * deltaTime(in milis) * 60sec = to get rpm
-    temp.motor1 = ((float)lpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000.0 )* 60;
+    temp.motor2 = ((float)rpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000000.0 )* 60;  // number of revolutions * deltaTime(in milis) * 60sec = to get rpm
+    temp.motor1 = ((float)lpulses / NoTicks) /((currentRPMTime - lastRPMTime) / 1000000.0 )* 60;
   }
   //Debido a que solo tenemos un pin para poder medir el rpm,
   // la forma en la que se determina si es positivo o negativo el rpm
@@ -233,7 +233,7 @@ void loop() {
   if(inic){
     inic = false;
     delay(5000);
-  }/*
+  }
   //Codigo para recivir la informacion por parte de vision
       int packetSize = udp.parsePacket();
       currentUDPTime = millis();
@@ -247,22 +247,8 @@ void loop() {
         memcpy(&pwmM2, &packetBuffer[4], sizeof(float));
         previousUDPTime = currentUDPTime;
 
-      }*/
-    a++;
-    if(a < 200){
-      pwmM1 = 200;
-      pwmM2 = 200;
-    }else if(a < 600){
+      }
 
-      pwmM1 = 50;
-      pwmM2 = 180;
-    }else if ( a < 1000){
-      pwmM1 = 150;
-      pwmM2 = -150;
-    }
-    pwmM1 = 0;
-    pwmM2 = 0;
-    a %=1000;
     VelocityTracker();
    
 
@@ -290,7 +276,7 @@ void VelocityTracker()
     pwm.Print();Serial.print("\n                             O");
     Drive((int)pwm.motor1,(int)pwm.motor2);
 
-  delay(20);
+  delay(10);
 
 }
 
