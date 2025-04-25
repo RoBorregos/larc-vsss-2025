@@ -55,7 +55,7 @@ using namespace std;
             tempPos.y = m*tempPos.x- m*target.position.x + target.position.y;
             Transform tempTransform(tempPos, 0);
             Vector2 force;
-            force = Atract(origin, target, impact) + Repelent(origin, tempTransform, impact*0.5f); // combine the attractive and repelent forces to simulate a magnetic field
+            force = Atract(origin, target, impact) + Repelent(origin, tempTransform, impact); // combine the attractive and repelent forces to simulate a magnetic field
             return force;
         }
     //

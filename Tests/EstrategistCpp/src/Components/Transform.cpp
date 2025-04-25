@@ -1,6 +1,6 @@
 #include "Transform.h"
-#define _USE_MATH_DEFINES
-#include <cmath>
+#include <math.h>
+constexpr double pi = 3.141592653589793;
 
 
 using namespace std;
@@ -35,11 +35,11 @@ Transform Transform::operator-(const Transform& b) const {
 }
 // Ensures the rotation angle is within the range [0, 2π].
 void Transform::CheckAngle() const {
-    if (rotation > 2*M_PI) {
-        rotation -= 2*M_PI;
+    if (rotation > 2*pi) {
+        rotation -= 2*pi;
     }
     if (rotation < 0) {
-        rotation += 2*M_PI;
+        rotation += 2*pi;
     }
 }
 
@@ -55,10 +55,10 @@ void Transform::SetAngule() const {
 // Returns the difference in radians, accounting for wrap-around at 2π.
 float Transform::GetRotationalDifference(float objective) const{
     float dif = objective - rotation;
-    if(abs(dif) < M_PI){
+    if(abs(dif) < pi){
         return dif; // If the difference is less than π, return it directly.
     }else{
-        return (signbit(dif) ? 1 : -1) * 2*M_PI + dif;    // Adjust for wrap-around at 2π.
+        return (signbit(dif) ? 1 : -1) * 2*pi + dif;    // Adjust for wrap-around at 2π.
     }
 }
 
@@ -66,9 +66,9 @@ float Transform::GetRotationalDifference(float objective) const{
 // Sets the Transform's position and rotation.
 // Ensures the rotation is within the valid range [0, 2π].
 void Transform::SetTransform(float x, float y, float r) {
-    position.x = -x;
-    position.y = y;
-    rotation = M_PI - r;
+    position.x = -x/10;
+    position.y = y/10;
+    rotation = pi - r;
     CheckAngle();
 }
 

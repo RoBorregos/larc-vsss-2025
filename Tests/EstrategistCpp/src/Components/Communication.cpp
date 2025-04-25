@@ -15,7 +15,7 @@ int Communication::SendData(Output data)
     {
         // Init Winsock
         std::string ip = ips[robotID]; // Get the IP address for the robot ID
-        cout<< "                            Sending to Ip = "<<ip<<" For ID = "<<robotID<<endl;
+        //cout<< "                            Sending to Ip = "<<ip<<" For ID = "<<robotID<<endl;
         WSADATA wsaData;
         int startupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
         if (startupResult != 0) {
@@ -110,7 +110,7 @@ int Communication::ReceiveData() {
 
     int opt = 1;
     if (setsockopt(receive_py, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) == SOCKET_ERROR) {
-        std::cerr << "Failed to set SO_REUSEADDR: " << WSAGetLastError() << std::endl;
+       // std::cerr << "Failed to set SO_REUSEADDR: " << WSAGetLastError() << std::endl;
         closesocket(receive_py);
         WSACleanup();
         return 6; // Return a new error code for this failure
@@ -146,8 +146,8 @@ int Communication::ReceiveData() {
             char python_ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &python_addr.sin_addr, python_ip, INET_ADDRSTRLEN);
             
-            std::cout << "Received coordinates from " << python_ip << ": x=" 
-                      << x << ", y=" << y <<  "thehta=" << theta << std::endl;
+          //  std::cout << "Received coordinates from " << python_ip << ": x=" 
+               //       << x << ", y=" << y <<  "thehta=" << theta << std::endl;
             transform.SetTransform(x,y,theta);
         } 
         else if(received_bytes == 8){ 
@@ -157,16 +157,16 @@ int Communication::ReceiveData() {
             char python_ip[INET_ADDRSTRLEN];
             inet_ntop(AF_INET, &python_addr.sin_addr, python_ip, INET_ADDRSTRLEN);
             
-            std::cout << "Received coordinates from " << python_ip << ": x=" 
-                      << x << ", y=" << y << std::endl;
+         //   std::cout << "Received coordinates from " << python_ip << ": x=" 
+          //            << x << ", y=" << y << std::endl;
             transform.SetTransform(x,y,0.0f); // theta is not used in this case
 
         }
         else {
-            std::cerr << "Received unexpected data size: " << received_bytes << " bytes" << std::endl;
+            //std::cerr << "Received unexpected data size: " << received_bytes << " bytes" << std::endl;
             if (received_bytes == SOCKET_ERROR) {
                 int error_code = WSAGetLastError();
-                std::cerr << "recvfrom failed with error: " << error_code << std::endl;
+               // std::cerr << "recvfrom failed with error: " << error_code << std::endl;
                 
             }
             closesocket(receive_py);
