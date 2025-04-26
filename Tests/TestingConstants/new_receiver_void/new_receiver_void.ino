@@ -37,12 +37,10 @@ const int motorSpeed = 255;
 #define MotorA1 19 
 #define MotorA2 17 // new prototype 
 #define MotorA_PWM 1
-#define MotorA_PWM 1
 
 
 #define MotorB1 2
 #define MotorB2 21
-#define MotorB_PWM 0
 #define MotorB_PWM 0
 
 //Encoders Pins
@@ -67,11 +65,11 @@ volatile unsigned int lpulses;
 
 //Constants for PID
 #define Rightkp 0.1
-#define Rightki 0.000
+#define Rightki 0.0001
 #define Rightkd 0.05
 
 #define Leftkp 0.1
-#define Leftki 0.000
+#define Leftki 0.0001
 #define Leftkd 0.05
 
 //Kinematics
@@ -235,7 +233,7 @@ void loop() {
     inic = false;
     delay(5000);
   }
-  }
+  
   //Codigo para recivir la informacion por parte de vision
       int packetSize = udp.parsePacket();
       currentUDPTime = millis();
