@@ -8,19 +8,26 @@ import struct
 from scipy.spatial import KDTree
 from ultralytics import YOLO
 from Model_use import bb_center_orien
-from kalman_filter import KalmanFilter
+
+'''                        HC
+HSV's -> Check for local circumstances in real competition
+IP's-> robotAndBallDetector.py ,  ballDetector.py
+Homography -> Manually set homography '''
+
 #fusion 
 model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
 
 RELAY_IP = "192.168.0.171" 
-PORT_IP = 1200
+PORT_IP = 1200 #for ball detections, IP for robot detections is in Model_use.py
+
+#backup coordinates
+ball_positions = []
+MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 
 #in HSV 
-colorParams = [0, 203, 77, 9, 255, 228] #most accurate HSV values for test ball (bright orange) 0, 63, 255, 179, 255, 255
+colorParams = [0, 67, 1, 11, 255, 255] #0, 203, 77, 9, 255, 228
 #checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
-#refColorParams = [0, 0, 0, 0, 0, 0]  # white 
-refCenter = (320, 240) #in pixels
-referenceWidth = 2.9  # Test width
+#0, 188, 197, 179, 255, 255
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
@@ -30,14 +37,6 @@ realFieldCoors = [[0, 0], #tl
 CAMERA_HEIGHT = 200 #cm
 clicked_points = []
 
-# Inicializa filtros de Kalman para x e y
-kf_x = KalmanFilter(initial_estimate=75.0, 
-                    initial_est_error=1.5,#que tanto confia de tu medición y se ajusta mas rapido
-                    initial_measure_error=1.0) #error de medición
-
-kf_y = KalmanFilter(initial_estimate=65.0, 
-                    initial_est_error=2.5, 
-                    initial_measure_error=2.0)
 
 #Communication python to esp32
 def send_coordinates(x_coord, y_coord, relay_ip, relay_port):
@@ -152,8 +151,22 @@ def findContoursAndSize(img, copy):
             return (cX, cY), form_pts
     return (0, 0), None
 
+#returns the next position of the ball using polynomial extrapolation
+#this is used to predict the next position of the ball
+#in case the ball is not detected in the current frame
+def polynomial_extrapolation(positions, degree=2):
+    n = len(positions)
+    if n < degree + 1:
+        return positions[-1]  # Not enough points for a fit
+    times = np.arange(n)
+    poly_coeffs = np.polyfit(times, positions, degree)
+    next_time = n
+    next_position = np.polyval(poly_coeffs, next_time)
+    return next_position
+
 #main function. Returns object center with img preprocessing
 def findObject(image, copy, H): 
+    global ball_positions #allows the function to modify the global variable
     imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Ball mask, already have refObj
@@ -164,10 +177,7 @@ def findObject(image, copy, H):
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-    #cv2.imshow("Better mask", mask)
-
-    #kernel_dilate = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
-    #mask = cv2.dilate(mask, kernel_dilate, iterations=2)
+    cv2.imshow("Better mask", mask)
 
     objCenter,objPts = findContoursAndSize(mask, copy)
     
@@ -177,43 +187,40 @@ def findObject(image, copy, H):
         #give the correct format to the pt for use in perspectiveTransform
         objCenterPt = np.array([objCenter[0], objCenter[1]], dtype="float32")
         print(f"Normal: {objCenterPt[0]}, {objCenterPt[1]}")
-        # Apply Kalman filter to smooth the coordinates
-        kf_x.calculate_kalman_gain()
-        kf_x.update_estimate(sensor_value=objCenterPt[0])
-        kf_x.calculate_estimate_error()
+        
 
-        kf_y.calculate_kalman_gain()
-        kf_y.update_estimate(sensor_value=objCenterPt[1])
-        kf_y.calculate_estimate_error()
+        # Agregar las coordenadas suavizadas a la lista de posiciones
+        ball_positions.append((objCenterPt[0], objCenterPt[1]))
+        if len(ball_positions) > MOVING_AVG_WINDOW:
+            ball_positions.pop(0) #mantain window size
 
-        # Smoothed coordinates
-        smoothed_x = kf_x.estimate
-        smoothed_y = kf_y.estimate
+        #apply polynomial extrapolation to the last 5 points
+        if len(ball_positions) >= MOVING_AVG_WINDOW:
+            # Extrapolar la posición de la pelota
+            ball_positions_np = np.array(ball_positions)
+            x_extrapolated = polynomial_extrapolation(ball_positions_np[:, 0])
+            y_extrapolated = polynomial_extrapolation(ball_positions_np[:, 1])
+            objCenterPt = (x_extrapolated, y_extrapolated)
+        # Calcular la media móvil
+        avg_x = sum(pos[0] for pos in ball_positions) / len(ball_positions)
+        avg_y = sum(pos[1] for pos in ball_positions) / len(ball_positions)
+        cv2.circle(copy, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
+        #cv2.circle(copy, (int(avg_x), int(avg_y)), 2, (0, 0, 255), 5) #draw the moving average point
+        print(f"Media móvil: {avg_x}, {avg_y}")
+        print(f"Extrapolado: {objCenterPt[0]}, {objCenterPt[1]}")
 
-        print(f"smoothed: {smoothed_x}, {smoothed_y}")
-        #cv2.circle(copy, (int(smoothed_x), int(smoothed_y)), 2, (0, 255, 0), 5)
-
+        #realFieldCoors2 = cv2.perspectiveTransform(np.array([[[avg_x, avg_y]]], dtype="float32"), H)[0][0]
         realFldCoors = cv2.perspectiveTransform(np.array([[[objCenterPt[0], objCenterPt[1]]]], dtype="float32"), H)[0][0]
         cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
-    
+        #cv2.putText(copy, f"({realFieldCoors2[0]:.1f}, {realFieldCoors2[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
+
         return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
     else:
         return (0, 0)
-        '''cv2.circle(copy, (int(objCenter[0]), int(objCenter[1])),2, (255,0,0), 5)
-        #give the correct format to the pt for use in perspectiveTransform
-        objCenterPt = np.array([[objCenter[0], objCenter[1]]], dtype="float32")
-        objCenterPt = np.array([objCenterPt])
-        realFldCoors = cv2.perspectiveTransform(objCenterPt, H)[0][0]
-        cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
-    if objCenter != None:
-        return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
-    else:
-        return (0, 0)'''
 
 
-#SERÁ POR EL USO DE MAIN()? PORQUE LLAMA A LA FUNCIÓN Y ESTA TIENE IMSHOW DENTRO O ALGO ASI?
 def main():       
-    cap = cv2.VideoCapture(2) #2 for external devices, sometimes 0 idkw
+    cap = cv2.VideoCapture(0) #2 for external devices, sometimes 0 idkw
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
@@ -232,25 +239,26 @@ def main():
         if success:
             # Detección de robots con el modelo YOLO
             img_copy = img.copy()  # Copia del frame para detección de la pelota
-            results = model.predict(img)
+            results = model.track(img)
 
             # Detección de pelota
             objCoorsCenter = findObject(img, img_copy, H)  # Coordenadas reales de la pelota
-            send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, PORT_IP)
-            print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
+            if objCoorsCenter[0] != 0 and objCoorsCenter[1] != 0:
+                send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, PORT_IP)
+                print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
+            else:
+                send_coordinates(0, 0, RELAY_IP, PORT_IP)
 
-            #cv2.imshow("Test", img_copy)
             #Detección de robots
             if results:
-                #res_img = img.copy()   # Copia del frame para detección de robots
                 detect_img = results[0].plot()
                 bb_center_orien(results, img_copy, H)  # Procesar orientación y centro de los robots
                 cv2.imshow("Model", detect_img)
                 cv2.imshow("Detections", img_copy)
-
             if cv2.waitKey(1) == ord('q'):
                 break
-        
+        else:
+            print("No camera")
         # Control de salida
         if cv2.waitKey(1) & 0xFF == ord('q'):
             #print(f"FPS: {fps:.2f}")

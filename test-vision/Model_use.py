@@ -1,4 +1,5 @@
 from ultralytics import YOLO
+import torch
 import cv2
 import time
 import math
@@ -7,27 +8,27 @@ import json #if communication tells you he needs the info in json format
 from homography import getHomography
 import struct
 import socket
+from collections import deque
+
 
 #PORT_IP = 1234 #change port for robot data communication
 RELAY_IP = "192.168.0.171"  # Replace with your esp
 
-'''#changes
-model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
+#changes
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/detect/custom-yolov8m/weights/best.pt')
 
-cap = cv2.VideoCapture(2)
-cap.set(3, 640) #width
-cap.set(4, 480) #height
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
                   [150, 130], #br
                   [0, 130]] # bl
-'''
+
 hsvRanges = {
-    'blue' : {'lower':[95, 122, 80], 'upper': [111, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
-    'yellow' : {'lower': [14, 94, 0], 'upper':[37, 255, 255] } #h_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
+    'blue' : {'lower':[102, 142, 115], 'upper': [133, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'yellow' : {'lower': [4, 19, 51], 'upper':[55, 196, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
+    
 #Communication python to esp32
 def send_coordinates_robot(x, y, orientation, relay_ip, relay_port):
     """
@@ -49,15 +50,23 @@ def send_coordinates_robot(x, y, orientation, relay_ip, relay_port):
         # Close the socket
         sock.close()
 
+def auto_adjust_hsv(hsv_img, mask):
+    """Ajusta dinámicamente los rangos HSV basándose en el histograma del canal H."""
+    h_channel = hsv_img[:, :, 0]  # Extraer canal H
+    masked_h = h_channel[mask > 0]  # Píxeles dentro de la máscara
 
+    if len(masked_h) > 0:  # Verifica si hay píxeles en la máscara
+        lower_h = np.percentile(masked_h, 5)  # Percentil inferior (5%)
+        upper_h = np.percentile(masked_h, 95)  # Percentil superior (95%)
 
+        # Ajustar los rangos dinámicamente (usando valores predeterminados para S y V)
+        lower_hsv = np.array([lower_h, 50, 50])
+        upper_hsv = np.array([upper_h, 255, 255])
 
-def transform_coors(pt, H):
-    pt = np.array([[pt]], type="float32")
-    transformed_pt = cv2.perspectiveTransform(pt, H)
-    return transformed_pt[0][0]
-
-
+        return lower_hsv, upper_hsv
+    else:
+        return None, None
+    
 def get_color_centroid(img):
     hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     max_area = 0
@@ -67,15 +76,23 @@ def get_color_centroid(img):
     for color, ranges in hsvRanges.items():
         lower = np.array(ranges['lower'])
         upper = np.array(ranges['upper'])
+
         mask = cv2.inRange(hsv_img, lower, upper)
+
+        # Ajuste dinámico de los valores HSV
+        lower_hsv, upper_hsv = auto_adjust_hsv(hsv_img, mask)
+        if lower_hsv is not None and upper_hsv is not None:
+            mask = cv2.inRange(hsv_img, lower_hsv, upper_hsv)
+
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        
 
         if contours:
             #returns the biggest contour based on it's area
             largest_cnt = max(contours, key=cv2.contourArea)
             area = cv2.contourArea(largest_cnt)
             if area > max_area:
-                #cv2.imshow("Mask", mask)
+                cv2.imshow("Mask", mask)
                 max_area = area
                 M = cv2.moments(largest_cnt)
                 if M['m00'] > 0:
@@ -97,77 +114,108 @@ def get_orientation(img, color_centroid):
 
         dx = robot_centroid[0] - color_centroid[0]
         dy = robot_centroid[1] - color_centroid[1]
-        print(f"Robot: {robot_centroid}\n Color: {color_centroid}")
+        #print(f"Robot: {robot_centroid}\n Color: {color_centroid}")
         #return orientation in degrees; change depending on control needs
-        orientation = math.atan2(dy, dx) #use math.degrees() % 360 for degrees use
+        orientation = math.degrees(math.atan2(dy, dx)) % 360 #use math.degrees() % 360 for degrees use
         cv2.line(img, (int(color_centroid[0]), int(color_centroid[1])), (int(robot_centroid[0]), int(robot_centroid[1])), (0,255, 0), 2)
         return orientation
     else:
         return None
 
+    
+# Define una lista para almacenar las últimas orientaciones
+orientation_history = {}
+centroid_history = deque(maxlen=5)  # Mantén un historial de los centroides
 
-#returns list of (x, y) tuples for the center of each detected bb (bounding box)
+def moving_average_centroid(centroid, window_size=5):
+    centroid_history.append(centroid)
+    avg_x = sum([c[0] for c in centroid_history]) / len(centroid_history)
+    avg_y = sum([c[1] for c in centroid_history]) / len(centroid_history)
+    return (avg_x, avg_y)
+
+# Función para calcular la media móvil
+def moving_average(orientation_list, window_size=5):
+    return sum(orientation_list) / len(orientation_list)  # Promedio de los valores disponibles
+    
+
+# Modifica la función bb_center_orien para incluir la media móvil
 def bb_center_orien(results, img, H):
+    global orientation_history
     robot_orien = 0
     robot_coors = (0.0, 0.0)
 
     for res in results:
-            boxes = res.boxes #variable with all the bb's detected in the frame
-            for box in boxes:
-                x1, y1, x2, y2 = box.xyxy[0]
+        boxes = res.boxes  # Variable con todas las bb detectadas en el frame
+        for box in boxes:
+            x1, y1, x2, y2 = box.xyxy[0]
+            track_id = box.id  # ID de seguimiento
+            class_id = int(box.cls[0]) + 1  # Índice de la clase detectada
 
-                #get robot's pattern
-                class_id = int(box.cls[0]) + 1 #detected class index
+            # Centro del robot
+            x_center = float((x1 + x2) / 2)
+            y_center = float((y1 + y2) / 2)
 
-                #get robot's center (position regarding general view, not roi)
-                x_center = float((x1 + x2) / 2)
-                y_center = float((y1 + y2) / 2)
+            # ROI para calcular la orientación
+            roi = img[int(y1):int(y2), int(x1):int(x2)]
+            blurred = cv2.GaussianBlur(roi, (5, 5), 0)
+            color_centroid, _ = get_color_centroid(blurred)
 
-                #robot's orientation based on largest area color
-                roi = img[int(y1):int(y2), int(x1):int(x2)]
+            if isinstance(track_id, torch.Tensor):
+                track_id = int(track_id.item())
+            if color_centroid is not None:
+                smoothed_centroid = moving_average_centroid(color_centroid)
                 
-                color_centroid, _ = get_color_centroid(roi)
-                orien = get_orientation(roi, color_centroid)
-                if orien != None:
+                orien = get_orientation(roi, smoothed_centroid)
+                
+                if orien is not None and isinstance(track_id, int):
                     orien = round(float(orien), 4)
-                print(f"Robot {class_id}, orientation: {orien}")
+                    # Agregar orientación al historial del robot
 
-                #get the real center coordinates
-                robot_coors = np.array([[x_center, y_center]], dtype="float32")
-                robot_coors = np.array([robot_coors])
-                real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
+                    # Obtener coordenadas reales
+                    robot_coors = np.array([[x_center, y_center]], dtype="float32")
+                    robot_coors = np.array([robot_coors])
+                    real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
+
+                    # Enviar coordenadas y orientación suavizada al robot
+                    send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien, RELAY_IP, 1201)
+                    print(f"Robot {track_id}: {real_robot_coors[0]}, {real_robot_coors[1]}")
+
+                    # Dibujar el centro del robot
+                    x_center = int(x_center)
+                    y_center = int(y_center)
+                    cv2.circle(img, (x_center, y_center), 2, (0, 0, 255), -1)
+                    
+
                 
-                send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien,  RELAY_IP, 1201)
-                print(f"mandado coordenadas: {real_robot_coors[0]}, y {real_robot_coors[1]}")
-                #make them int for cv2.circle
-                x_center = int(x_center)
-                y_center = int(y_center) 
-                #debug
-                cv2.circle(img, (x_center, y_center), 2, (0,0,255), -1)
-                
+def main():               
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 640) #width
+    cap.set(4, 480) #height
 
-'''H = getHomography(cap, realFieldCoors)
+    H = getHomography(cap, realFieldCoors)
 
+    #main loop
+    while True:
+        tpast = time.time()
+        success, img = cap.read()
 
-#main loop
-while True:
-    tpast = time.time()
-    success, img = cap.read()
-
-    if success:
-        results = model.predict(img)
-        if results:
-            res_img = results[0].plot()
-            #center and orientation for each bb detected
-            bb_center_orien(results, res_img, H)
-            cv2.imshow("Model prediction", res_img)
+        if success:
+            results = model.track(source=img, persist=True, show=False, )
+            #results = model.predict(img)
+            if results:
+                res_img = results[0].plot()
+                bb_center_orien(results, res_img, H)
+                cv2.imshow("Model prediction", res_img)
+            else:
+                print("No se usa modelo")
         else:
-            print("No se usa modelo")
-    else:
-        print("No success")
-    tnow = time.time()
-    totalTime = tnow - tpast
-    fps = 1 / totalTime
-    if cv2.waitKey(1) == ord('q'):
-        print(f"fps: {fps}")
-        break'''
+            print("No success")
+        tnow = time.time()
+        totalTime = tnow - tpast
+        fps = 1 / totalTime
+        if cv2.waitKey(1) == ord('q'):
+            print(f"fps: {fps}")
+            break
+
+if __name__ == '__main__':
+    main()

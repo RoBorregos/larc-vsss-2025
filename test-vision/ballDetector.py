@@ -7,14 +7,11 @@ import time
 import socket
 import struct
 from scipy.spatial import KDTree
-from kalman_filter import KalmanFilter
 
 #in HSV 
 colorParams = [0, 203, 77, 9, 255, 228] #most accurate HSV values for test ball (bright orange) 0, 63, 255, 179, 255, 255
 #checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
 #refColorParams = [0, 0, 0, 0, 0, 0]  # white 
-refCenter = (320, 240) #in pixels
-referenceWidth = 2.9  # Test width
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
@@ -23,15 +20,6 @@ realFieldCoors = [[0, 0], #tl
 
 CAMERA_HEIGHT = 200 #cm
 clicked_points = []
-
-# Inicializa filtros de Kalman para x e y
-kf_x = KalmanFilter(initial_estimate=75.0, 
-                    initial_est_error=1.5,#que tanto confia de tu medición y se ajusta mas rapido
-                    initial_measure_error=1.0) #error de medición
-
-kf_y = KalmanFilter(initial_estimate=65.0, 
-                    initial_est_error=2.5, 
-                    initial_measure_error=2.0)
 
 #Communication python to esp32
 def send_coordinates(x, y, relay_ip, relay_port):
@@ -153,6 +141,7 @@ def findContoursAndSize(img, copy):
 
 #main function. Returns object center with img preprocessing
 def findObject(image, copy, kf_x, kf_y): 
+    global ball_positions #allows the function to modify the global variable
     imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Ball mask, already have refObj
@@ -165,9 +154,6 @@ def findObject(image, copy, kf_x, kf_y):
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
     cv2.imshow("Better mask", mask)
 
-    #kernel_dilate = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7,7))
-    #mask = cv2.dilate(mask, kernel_dilate, iterations=2)
-
     objCenter,objPts = findContoursAndSize(mask, copy)
     
     #if the center is detected, get it's coordinates in real field coordinates
@@ -176,30 +162,39 @@ def findObject(image, copy, kf_x, kf_y):
         #give the correct format to the pt for use in perspectiveTransform
         objCenterPt = np.array([objCenter[0], objCenter[1]], dtype="float32")
         print(f"Normal: {objCenterPt[0]}, {objCenterPt[1]}")
-        # Apply Kalman filter to smooth the coordinates
-        kf_x.calculate_kalman_gain()
-        kf_x.update_estimate(sensor_value=objCenterPt[0])
-        kf_x.calculate_estimate_error()
+        
 
-        kf_y.calculate_kalman_gain()
-        kf_y.update_estimate(sensor_value=objCenterPt[1])
-        kf_y.calculate_estimate_error()
+        # Agregar las coordenadas suavizadas a la lista de posiciones
+        ball_positions.append((objCenterPt[0], objCenterPt[1]))
+        if len(ball_positions) > MOVING_AVG_WINDOW:
+            ball_positions.pop(0) #mantain window size
 
-        # Smoothed coordinates
-        smoothed_x = kf_x.estimate
-        smoothed_y = kf_y.estimate
+        #apply polynomial extrapolation to the last 5 points
+        if len(ball_positions) >= MOVING_AVG_WINDOW:
+            # Extrapolar la posición de la pelota
+            ball_positions_np = np.array(ball_positions)
+            x_extrapolated = polynomial_extrapolation(ball_positions_np[:, 0])
+            y_extrapolated = polynomial_extrapolation(ball_positions_np[:, 1])
+            objCenterPt = (x_extrapolated, y_extrapolated)
+        # Calcular la media móvil
+        avg_x = sum(pos[0] for pos in ball_positions) / len(ball_positions)
+        avg_y = sum(pos[1] for pos in ball_positions) / len(ball_positions)
+        cv2.circle(copy, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
+        cv2.circle(copy, (int(avg_x), int(avg_y)), 2, (0, 0, 255), 5) #draw the moving average point
+        print(f"Media móvil: {avg_x}, {avg_y}")
+        print(f"Extrapolado: {objCenterPt[0]}, {objCenterPt[1]}")
 
-        print(f"smoothed: {smoothed_x}, {smoothed_y}")
-        cv2.circle(copy, (int(smoothed_x), int(smoothed_y)), 2, (0, 255, 0), 5)
-
-        realFldCoors = cv2.perspectiveTransform(np.array([[[smoothed_x, smoothed_y]]], dtype="float32"), H)[0][0]
+        #realFieldCoors2 = cv2.perspectiveTransform(np.array([[[avg_x, avg_y]]], dtype="float32"), H)[0][0]
+        realFldCoors = cv2.perspectiveTransform(np.array([[[objCenterPt[0], objCenterPt[1]]]], dtype="float32"), H)[0][0]
         cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
-    
+        #cv2.putText(copy, f"({realFieldCoors2[0]:.1f}, {realFieldCoors2[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
+
         return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
     else:
         return (0, 0)
         
-cap = cv2.VideoCapture(2) #2 for external devices
+        
+cap = cv2.VideoCapture(0) #2 for external devices
 cap.set(3, 640) #width
 cap.set(4, 480) #height
 

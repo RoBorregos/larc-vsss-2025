@@ -18,7 +18,7 @@ def colorPicker(window):
     cv2.createTrackbar("Val Max", window, 255, 255, empty)
 
     #Video capture and settings
-    video = cv2.VideoCapture(2)
+    video = cv2.VideoCapture(0)
     video.set(3, 640) #width
     video.set(4, 480) #Height
     #video.set(10, 150) #brightness
