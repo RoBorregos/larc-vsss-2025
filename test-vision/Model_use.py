@@ -24,8 +24,8 @@ realFieldCoors = [[0, 0], #tl
                   [0, 130]] # bl
 
 hsvRanges = {
-    'blue' : {'lower':[102, 142, 115], 'upper': [133, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
-    'yellow' : {'lower': [4, 19, 51], 'upper':[55, 196, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
+    'blue' : {'lower':[100, 158, 78], 'upper': [157, 255, 141]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'yellow' : {'lower': [7, 119, 99], 'upper':[50, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
     
@@ -68,11 +68,15 @@ def auto_adjust_hsv(hsv_img, mask):
         return None, None
     
 def get_color_centroid(img):
+    blurred = cv2.GaussianBlur(img, (7,7), 0)
     hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    hsv_img = cv2.medianBlur(hsv_img, 5)  # Aplicar un filtro mediano para reducir ruido
+    hsv_img = cv2.bilateralFilter(hsv_img, 9, 75, 75)  # Filtrado bilateral para preservar bordes
+
     max_area = 0
     centroid = None
     biggest_color = None
-    
+    cv2.imshow("Blurred passing", img)
     for color, ranges in hsvRanges.items():
         lower = np.array(ranges['lower'])
         upper = np.array(ranges['upper'])
@@ -86,6 +90,10 @@ def get_color_centroid(img):
 
         contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
+         # Aplicar morfología para limpiar la máscara
+        kernel = np.ones((5, 5), np.uint8)
+        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)  # Cerrar pequeños huecos
+        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)  # Eliminar ruido pequeño
 
         if contours:
             #returns the biggest contour based on it's area
@@ -157,8 +165,7 @@ def bb_center_orien(results, img, H):
 
             # ROI para calcular la orientación
             roi = img[int(y1):int(y2), int(x1):int(x2)]
-            blurred = cv2.GaussianBlur(roi, (5, 5), 0)
-            color_centroid, _ = get_color_centroid(blurred)
+            color_centroid, _ = get_color_centroid(roi)
 
             if isinstance(track_id, torch.Tensor):
                 track_id = int(track_id.item())
@@ -170,14 +177,14 @@ def bb_center_orien(results, img, H):
                 if orien is not None and isinstance(track_id, int):
                     orien = round(float(orien), 4)
                     # Agregar orientación al historial del robot
-
+                    print(f"Orien {track_id}: {orien}")
                     # Obtener coordenadas reales
                     robot_coors = np.array([[x_center, y_center]], dtype="float32")
                     robot_coors = np.array([robot_coors])
                     real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
 
                     # Enviar coordenadas y orientación suavizada al robot
-                    send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien, RELAY_IP, 1201)
+                    #send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien, RELAY_IP, 1201)
                     print(f"Robot {track_id}: {real_robot_coors[0]}, {real_robot_coors[1]}")
 
                     # Dibujar el centro del robot
@@ -188,7 +195,7 @@ def bb_center_orien(results, img, H):
 
                 
 def main():               
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('/home/daniela/Desktop/VSSS/larc-vsss-2025/test-vision/WhatsApp Video 2025-04-27 at 9.48.46 PM.mp4')
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
@@ -200,12 +207,13 @@ def main():
         success, img = cap.read()
 
         if success:
-            results = model.track(source=img, persist=True, show=False, )
+            results = model.track(source=img, persist=True, show=False )
             #results = model.predict(img)
             if results:
                 res_img = results[0].plot()
-                bb_center_orien(results, res_img, H)
+                bb_center_orien(results, img, H)
                 cv2.imshow("Model prediction", res_img)
+                cv2.imshow("Video", img)
             else:
                 print("No se usa modelo")
         else:

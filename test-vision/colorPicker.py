@@ -18,17 +18,19 @@ def colorPicker(window):
     cv2.createTrackbar("Val Max", window, 255, 255, empty)
 
     #Video capture and settings
-    video = cv2.VideoCapture(0)
-    video.set(3, 640) #width
-    video.set(4, 480) #Height
+    #video = cv2.VideoCapture(0)
+    #video.set(3, 640) #width
+    #video.set(4, 480) #Height
     #video.set(10, 150) #brightness
 
     #images processing
+    #preprocess
+    img = cv2.imread('/home/daniela/Desktop/VSSS/larc-vsss-2025/test-vision/WhatsApp Image 2025-04-27 at 10.23.45 PM.jpeg')
+    imgBlur = cv2.GaussianBlur(img, (7,7), 0)
+    imgHSV = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV)
     while True:
-        _, img = video.read()
-        #preprocess
-        imgBlur = cv2.GaussianBlur(img, (7,7), 0)
-        imgHSV = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV)
+        #_, img = video.read()
+#'lower': [4, 19, 51], 'upper':[55, 196, 255]
 
         h_min = cv2.getTrackbarPos("Hue Min", "TrackBars")
         h_max = cv2.getTrackbarPos("Hue Max", "TrackBars")
