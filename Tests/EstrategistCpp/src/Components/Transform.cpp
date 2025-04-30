@@ -6,11 +6,13 @@ constexpr double pi = 3.141592653589793;
 using namespace std;
 Transform::Transform() {
     position = Vector2();
+    velocities =Vector2();
     rotation = 0.0f;
 }
 
 Transform::Transform(float x, float y, float r) {
     position = Vector2(x, y);
+    velocities = Vector2();
     rotation = r;
     CheckAngle();  // Ensure the rotation is within the valid range [0, 2π].
 }
@@ -27,10 +29,12 @@ Transform Transform::operator-(const Transform& b) const {
     b.CheckAngle();
     //Get Vector between the two origins
     Transform t;
-    t.position =  b.position - this->position ;
+    t.position =  this->position - b.position ;
     t.SetAngule();     // Set the angle of the resulting Transform based on its position.
     t.CheckAngle();    // Enzure the resulting angle is valid
-    t.rotation = GetRotationalDifference(b.rotation); // compute the rotational difference between the actual rotation and the b.rotation
+    cout<<"Angle obj"<<t.rotation<<endl;
+    cout<<"My Angle: "<< rotation<<endl;
+    t.rotation = b.GetRotationalDifference(t.rotation); // compute the rotational difference between the actual rotation and the b.rotation
     return t;
 }
 // Ensures the rotation angle is within the range [0, 2π].
@@ -66,8 +70,10 @@ float Transform::GetRotationalDifference(float objective) const{
 // Sets the Transform's position and rotation.
 // Ensures the rotation is within the valid range [0, 2π].
 void Transform::SetTransform(float x, float y, float r) {
-    position.x = -x/10;
-    position.y = y/10;
+    x = -x/10; y /=10;
+    velocities =  Vector2(x,y) - position;
+    position.x = x ;
+    position.y = y;
     rotation = pi - r;
     CheckAngle();
 }

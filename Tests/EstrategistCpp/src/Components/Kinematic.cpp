@@ -1,4 +1,6 @@
 #include "Kinematic.h"
+#include <cmath>
+constexpr float pi = 3.141592653589793f;
 
 // Sets the Transform's position and rotation.
 // Ensures the rotation is within the valid range [0, 2π].
@@ -19,9 +21,19 @@ Output Kinematic::GetVelocities(Transform target) {
     Output output;
     //Get the difference between the two transforms.
     Transform t = target - transform;
+    bool changeReference = abs(t.rotation) > pi/2;
+    
+    cout<<"Transform Rotation for: "<< t.rotation<<endl; 
+    if (changeReference){
+        t.rotation =( signbit(t.rotation) ? -1 : 1 ) * pi - t.rotation;
+    }
+    
+    cout<<"Transform Rotation for: "<< t.rotation<<endl; 
+
+
     // Calculate the forward velocity and rotational velocity.
     float FrontVel = t.position.Magnitude() * LINEAR_CONSTANT;
-    float RotationVel = t.rotation * ANGULAR_CONSTANT;
+    float RotationVel = t.rotation * ANGULAR_CONSTANT*23;
     //Get the velocities of the wheels in rad/s
     float leftVel = FrontVel/ RADIUS - WHEEL_DISTANCE / (2*RADIUS) * RotationVel; 
     float rightVel = FrontVel/ RADIUS + WHEEL_DISTANCE / (2*RADIUS) * RotationVel;
@@ -29,6 +41,12 @@ Output Kinematic::GetVelocities(Transform target) {
     //Convert to RPM
     output.a = leftVel * 60 / CIRCUMFERENCE;
     output.b = rightVel * 60 / CIRCUMFERENCE;
+    if(changeReference){
+        cout<<"rotated"<<endl;
+        float temp = output.a;
+        output.a = -output.b;
+        output.b = -temp;
+    }
 
     return output;
 }

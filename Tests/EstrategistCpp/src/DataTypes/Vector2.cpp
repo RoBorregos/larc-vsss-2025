@@ -2,11 +2,14 @@
 #include <cmath>
 using namespace std;
 
+constexpr float pi = 3.141592653589793f;
+
+
 Vector2::Vector2(){
     x = 0;
     y = 0;
 }
-Vector2::Vector2(float x_, float y_){
+Vector2::Vector2(float x_, float y_){ //x, y
     x = x_;
     y = y_;   
 }
@@ -16,14 +19,14 @@ float Vector2::Magnitude(){
 }
 
 float Vector2::GetAngle() const{
-    return atan2(y, x);
+    float angle = atan2(y, x);
+    angle = angle < 0 ? angle + 2*pi : angle;
+    return angle;
 }
 void Vector2::Normallize() {
     float mag = Magnitude();
-    if (mag > 0) {
         x /= mag;
         y /= mag;
-    }
 }
 
 Vector2 Vector2::operator-( const Vector2& b) const{

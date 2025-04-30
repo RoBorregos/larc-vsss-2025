@@ -28,7 +28,7 @@ const char* ssid = "Roborregos";
 const char* password = "RoBorregos2025";
 
 unsigned int localUdpPort = 1001;       // Port to listen on
-const int packetSize = 8;       // Size of 2 floats (4 bytes each)
+int packetSize = 8;       // Size of 2 floats (4 bytes each)
 byte packetBuffer[packetSize];  // Buffer to hold incoming packet
               // Buffer for incoming packets
 const int motorSpeed = 255;

@@ -1,6 +1,5 @@
 #include "Output.h"
 #include <cmath>
-using namespace std;
 
 Output::Output(){
     a = 0;
@@ -15,12 +14,18 @@ void Output::Scale(float MAX){
     if(abs(a) > MAX || abs(b) > MAX){
         if(abs(a) > abs(b)){
             float scale = MAX/abs(a);
-            a = MAX * (signbit(a) ? -1 : 1);
+            a = MAX * (std::signbit(a) ? -1 : 1);
             b = b * scale;
         }else{
             float scale = MAX/abs(b);
-            b = MAX * (signbit(b) ? -1 : 1);
+            b = MAX * (std::signbit(b) ? -1 : 1);
             a = a * scale;
         }
     }
+}
+
+ostream& operator<<(ostream& os, const Output& output)
+{
+    os << "Output(a: " << output.a << ", b: " << output.b << ")";
+    return os;
 }

@@ -1,5 +1,6 @@
 #include "src/Entities/Robot.h"
 #include "src/Entities/Ball.h"
+#include "src/Entities/Line.h"
 #include <vector>
 #include <iomanip>
 #include <iostream>
@@ -22,18 +23,23 @@ int main()
     unordered_map<int, Entity*> entities;
     unordered_map<int, Robot*> robots;
     // create transforms(position classes) for each of the entities;    
-    vector<Transform> transforms(3,Transform());
-    transforms[2] = Transform(20,20 , 0 );
+    vector<Transform> transforms(4,Transform());                         //Goal
+    float x_min = -6, x_max = -2, y_line = 5;
+    Vector2 start(x_min, y_line), end(x_max, y_line);
+        Line porteria (start, end);
+
     //Create the ball and add it to the entities5 map
     //      BallPos         GoalPoss    ID   ForceImpactVectorF PortR       PortS
-    
-    Ball b (transforms[1], transforms[2], 0, magneticConstant , 1200 ); 
-    entities[0] = &b;
-    robots[1] = new Robot(transforms[0],  1,     vortexConstant, 1201       ,1001); //robot with the correct udpPOR
-    entities[1] = robots[1];
-    robots[1]->transform.SetTransform(6,12,4.6);
-    b.transform.SetTransform(6,2,0);
-    b.goal.SetTransform(0,30,0);
+    Ball ball (transforms[1], transforms[2], 0, magneticConstant , 1200 ); 
+                                                                            entities[0] = &ball;
+        robots[1] = new Robot(transforms[0],  1,     vortexConstant, 1201       ,1001); //robot with the correct udpPOR
+                                                                                        entities[1] = robots[1];
+        robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1203,       1002 );
+                                                                                        entities[2] = robots[2];
+            robots[1]->transform.SetTransform(35,15,3.14/2);
+            robots[2]->transform.SetTransform(35,40,3.14);
+            ball.transform.SetTransform(16.8,28.56,0);
+            ball.goal.SetTransform(83,55,0);
     //Print all entities transform (position and rotation)
     for (auto entiti : entities)
     {
@@ -43,11 +49,12 @@ int main()
     
     while (true) {        
         // Loop through all entities and receive position updates
-        /*for (auto entity : entities) {
+       /*for (auto entity : entities) {
             //cout << "------------------Receiving data for ID: " << entity.second->ID << endl;
             
             // Call ReceiveData to update the entity's transform
             int a = entity.second->communication.ReceiveData();
+            cout << "ID: " << entity.second->ID << " Transform: " << entity.second->transform << endl;
             if(a != 0){
                 cout<<"                 Error: "<<a<<endl;
                 continue;
@@ -84,20 +91,34 @@ int main()
             //This way the robot will always push the ball pointing to the goal
             else
             {
-                tforce = entities[minID]->forceGenerator.GetForce(entitie.second->transform, b.goal, ForceType::MAGNETIC, 2);
+                tforce = entities[minID]->forceGenerator.GetForce(entitie.second->transform, ball.goal, ForceType::MAGNETIC, 0.2);
+                cout << "Robot ID: " << entitie.first << " Force: " << tforce << endl;
             }
             result += tforce;
         }
-        cout<<"Result F: "<< result;
+        
+        cout<<"Result Force: "<< result<<endl;
         //Generating the rpm and sending it to the robot
         //here the kinematic component will transform this velocitie vectore into rpm the robot should follow
         Output output = robots[minID]->kinematic.GetVelocities(result);
-        output.Scale(100.0f);
+        output.Scale(120.0f);
+
+
+        Vector2 PorteriaObj = porteria.Intersect(ball.transform);
+        if(PorteriaObj.x > -1000){
+            Transform PortObjective (PorteriaObj, 0);
+            Output defender = robots[2]->kinematic.GetVelocities(PortObjective);
+            defender.Scale(120.0f);
+            cout<<"Defender Move: "<< defender<<endl;
+        }
+
+
         //Later the communication component will transmit this output information to the attacker robot
-        int a = robots[minID]->communication.SendData(output);
-       if(a != 0){cout<<"                  Error:"<<a<<endl;}
-       cout << "                                        Sending to Robot " << minID << " - Left: " << output.a << ", Right: " << output.b << endl;
+        /*int a = robots[minID]->communication.SendData(output);
+        if(a != 0){cout<<"                  Error:"<<a<<endl;}
+        cout << "----------    Sending to Robot " << minID << " /**\\ Left: " << output.a << ", Right: " << output.b << endl;*/
         // Add a small delay between updates
+        break;
         this_thread::sleep_for(chrono::milliseconds(100));
     }
 

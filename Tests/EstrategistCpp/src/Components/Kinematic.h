@@ -9,8 +9,8 @@ class Kinematic
     public:
         Transform &transform;
         //Constants
-        float ANGULAR_CONSTANT =0.75f;
-        float LINEAR_CONSTANT = 0.3f;
+        float ANGULAR_CONSTANT =0.16f;
+        float LINEAR_CONSTANT = 0.82f;
         float RADIUS = 0.03f;
         float WHEEL_DISTANCE = 0.076f;
         float CIRCUMFERENCE;

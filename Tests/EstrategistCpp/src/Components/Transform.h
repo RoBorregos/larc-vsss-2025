@@ -9,6 +9,7 @@ class Transform
 {
     public :
         Vector2 position;
+        Vector2 velocities;
         mutable float rotation;
         Transform(float x, float y, float r) ; // x,y,rotation
         Transform(Vector2 p, float r) ;

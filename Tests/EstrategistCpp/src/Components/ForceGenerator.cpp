@@ -30,8 +30,8 @@ using namespace std;
         Vector2 Vortex(Transform& origin, Transform& target, float impact){
             Vector2 force, dif;
             float difMagnitude = (origin.position - target.position).Magnitude();
-            force.x = (origin.position.y - target.position.y) / difMagnitude/difMagnitude;
-            force.y = (target.position.x - origin.position.x) / difMagnitude/difMagnitude;
+            force.x = (origin.position.y - target.position.y) / difMagnitude;
+            force.y = (target.position.x - origin.position.x) / difMagnitude;
             force *= (impact);
             return force;
         }
@@ -50,11 +50,13 @@ using namespace std;
             float m = (goal.position.y - target.position.y)/(goal.position.x-target.position.x);
             float d = sqrt(pow(dist,2) / (1+pow(m,2)));
             Vector2 tempPos;
+            d = goal.position.x > target.position.x ? d : -d;
             tempPos.x = target.position.x + d;
             tempPos.y = m*tempPos.x- m*target.position.x + target.position.y;
             Transform tempTransform(tempPos, 0);
+//            cout<<"PosTemp"<<tempTransform<<endl;
             Vector2 force;
-            force = Atract(origin, target, impact) + Repelent(origin, tempTransform, impact); // combine the attractive and repelent forces to simulate a magnetic field
+            force = Atract(origin, target, impact) + Repelent(origin, tempTransform, impact*0.6f); // combine the attractive and repelent forces to simulate a magnetic field
             return force;
         }
     //
