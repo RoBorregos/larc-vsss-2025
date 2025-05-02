@@ -11,6 +11,7 @@ class Transform
         Vector2 position;
         Vector2 velocities;
         mutable float rotation;
+        float angularVelocity;
         Transform(float x, float y, float r) ; // x,y,rotation
         Transform(Vector2 p, float r) ;
         Transform() ;

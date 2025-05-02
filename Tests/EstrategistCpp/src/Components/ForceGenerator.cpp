@@ -6,7 +6,7 @@ using namespace std;
     // the origine variable defines the object that recives the force
     // the target variable defines the object that creates the force
 
-        Vector2 Repelent(Transform& origin, Transform& target, float impact){
+        Vector2 Repelent(Transform& target, Transform& origin, float impact){
             Vector2 force, dif;
             dif = origin.position - target.position;
             float difMagnitude = dif.Magnitude();
@@ -17,7 +17,7 @@ using namespace std;
             return force;
         }
 
-        Vector2 Atract(Transform& origin, Transform& target, float impact){
+        Vector2 Atract(Transform& target, Transform& origin, float impact){
             Vector2 force, dif;
             dif = target.position - origin.position;
             dif.Normallize();
@@ -27,12 +27,12 @@ using namespace std;
             return force;
         }
 
-        Vector2 Vortex(Transform& origin, Transform& target, float impact){
+        Vector2 Vortex(Transform& target, Transform& origin, float impact){
             Vector2 force, dif;
             float difMagnitude = (origin.position - target.position).Magnitude();
             force.x = (origin.position.y - target.position.y) / difMagnitude;
             force.y = (target.position.x - origin.position.x) / difMagnitude;
-            force *= (impact);
+            force *= (impact) *( signbit(origin.angularVelocity) ? 1 : -1);
             return force;
         }
         // In this case, to create a magnetic field, I have to set a second transform that would act as the position of the goal
@@ -46,7 +46,7 @@ using namespace std;
             #####\#
             ######G     Goal
         */
-        Vector2 Magnetic(Transform& origin, Transform& target, Transform& goal, float impact, float dist){
+        Vector2 Magnetic(Transform& target, Transform& origin, Transform& goal, float impact, float dist){
             float m = (goal.position.y - target.position.y)/(goal.position.x-target.position.x);
             float d = sqrt(pow(dist,2) / (1+pow(m,2)));
             Vector2 tempPos;
@@ -87,7 +87,7 @@ Vector2 ForceGenerator::GetForce(Transform target, ForceType type){
             force = Repelent(transform, target, impact);
             break;
         case static_cast<int>(ForceType::VORTEX):
-            force = Vortex(transform, target, impact);
+            force = Vortex(transform, target, impact );
             break;
         default:
             break;

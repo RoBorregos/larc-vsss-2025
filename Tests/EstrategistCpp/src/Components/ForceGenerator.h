@@ -27,7 +27,7 @@ class ForceGenerator
                     // Objeto que genera la fuerza 
                                         // El tipo de fuerza
     Vector2 GetForce(Transform target, ForceType type);  
-    Vector2 GetForce(Transform target, Transform goal, ForceType type, float dist);
+    Vector2 GetForce(Transform target, Transform goal, ForceType type, float dist); // Magnetic force
 
 
 

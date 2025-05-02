@@ -12,7 +12,7 @@ using namespace std;
 
 float vortexConstant = 0.02f;
 float repelentConstant = 0.02f;
-float magneticConstant = 19000000.0f;
+float magneticConstant = 0.06f;
 //Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
 //Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
@@ -37,7 +37,7 @@ int main()
         robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1203,       1002 );
                                                                                         entities[2] = robots[2];
             robots[1]->transform.SetTransform(35,15,3.14/2);
-            robots[2]->transform.SetTransform(35,40,3.14);
+            robots[2]->transform.SetTransform(20,40,3.14);
             ball.transform.SetTransform(16.8,28.56,0);
             ball.goal.SetTransform(83,55,0);
     //Print all entities transform (position and rotation)
@@ -64,26 +64,30 @@ int main()
 
     
         //atacker;
-        int minID = 1; 
+        int attackerID = 1; 
+        int defenderID = 2;
         //Determine the velocity vector the robot should follow by checking each of the entities on the map
         Vector2 tforce, result;
+        cout<<"Adding Forces:                          "<<endl;
         for (auto entitie: entities)
         {
+           
             // if the entitie is the same as the attacker we continue
-            if (entitie.first == minID)
+            if (entitie.first == attackerID)
             {
                 continue;
             }
+            cout<<"                ";
             // if the entity is an enemie we add a repulsive form originated from the enemie.
             if (entitie.first > 0)
             {
-                tforce = entities[minID]->forceGenerator.GetForce(entitie.second->transform, ForceType::VORTEX);
+                tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform, ForceType::VORTEX);
                 cout << "Robot ID: " << entitie.first << " Force: " << tforce << endl;
             }
             // if the entity is an ally, it adds a clockwise vortex force form the allie
             else if (entitie.first < 0)
             {
-                tforce = entities[minID]->forceGenerator.GetForce(entitie.second->transform, ForceType::REPELENT);
+                tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform, ForceType::REPELENT);
                 cout << "Robot ID: " << entitie.first << " Force: " << tforce << endl;
             }
             //and if the entity is the ball, it generates a magnetic force
@@ -91,7 +95,7 @@ int main()
             //This way the robot will always push the ball pointing to the goal
             else
             {
-                tforce = entities[minID]->forceGenerator.GetForce(entitie.second->transform, ball.goal, ForceType::MAGNETIC, 0.2);
+                tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform, ball.goal, ForceType::MAGNETIC, 0.2);
                 cout << "Robot ID: " << entitie.first << " Force: " << tforce << endl;
             }
             result += tforce;
@@ -100,23 +104,24 @@ int main()
         cout<<"Result Force: "<< result<<endl;
         //Generating the rpm and sending it to the robot
         //here the kinematic component will transform this velocitie vectore into rpm the robot should follow
-        Output output = robots[minID]->kinematic.GetVelocities(result);
-        output.Scale(120.0f);
+        Output attackerMove = robots[attackerID]->kinematic.GetVelocities(result);
+        attackerMove.Scale(120.0f);
+        cout<<"Attacker Move: "<<attackerMove<<endl;
 
-
-        Vector2 PorteriaObj = porteria.Intersect(ball.transform);
-        if(PorteriaObj.x > -1000){
-            Transform PortObjective (PorteriaObj, 0);
-            Output defender = robots[2]->kinematic.GetVelocities(PortObjective);
-            defender.Scale(120.0f);
-            cout<<"Defender Move: "<< defender<<endl;
+        Output defenderAction;
+        Vector2 TrayectoryIntersection = porteria.Intersect(ball.transform);
+        if(TrayectoryIntersection.x > -1000){
+            Transform transformTrayectoryIntersection (TrayectoryIntersection, 0);
+            defenderAction = robots[2]->kinematic.GetVelocities(transformTrayectoryIntersection);
+            defenderAction.Scale(120.0f);
+            cout<<"Defender Move: "<< defenderAction<<endl;
         }
 
 
         //Later the communication component will transmit this output information to the attacker robot
-        /*int a = robots[minID]->communication.SendData(output);
+        /*int a = robots[attackerID]->communication.SendData(output);
         if(a != 0){cout<<"                  Error:"<<a<<endl;}
-        cout << "----------    Sending to Robot " << minID << " /**\\ Left: " << output.a << ", Right: " << output.b << endl;*/
+        cout << "----------    Sending to Robot " << attackerID << " /**\\ Left: " << output.a << ", Right: " << output.b << endl;*/
         // Add a small delay between updates
         break;
         this_thread::sleep_for(chrono::milliseconds(100));

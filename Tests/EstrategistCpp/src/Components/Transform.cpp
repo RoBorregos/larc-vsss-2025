@@ -8,6 +8,7 @@ Transform::Transform() {
     position = Vector2();
     velocities =Vector2();
     rotation = 0.0f;
+    angularVelocity = 0.0f;
 }
 
 Transform::Transform(float x, float y, float r) {
@@ -70,11 +71,12 @@ float Transform::GetRotationalDifference(float objective) const{
 // Sets the Transform's position and rotation.
 // Ensures the rotation is within the valid range [0, 2π].
 void Transform::SetTransform(float x, float y, float r) {
-    x = -x/10; y /=10;
+    x = -x/10; y /=10; r = pi -r;
     velocities =  Vector2(x,y) - position;
+    angularVelocity = r - rotation;
     position.x = x ;
     position.y = y;
-    rotation = pi - r;
+    rotation =  r;
     CheckAngle();
 }
 

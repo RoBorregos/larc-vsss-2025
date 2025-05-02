@@ -17,12 +17,13 @@ Line::Line(Vector2 s, Vector2 f) : start(s), end(f) {
 }
 
 Vector2 Line::Intersect(Transform ball)  {
+    
+    cout<<"\n///////////cheking intersect to a horizontalLine: \n"<<endl;
     Vector2 fi(-1000,-1000);
     float _m = ball.velocities.y/ ball.velocities.x;
     float _b = ball.position.y - _m*ball.position.x;
     cout<<"Ball----------- m: "<<_m<< "-- b: "<<_b<<endl;
     if(end.y == start.y && ball.velocities.y > 0){
-        cout<<"\n///////////cheking intersect to a horizontalLine: \n"<<endl;
         float intersection_y = (end.y-_b)/_m;
         if(start.x <  intersection_y && intersection_y < end.x){
             fi = Vector2(intersection_y, end.y);
