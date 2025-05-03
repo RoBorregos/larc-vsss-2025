@@ -11,6 +11,7 @@ from Model_use import bb_center_orien
 
 '''                        HC
 HSV's -> Check for local circumstances in real competition
+HSV's -> For robots 
 IP's-> robotAndBallDetector.py ,  ballDetector.py
 Homography -> Manually set homography '''
 
@@ -202,18 +203,11 @@ def findObject(image, copy, H):
             x_extrapolated = polynomial_extrapolation(ball_positions_np[:, 0])
             y_extrapolated = polynomial_extrapolation(ball_positions_np[:, 1])
             objCenterPt = (x_extrapolated, y_extrapolated)
-        # Calcular la media móvil
-        avg_x = sum(pos[0] for pos in ball_positions) / len(ball_positions)
-        avg_y = sum(pos[1] for pos in ball_positions) / len(ball_positions)
         cv2.circle(copy, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
-        #cv2.circle(copy, (int(avg_x), int(avg_y)), 2, (0, 0, 255), 5) #draw the moving average point
-        print(f"Media móvil: {avg_x}, {avg_y}")
         print(f"Extrapolado: {objCenterPt[0]}, {objCenterPt[1]}")
 
-        #realFieldCoors2 = cv2.perspectiveTransform(np.array([[[avg_x, avg_y]]], dtype="float32"), H)[0][0]
         realFldCoors = cv2.perspectiveTransform(np.array([[[objCenterPt[0], objCenterPt[1]]]], dtype="float32"), H)[0][0]
         cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
-        #cv2.putText(copy, f"({realFieldCoors2[0]:.1f}, {realFieldCoors2[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
     else:
