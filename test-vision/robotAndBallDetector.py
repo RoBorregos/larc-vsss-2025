@@ -15,17 +15,18 @@ IP's-> robotAndBallDetector.py ,  ballDetector.py
 Homography -> Manually set homography '''
 
 #fusion 
-model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
+model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
 
 RELAY_IP = "192.168.0.171" 
-PORT_IP = 1200 #for ball detections, IP for robot detections is in Model_use.py
+Robot1 = 1201 #for ball detections, IP for robot detections is in Model_use.py
+
 
 #backup coordinates
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 
-#in HSV 
-colorParams = [0, 67, 1, 11, 255, 255] #0, 203, 77, 9, 255, 228
+#in HSV Ball detection 
+colorParams = [0, 135, 0, 27, 214, 255] #0, 203, 77, 9, 255, 228
 #checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
 #0, 188, 197, 179, 255, 255
 
@@ -220,7 +221,7 @@ def findObject(image, copy, H):
 
 
 def main():       
-    cap = cv2.VideoCapture(0) #2 for external devices, sometimes 0 idkw
+    cap = cv2.VideoCapture(2) #2 for external devices, sometimes 0 idkw
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
@@ -236,6 +237,7 @@ def main():
         tpast = time.time()
         
         success, img = cap.read()
+
         if success:
             # Detección de robots con el modelo YOLO
             img_copy = img.copy()  # Copia del frame para detección de la pelota
@@ -244,15 +246,17 @@ def main():
             # Detección de pelota
             objCoorsCenter = findObject(img, img_copy, H)  # Coordenadas reales de la pelota
             if objCoorsCenter[0] != 0 and objCoorsCenter[1] != 0:
-                send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, PORT_IP)
+                send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, Robot1)
+
                 print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
             else:
-                send_coordinates(0, 0, RELAY_IP, PORT_IP)
+                send_coordinates(0, 0, RELAY_IP, Robot1)
 
             #Detección de robots
             if results:
                 detect_img = results[0].plot()
                 bb_center_orien(results, img_copy, H)  # Procesar orientación y centro de los robots
+    
                 cv2.imshow("Model", detect_img)
                 cv2.imshow("Detections", img_copy)
             if cv2.waitKey(1) == ord('q'):

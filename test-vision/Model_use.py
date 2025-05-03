@@ -15,7 +15,7 @@ from collections import deque
 RELAY_IP = "192.168.0.171"  # Replace with your esp
 
 #changes
-model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/detect/custom-yolov8m/weights/best.pt')
+model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
 
 
 realFieldCoors = [[0, 0], #tl
@@ -24,8 +24,8 @@ realFieldCoors = [[0, 0], #tl
                   [0, 130]] # bl
 
 hsvRanges = {
-    'blue' : {'lower':[100, 158, 78], 'upper': [157, 255, 141]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
-    'yellow' : {'lower': [7, 119, 99], 'upper':[50, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
+    'blue' : {'lower':[108, 120, 0], 'upper': [130, 255, 206]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'yellow' : {'lower': [18, 82, 0], 'upper':[28, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
     
@@ -184,6 +184,7 @@ def bb_center_orien(results, img, H):
                     real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
 
                     # Enviar coordenadas y orientación suavizada al robot
+                    #
                     #send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien, RELAY_IP, 1201)
                     print(f"Robot {track_id}: {real_robot_coors[0]}, {real_robot_coors[1]}")
 
@@ -195,7 +196,7 @@ def bb_center_orien(results, img, H):
 
                 
 def main():               
-    cap = cv2.VideoCapture('/home/daniela/Desktop/VSSS/larc-vsss-2025/test-vision/WhatsApp Video 2025-04-27 at 9.48.46 PM.mp4')
+    cap = cv2.VideoCapture(2)
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
