@@ -7,7 +7,7 @@ import socket
 import struct
 from scipy.spatial import KDTree
 from ultralytics import YOLO
-from Model_use import bb_center_orien
+from Model_use import bb_center_orien 
 
 '''                        HC
 HSV's -> Check for local circumstances in real competition
@@ -19,15 +19,14 @@ Homography -> Manually set homography '''
 model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
 
 RELAY_IP = "192.168.0.171" 
-Robot1 = 1201 #for ball detections, IP for robot detections is in Model_use.py
+BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 
 
 #backup coordinates
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
-
 #in HSV Ball detection 
-colorParams = [0, 135, 0, 27, 214, 255] #0, 203, 77, 9, 255, 228
+colorParams = [0, 115, 178, 7, 255, 255] #0, 203, 77, 9, 255, 228
 #checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
 #0, 188, 197, 179, 255, 255
 
@@ -240,11 +239,11 @@ def main():
             # Detección de pelota
             objCoorsCenter = findObject(img, img_copy, H)  # Coordenadas reales de la pelota
             if objCoorsCenter[0] != 0 and objCoorsCenter[1] != 0:
-                send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, Robot1)
+                send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, BALL)
 
                 print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
             else:
-                send_coordinates(0, 0, RELAY_IP, Robot1)
+                send_coordinates(0, 0, RELAY_IP, BALL)
 
             #Detección de robots
             if results:

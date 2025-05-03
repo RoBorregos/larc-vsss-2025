@@ -24,7 +24,7 @@ realFieldCoors = [[0, 0], #tl
                   [0, 130]] # bl
 
 hsvRanges = {
-    'blue' : {'lower':[108, 120, 0], 'upper': [130, 255, 206]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'blue' : {'lower':[104, 72, 106], 'upper': [159, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
     'yellow' : {'lower': [18, 82, 0], 'upper':[28, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
@@ -43,12 +43,12 @@ def send_coordinates_robot(x, y, orientation, relay_ip, relay_port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Pack the two float values into bytes
     # 'ff' format means two 32-bit float values
-    if orientation != None and x != None:
-        data = struct.pack('fff', x, y, float(orientation)) # Use 'e' for 16-bit floats 
-        # Send the data
-        sock.sendto(data, (relay_ip, relay_port))
+    
+    data = struct.pack('fff', x, y, float(orientation)) # Use 'e' for 16-bit floats 
+    # Send the data
+    sock.sendto(data, (relay_ip, relay_port))
         # Close the socket
-        sock.close()
+    sock.close()
 
 def auto_adjust_hsv(hsv_img, mask):
     """Ajusta dinámicamente los rangos HSV basándose en el histograma del canal H."""
@@ -122,9 +122,13 @@ def get_orientation(img, color_centroid):
 
         dx = robot_centroid[0] - color_centroid[0]
         dy = robot_centroid[1] - color_centroid[1]
+
+        #dx = color_centroid[0] - robot_centroid[0]
+        #dy = color_centroid[1] - robot_centroid[1]
+
         #print(f"Robot: {robot_centroid}\n Color: {color_centroid}")
         #return orientation in degrees; change depending on control needs
-        orientation = math.degrees(math.atan2(dy, dx)) % 360 #use math.degrees() % 360 for degrees use
+        orientation = (math.atan2(dy, dx)) #use math.degrees() % 360 for degrees use
         cv2.line(img, (int(color_centroid[0]), int(color_centroid[1])), (int(robot_centroid[0]), int(robot_centroid[1])), (0,255, 0), 2)
         return orientation
     else:
@@ -185,14 +189,15 @@ def bb_center_orien(results, img, H):
 
                     # Enviar coordenadas y orientación suavizada al robot
                     #
-                    #send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien, RELAY_IP, 1201)
-                    print(f"Robot {track_id}: {real_robot_coors[0]}, {real_robot_coors[1]}")
+                    send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien, RELAY_IP, 1201)
+                    print(f"Robot {track_id}: {real_robot_coors[0]}, {real_robot_coors[1]}, {orien}")
 
                     # Dibujar el centro del robot
                     x_center = int(x_center)
                     y_center = int(y_center)
                     cv2.circle(img, (x_center, y_center), 2, (0, 0, 255), -1)
-                    
+                else:
+                    send_coordinates_robot(0.0, 0.0, 0.0, RELAY_IP, 1201)
 
                 
 def main():               
