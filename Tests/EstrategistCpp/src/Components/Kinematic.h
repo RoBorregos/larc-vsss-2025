@@ -12,8 +12,8 @@ class Kinematic
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         //Valores para el movimiento del robot
         //Ya te la sabes
-        float ANGULAR_CONSTANT =0.065f;
-        float LINEAR_CONSTANT = 0.015f;
+        float ANGULAR_CONSTANT =0.13f;
+        float LINEAR_CONSTANT = 0.04f;
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,
         float RADIUS = 0.03f;
         float WHEEL_DISTANCE = 0.076f;
@@ -22,6 +22,7 @@ class Kinematic
         //Functions to obtain the desaired rpm for the robot depending on the input (Transform or vector2)
         Output GetVelocities(Transform target);
         Output GetVelocities(Vector2 target);
+        Output GetVelocitiesForRotation(Transform target);
 
         Kinematic(const Kinematic& other) ;
         Kinematic& operator=(const Kinematic& other) ;

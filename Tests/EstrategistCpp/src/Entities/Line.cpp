@@ -13,7 +13,7 @@ Line::Line(Vector2 s, Vector2 f) : start(s), end(f) {
     Vector2 dif = start -end;
     m = dif.y / dif.x;
     b = start.y - m* start.x;
-    cout<<"Port----------- m: "<<m<< " -- b: "<<b<<endl;
+    cout<<"Line ----------- m: "<<m<< " -- b: "<<b<<endl;
 }
 
 Vector2 Line::Intersect(Transform ball)  {

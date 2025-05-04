@@ -10,43 +10,56 @@ Kinematic::Kinematic(Transform &t) : transform(t) {
 
 
 
+Output Kinematic::GetVelocitiesForRotation(Transform target){
+    Output output;
+    target.rotation = transform.GetRotationalDifference(target.rotation); 
+    bool changeReference = abs(target.rotation) > pi/2;
+    if (changeReference){
+        target.rotation =( signbit(target.rotation) ? -1 : 1 ) * pi - target.rotation;
+    }
+    float RotationalVel = target.rotation * ANGULAR_CONSTANT;
+    float leftVel = - WHEEL_DISTANCE / (2*RADIUS) * RotationalVel; 
+    float rightVel = + WHEEL_DISTANCE / (2*RADIUS) * RotationalVel; 
+
+    output.a = leftVel * 60 / CIRCUMFERENCE;
+    output.b = rightVel * 60 / CIRCUMFERENCE;
+
+    if(changeReference){
+        cout<<"rotated"<<endl;
+        float temp = output.a;
+        output.a = -output.b;
+        output.b = -temp;
+    }
+    return output;
+
+
+}
+
 // Function: GetVelocities
 // Computes the wheel velocities (in RPM) required to move the robot from its current transform
 // to the target transform.
-// Parameters:
-// - target: The target Transform object.
-// Returns:
-// - Output object containing the left and right wheel velocities in RPM.
+
 Output Kinematic::GetVelocities(Transform target) {
     Output output;
     //Get the difference between the two transforms.
     Transform t = target - transform;
     bool changeReference = abs(t.rotation) > pi/2;
-    
-    cout<<"Transform Rotation for: "<< t.rotation<<endl; 
     if (changeReference){
         t.rotation =( signbit(t.rotation) ? -1 : 1 ) * pi - t.rotation;
     }
-    
-    cout<<"Transform Rotation for: "<< t.rotation<<endl; 
-
-
     // Calculate the forward velocity and rotational velocity.
     float FrontVel = t.position.Magnitude() * LINEAR_CONSTANT;
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    
-    float RotationVel = t.rotation * ANGULAR_CONSTANT*23;
+    float RotationVel = t.rotation * ANGULAR_CONSTANT * 35;
     //     Constante angular de robot bidireccional   ^   cambiar para que si se mueva bien
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     //Get the velocities of the wheels in rad/s
     float leftVel = FrontVel/ RADIUS - WHEEL_DISTANCE / (2*RADIUS) * RotationVel; 
     float rightVel = FrontVel/ RADIUS + WHEEL_DISTANCE / (2*RADIUS) * RotationVel;
-    
     //Convert to RPM
     output.a = leftVel * 60 / CIRCUMFERENCE;
     output.b = rightVel * 60 / CIRCUMFERENCE;
     if(changeReference){
-        cout<<"rotated"<<endl;
         float temp = output.a;
         output.a = -output.b;
         output.b = -temp;
@@ -54,18 +67,12 @@ Output Kinematic::GetVelocities(Transform target) {
 
     return output;
 }
-
 // Function: GetVelocities
 // Computes the wheel velocities (in RPM) required to move the robot toward a target global velocity.
-// Parameters:
-// - target: The target velocity as a Vector2 object.
-// Returns:
-// - Output object containing the left and right wheel velocities in RPM.
 Output Kinematic::GetVelocities(Vector2 target) {
     Output output;
     //Get the target magnitude of the target and get the angular 
     //difference and multiply by the constants
-
     // Calculate the forward velocity and rotational velocity.
     float FrontVel = target.Magnitude() * LINEAR_CONSTANT;
     float RotationVel = transform.GetRotationalDifference(target.GetAngle()) * ANGULAR_CONSTANT;

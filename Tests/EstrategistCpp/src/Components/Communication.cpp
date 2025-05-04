@@ -8,6 +8,7 @@ Communication::Communication(Transform& t, int id, int portA, int portB) : robot
     ips[1] = "192.168.0.216"; // Attacker Dflt
     ips[2] = "192.168.0.218"; //Defender Dflt
     ips[3] = "192.168.0.219"; // extra 
+    ips[4] = "192.168.0.100"; //lol
 }
 
 
