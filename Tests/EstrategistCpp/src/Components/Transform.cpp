@@ -79,6 +79,11 @@ void Transform::SetTransform(float x, float y, float r) {
     rotation =  r;
     CheckAngle();
 }
+void Transform::SetTransform(Vector2 p, float r) {
+    position = p;
+    rotation = r;
+    CheckAngle();
+}
 
 ostream& operator<<(ostream& os, const Transform& t) {
     os << "Position: " << t.position << " Angle: " << t.rotation;

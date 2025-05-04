@@ -5,9 +5,9 @@
 #pragma comment(lib, "ws2_32.lib")
 
 Communication::Communication(Transform& t, int id, int portA, int portB) : robotID(id), portR(portA), portS(portB), transform(t) {
-    ips[1] = "192.168.0.216"; // change for each xiaoC6
-    ips[2] = "192.168.137.212";
-    ips[3] = "192.168.137.213";
+    ips[1] = "192.168.0.216"; // Attacker Dflt
+    ips[2] = "192.168.0.218"; //Defender Dflt
+    ips[3] = "192.168.0.219"; // extra 
 }
 
 
@@ -148,9 +148,16 @@ int Communication::ReceiveData() {
             
           //  std::cout << "Received coordinates from " << python_ip << ": x=" 
                //       << x << ", y=" << y <<  "thehta=" << theta << std::endl;
-            transform.SetTransform(x,y,theta);
+               if(x== 0 && y == 0){
+                   std::cout<<"Recived 0"<<endl;
+                   
+                   closesocket(receive_py);
+                   WSACleanup();
+                   return 0;
+               }
+                transform.SetTransform(x,y,theta);
         } 
-        else if(received_bytes == 8){ 
+        else if(received_bytes == 8) { // change it tp 16 bit which is 2 bytes * 2 = 4bytes
             memcpy(&x, buffer, 4);
             memcpy(&y, buffer + 4, 4);
             
@@ -160,13 +167,15 @@ int Communication::ReceiveData() {
          //   std::cout << "Received coordinates from " << python_ip << ": x=" 
           //            << x << ", y=" << y << std::endl;
             transform.SetTransform(x,y,0.0f); // theta is not used in this case
+        closesocket(receive_py);
+        WSACleanup();
 
         }
         else {
-            //std::cerr << "Received unexpected data size: " << received_bytes << " bytes" << std::endl;
+            std::cerr << "Received unexpected data size: " << received_bytes << " bytes" << std::endl;
             if (received_bytes == SOCKET_ERROR) {
                 int error_code = WSAGetLastError();
-               // std::cerr << "recvfrom failed with error: " << error_code << std::endl;
+                std::cerr << "recvfrom failed with error: " << error_code << std::endl;
                 
             }
             closesocket(receive_py);

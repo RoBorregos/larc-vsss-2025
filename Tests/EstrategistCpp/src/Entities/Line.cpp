@@ -23,13 +23,13 @@ Vector2 Line::Intersect(Transform ball)  {
     float _m = ball.velocities.y/ ball.velocities.x;
     float _b = ball.position.y - _m*ball.position.x;
     cout<<"Ball----------- m: "<<_m<< "-- b: "<<_b<<endl;
-    if(end.y == start.y && ball.velocities.y > 0){
-        float intersection_y = (end.y-_b)/_m;
+    if(end.y == start.y ){
+        float intersection_y = _m ? (end.y-_b)/_m: -1000;
         if(start.x <  intersection_y && intersection_y < end.x){
             fi = Vector2(intersection_y, end.y);
         }
     }else{
-        float fy = (-b*_m + _b*m) / (m - _m);
+        float fy = (m - _m) ?  (-b*_m + _b*m) / (m - _m): -1000;
         float fx = (fy - b)/m;
         fi = Vector2(fx, fy);
     }

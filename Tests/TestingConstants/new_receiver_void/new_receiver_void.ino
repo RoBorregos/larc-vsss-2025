@@ -34,18 +34,18 @@ byte packetBuffer[packetSize];  // Buffer to hold incoming packet
 const int motorSpeed = 255;
 
 // TB6612FNG Motor Driver pins
-#define MotorA1 19 
-#define MotorA2 17 // new prototype 
+#define MotorA1 17 
+#define MotorA2 19 // new prototype 
 #define MotorA_PWM 1
 
 
-#define MotorB1 2
-#define MotorB2 21
+#define MotorB1 21
+#define MotorB2 2
 #define MotorB_PWM 0
 
 //Encoders Pins
 #define rEncoder 23
-#define lEncoder 18
+#define lEncoder 16
 #define NoTicks 350.0
 
 //Encoders variables
@@ -65,12 +65,12 @@ volatile unsigned int lpulses;
 
 //Constants for PID
 #define Rightkp 0.1
-#define Rightki 0.0001
-#define Rightkd 0.05
+#define Rightki 0.001
+#define Rightkd 0.037
 
 #define Leftkp 0.1
-#define Leftki 0.0001
-#define Leftkd 0.05
+#define Leftki 0.001
+#define Leftkd 0.037
 
 //Kinematics
 Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
@@ -248,7 +248,6 @@ void loop() {
         previousUDPTime = currentUDPTime;
 
       }
-
     VelocityTracker();
    
 
@@ -275,6 +274,7 @@ void VelocityTracker()
     rpm.Print(); Serial.print("\n               P");
     pwm.Print();Serial.print("\n                             O");
     Drive((int)pwm.motor1,(int)pwm.motor2);
+    
 
   delay(10);
 

@@ -20,9 +20,10 @@ using namespace std;
         Vector2 Atract(Transform& target, Transform& origin, float impact){
             Vector2 force, dif;
             dif = target.position - origin.position;
+            float difMagnitude = dif.Magnitude();
             dif.Normallize();
-            force.x = dif.x;
-            force.y = dif.y;
+            force.x = dif.x / difMagnitude;
+            force.y = dif.y / difMagnitude;
             force *= (impact);
             return force;
         }
@@ -54,9 +55,14 @@ using namespace std;
             tempPos.x = target.position.x + d;
             tempPos.y = m*tempPos.x- m*target.position.x + target.position.y;
             Transform tempTransform(tempPos, 0);
-//            cout<<"PosTemp"<<tempTransform<<endl;
+            cout<<"Temporal Position: "<<tempPos<<endl;
             Vector2 force;
-            force = Atract(origin, target, impact) + Repelent(origin, tempTransform, impact*0.6f); // combine the attractive and repelent forces to simulate a magnetic field
+            //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+            //Constante para la proporcion entre atrayente y repelente
+                                                                                    //impact * valor cabiado para que si responda
+            force = Atract(target, origin, impact) + Repelent(tempTransform, origin, impact ); // combine the attractive and repelent forces to simulate a magnetic field
+            cout<<"Atractive Force: "<< Atract(target, origin, impact) << "         Repelent Force: "<< Repelent(tempTransform, origin, impact) <<endl;
+            //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
             return force;
         }
     //

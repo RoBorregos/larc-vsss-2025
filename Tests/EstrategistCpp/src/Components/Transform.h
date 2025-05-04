@@ -21,6 +21,7 @@ class Transform
         void CheckAngle() const;
         float GetRotationalDifference(float objective) const;
         void SetTransform(float, float, float);
+        void SetTransform(Vector2, float);
 };
 
 #endif

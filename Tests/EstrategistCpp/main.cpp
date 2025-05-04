@@ -10,12 +10,20 @@ using namespace std;
 #include <chrono>
 #include <thread>
 
-float vortexConstant = 0.02f;
-float repelentConstant = 0.02f;
-float magneticConstant = 0.06f;
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Valores importantes para el comportamiento de los robots
+//Definen impacto sobre el atacante
+float vortexConstant = 0.02f;  //Vortice para los aliados
+float repelentConstant = 0.02f; //Repelente para los enemigos
+float magneticConstant = 15.0f; //Magnetico para la pelota -> <Atrayente> y <Repelente> [Definido en la clase ForceGenerator]
+//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+
 //Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
 //Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
+//##Valores definidos por la pelota
+const Vector2 PorteriaEnemiga(-10.3,0.2); //x /= -10 
+const Vector2 PorteriaAliada(-7.5,8); // y /= 10
 
 int main()
 {
@@ -24,48 +32,58 @@ int main()
     unordered_map<int, Robot*> robots;
     // create transforms(position classes) for each of the entities;    
     vector<Transform> transforms(4,Transform());                         //Goal
-    float x_min = -6, x_max = -2, y_line = 5;
-    Vector2 start(x_min, y_line), end(x_max, y_line);
-        Line porteria (start, end);
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    //Posicion de limites de la pelota conversion a negativo y *10
+    //---------------------------------------------------- <50 cm
+    //        ^                             ^
+    //       -60                             -20
+    float maxDist = 5; //20 cm
+    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    Vector2 pAliadaStart, pAliadaEnd;
+    pAliadaStart = PorteriaAliada + Vector2(-maxDist,0); //Porteria Aliada
+    pAliadaEnd = PorteriaAliada + Vector2(maxDist,0); //Porteria Aliada
+        Line porteriaAliada (pAliadaStart, pAliadaEnd);
 
     //Create the ball and add it to the entities5 map
     //      BallPos         GoalPoss    ID   ForceImpactVectorF PortR       PortS
     Ball ball (transforms[1], transforms[2], 0, magneticConstant , 1200 ); 
                                                                             entities[0] = &ball;
-        robots[1] = new Robot(transforms[0],  1,     vortexConstant, 1201       ,1001); //robot with the correct udpPOR
-                                                                                        entities[1] = robots[1];
-        robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1203,       1002 );
-                                                                                        entities[2] = robots[2];
-            robots[1]->transform.SetTransform(35,15,3.14/2);
-            robots[2]->transform.SetTransform(20,40,3.14);
-            ball.transform.SetTransform(16.8,28.56,0);
-            ball.goal.SetTransform(83,55,0);
+        robots[3] = new Robot(transforms[0],  3,     vortexConstant, 1201       ,1001); //robot with the correct udpPOR
+                                                                                        entities[3] = robots[3];
+        robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1202,       1001 );
+                                                                                   //    entities[2] = robots[2];
+            robots[3]->transform.SetTransform(0,0,0);
+            robots[2]->transform.SetTransform(0,0,0);
+            ball.transform.SetTransform(0,0,0);
+            ball.goal.SetTransform(PorteriaEnemiga,0);
+            
     //Print all entities transform (position and rotation)
-    for (auto entiti : entities)
-    {
-        cout << "ID: " << entiti.second->ID << " Transform: " << entiti.second->transform << endl;
-    }
     
     
-    while (true) {        
+    
+    while (true) {     
+        //atacker;
+        int attackerID = 3; 
+        int defenderID = 2;   
         // Loop through all entities and receive position updates
-       /*for (auto entity : entities) {
+       
+       for (auto entity : entities) {
             //cout << "------------------Receiving data for ID: " << entity.second->ID << endl;
             
             // Call ReceiveData to update the entity's transform
+            cout<<"Reciving from: "<< entity.second->communication.portR<<endl;
             int a = entity.second->communication.ReceiveData();
-            cout << "ID: " << entity.second->ID << " Transform: " << entity.second->transform << endl;
             if(a != 0){
                 cout<<"                 Error: "<<a<<endl;
                 continue;
             }
+            cout << "ID: " << entity.second->ID << " Transform: " << entity.second->transform << endl;
             // Print the updated position
-        }*/
+        }
+       
+       //robots[attackerID]->transform.SetTransform(robots[attackerID]->transform.position.x, robots[attackerID]->transform.position.y,j);
 
     
-        //atacker;
-        int attackerID = 1; 
-        int defenderID = 2;
         //Determine the velocity vector the robot should follow by checking each of the entities on the map
         Vector2 tforce, result;
         cout<<"Adding Forces:                          "<<endl;
@@ -78,7 +96,7 @@ int main()
                 continue;
             }
             cout<<"                ";
-            // if the entity is an enemie we add a repulsive form originated from the enemie.
+            // if the entity is an enemy we add a repulsive form originated from the enemy.
             if (entitie.first > 0)
             {
                 tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform, ForceType::VORTEX);
@@ -95,8 +113,20 @@ int main()
             //This way the robot will always push the ball pointing to the goal
             else
             {
-                tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform, ball.goal, ForceType::MAGNETIC, 0.2);
+                
+                //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                //Por ahora para debugear es hacer que el robot pueda ir a un punto bien, desde cualquier posicion
+                //tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform,  ForceType::ATRACT);
+                //Despues es modificar para que responda a que evite el punto
+                                                                                                            //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                                                                                               
+                tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform,ball.goal, ForceType::MAGNETIC, 0.12);
+                                                                                                            //Distancia entre pelota ^ y el punto repelente
+                                                                                                             
+                                                                                                             //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 cout << "Robot ID: " << entitie.first << " Force: " << tforce << endl;
+                
+                //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             }
             result += tforce;
         }
@@ -104,58 +134,69 @@ int main()
         cout<<"Result Force: "<< result<<endl;
         //Generating the rpm and sending it to the robot
         //here the kinematic component will transform this velocitie vectore into rpm the robot should follow
-        Output attackerMove = robots[attackerID]->kinematic.GetVelocities(result);
-        attackerMove.Scale(120.0f);
-        cout<<"Attacker Move: "<<attackerMove<<endl;
+        Output attackerOut = robots[attackerID]->kinematic.GetVelocities(result);
+        attackerOut.Scale(160.0f);
+        cout<<"Attacker Move: "<<attackerOut<<endl;
+        //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        //Descomenta toda esta area para ver como se comporta el defensor
 
-        Output defenderAction;
-        Vector2 TrayectoryIntersection = porteria.Intersect(ball.transform);
+        Output defnederOut;
+        Vector2 TrayectoryIntersection = porteriaAliada.Intersect(ball.transform);
         if(TrayectoryIntersection.x > -1000){
             Transform transformTrayectoryIntersection (TrayectoryIntersection, 0);
-            defenderAction = robots[2]->kinematic.GetVelocities(transformTrayectoryIntersection);
-            defenderAction.Scale(120.0f);
-            cout<<"Defender Move: "<< defenderAction<<endl;
+            defnederOut = robots[defenderID]->kinematic.GetVelocities(transformTrayectoryIntersection);
+            defnederOut.Scale(80.0f);
+        }else{
+            defnederOut = Output(120,-120);
         }
+        cout<<"Defender Move: "<< defnederOut<<endl;
+
+        //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 
-        //Later the communication component will transmit this output information to the attacker robot
-        /*int a = robots[attackerID]->communication.SendData(output);
-        if(a != 0){cout<<"                  Error:"<<a<<endl;}
-        cout << "----------    Sending to Robot " << attackerID << " /**\\ Left: " << output.a << ", Right: " << output.b << endl;*/
+        vector<int> errors(3,0);
+        errors[0] = robots[attackerID]->communication.SendData(attackerOut);
+        //Al igual que esta linea para el defensor
+        errors[1] = robots[defenderID]->communication.SendData(defnederOut);
+        cout<<"//////////////////////////////Sending data to robots "<<endl;
+        for(int i = 0; i < errors.size(); i++){
+            if(errors[i] != 0){
+                cout<<"Error sending : "<<i<<"Error N: "<<errors[i]<<endl;
+            }
+        }
+        cout<<"//////////////////////////////Sended data to robots \n"<<endl;
+        if(errors[0] != 0){
+            cout<<"Error sending data to attacker"<<endl;
+            break;
+        }
+        
+        
         // Add a small delay between updates
-        break;
-        this_thread::sleep_for(chrono::milliseconds(100));
+
     }
 
 }
 
-
-//Nota: Disculpa si de vez en cuando no uso el mismo termino para vector de velocidad (fuerza, vector) más que 
-//      nada es que yo me refiero a lo mismo pero uso diferentes palabras
-//Entonces para resumir
 /*
-Primero generamos los transform (positions) de cada una de las entidades, ya sean los robots o las pelotas
+En resumen: Ahora lo que tienes que hacer es modificar los valores de las constantes para que el movimiento sea más fluido
+-----Primero esta que el robot vaya hacia la pelota
 
-------------------------------------A partir de aqui podriamos poner todo lo siguiente en un loop-------------------------------------------------------
+------------------------------------Orden de acciones a cometer-------------------------------------------------------
+<variable, archivo>
+(par1, par2)
 
-[Communication] Recibimos la informacion de cada uno de las entidades y las actualizamos 
--> {No implementado aun}
+- Primero definir variables para que funcione el campo vectorial base : Que el robot vaya a la pelota 
+++ Variable que define -> <magneticConstant, main.cpp> <ANGULAR_CONSTANT, Kinematic.h> <LINEAR_CONSTANT, Kinematic.h> 
 
-[Transform] Encontramos el robot aliado más cercano a la pelota y lo seleccionamos como atacante
--> {Este metodo de toma de accion es arbitrario y se puede cambiar}
+- Ahora que ya sabemos que funciona toca configurar las constantes de movimiento para que funcione de manera magnetica
+**Acciones a realizar <- Modificar el tipo de accion (cambiar de atrayente a magnetica) <main.cpp>
+++ Variable que define -> < proporcion entre atrayente y repelente, ForceGenerator.cpp>   <distancia de la pelota al punto excluyente, main.cpp>
+?? Dato: La funcion atrayente es constante en cualquier punto del mapa mientras que la funcion repelente es proporcional a la distancia del Robot
 
-[ForceGenerator] Iteramos por cada entidad generando una fuerza resultante en nuestro atacante a la cual el debe seguir 
--> {Esta iteracion se puede hacer una funcion para no ocupar mucho espacio en el main(loop)}
-
-[Kinematics] Generamos el rpm necesario para cumplir con el vector de velocidad generado por la iteracion anterior
-
-[Communication] Mandas la informacion de rpm a el robot 
--> {Creo que ya esta implementada}
+- Finalmente poner a probar el portero solo es cambiar las variables de movimiento bidireccional y definir los limites de las porterias
+**Acciones a realizar <- Quitar de comentario a la accion de portero <main.cpp>
+++ Variable que define -> <Constante angular de robot bidireccional, Kinematic.cpp>  <(start, end), main.cpp>
+??Dato: puede que la constante del robot bidireccional puede que sea mejor ponerla a 1 despues de probar lo anterior 
 
 -------------------------------------------------------------Reperir------------------------------------------------------------------------------------------------
-*/
-/*
-Entonces, como comentarios sobre la informacion que recivo de vision.
-Lo que requiero es que se actualicen la informacion de posicion y rotacion de cada uno de las entidades, de 
-manera que se pueda generar luego vectores y finalmente rpm para los robots 👍
 */
