@@ -11,6 +11,35 @@ import socket
 from collections import deque
 
 
+class RobotData:
+    def __init__(self, x=0.0, y=0.0, orientation=0.0, port = 1200):
+        self.x = x
+        self.y = y
+        self.orientation = orientation
+        self.port = port
+    def update(self, x, y, orientation):
+        self.x = x
+        self.y = y
+        self.orientation = orientation
+
+    def __str__(self):
+        return f"x={self.x}, y={self.y}, orientation={self.orientation}, port={self.port}"
+    
+    def send_data(self, relay_ip):
+        """
+        Send the robot's data (x, y, orientation) to the specified relay IP and port.
+        """
+        # Create UDP socket
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # Pack the data into bytes
+        data = struct.pack('fff', self.x, self.y, float(self.orientation))
+        # Send the data
+        sock.sendto(data, (relay_ip, self.port))
+        # Close the socket
+        sock.close()
+    
+
+
 #PORT_IP = 1234 #change port for robot data communication
 RELAY_IP = "192.168.0.171"  # Replace with your esp
 
@@ -24,31 +53,12 @@ realFieldCoors = [[0, 0], #tl
                   [0, 130]] # bl
 
 hsvRanges = {
-    'blue' : {'lower':[104, 72, 106], 'upper': [159, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'blue' : {'lower':[107,133 , 0], 'upper': [118, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
     'yellow' : {'lower': [18, 82, 0], 'upper':[28, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
     
-#Communication python to esp32
-def send_coordinates_robot(x, y, orientation, relay_ip, relay_port):
-    """
-    Send two float coordinates to C++ relay via UDP
-    Args:
-        x_coord (float): X coordinate value
-        y_coord (float): Y coordinate value
-        relay_ip (str): IP address of the C++ relay
-        relay_port (int): UDP port of the C++ relay
-    """
-    # Create UDP socket
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # Pack the two float values into bytes
-    # 'ff' format means two 32-bit float values
-    
-    data = struct.pack('fff', x, y, float(orientation)) # Use 'e' for 16-bit floats 
-    # Send the data
-    sock.sendto(data, (relay_ip, relay_port))
-        # Close the socket
-    sock.close()
+
 
 def auto_adjust_hsv(hsv_img, mask):
     """Ajusta dinámicamente los rangos HSV basándose en el histograma del canal H."""
@@ -134,10 +144,28 @@ def get_orientation(img, color_centroid):
     else:
         return None
 
+ 
     
 # Define una lista para almacenar las últimas orientaciones
 orientation_history = {}
 centroid_history = deque(maxlen=5)  # Mantén un historial de los centroides
+
+global robots 
+robots = {}
+
+# Predefined robot ports
+predefined_ports = {
+    1: 1201,  # Robot ID 1 with port 1201
+    2: 1202,  # Robot ID 2 with port 1202
+    3: 1203,  # Robot ID 3 with port 1203
+    4: 1204,   # Robot ID 4 with port 1204,
+    5: 1205,   # Robot ID 5 with port 1205
+    6: 1206,   # Robot ID 6 with port 1206
+
+}
+
+for robot_id, port in predefined_ports.items():
+    robots[robot_id] = RobotData(port=port)  # Initialize each robot with its port
 
 def moving_average_centroid(centroid, window_size=5):
     centroid_history.append(centroid)
@@ -176,7 +204,7 @@ def bb_center_orien(results, img, H):
             if color_centroid is not None:
                 smoothed_centroid = moving_average_centroid(color_centroid)
                 
-                orien = get_orientation(roi, smoothed_centroid)
+                orien = get_orientation(roi, smoothed_centroid)               
                 
                 if orien is not None and isinstance(track_id, int):
                     orien = round(float(orien), 4)
@@ -186,22 +214,21 @@ def bb_center_orien(results, img, H):
                     robot_coors = np.array([[x_center, y_center]], dtype="float32")
                     robot_coors = np.array([robot_coors])
                     real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
-
+                    last_robot_data = {"x": real_robot_coors[0], "y": real_robot_coors[1], "orientation": orien} # Historial de datos del robot  
                     # Enviar coordenadas y orientación suavizada al robot
                     #
-                    send_coordinates_robot(real_robot_coors[0], real_robot_coors[1], orien, RELAY_IP, 1201)
+                    robots[track_id].update(real_robot_coors[0], real_robot_coors[1], orien)
                     print(f"Robot {track_id}: {real_robot_coors[0]}, {real_robot_coors[1]}, {orien}")
 
                     # Dibujar el centro del robot
                     x_center = int(x_center)
                     y_center = int(y_center)
                     cv2.circle(img, (x_center, y_center), 2, (0, 0, 255), -1)
-                else:
-                    send_coordinates_robot(0.0, 0.0, 0.0, RELAY_IP, 1201)
-
+    return robots
+               
                 
 def main():               
-    cap = cv2.VideoCapture(2)
+    cap = cv2.VideoCapture(0)
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
@@ -233,3 +260,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+

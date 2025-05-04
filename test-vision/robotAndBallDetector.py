@@ -26,7 +26,7 @@ BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 #in HSV Ball detection 
-colorParams = [0, 115, 178, 7, 255, 255] #0, 203, 77, 9, 255, 228
+colorParams = [0, 86, 0, 13, 255, 255] #0, 203, 77, 9, 255, 228
 #checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
 #0, 188, 197, 179, 255, 255
 
@@ -158,7 +158,7 @@ def findContoursAndSize(img, copy):
 def polynomial_extrapolation(positions, degree=2):
     n = len(positions)
     if n < degree + 1:
-        return positions[-1]  # Not enough points for a fit
+        return positions[-1]  # Nqot enough points for a fit
     times = np.arange(n)
     poly_coeffs = np.polyfit(times, positions, degree)
     next_time = n
@@ -214,7 +214,7 @@ def findObject(image, copy, H):
 
 
 def main():       
-    cap = cv2.VideoCapture(2) #2 for external devices, sometimes 0 idkw
+    cap = cv2.VideoCapture(0) #2 for external devices, sometimes 0 idkw
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
@@ -248,15 +248,17 @@ def main():
             #Detección de robots
             if results:
                 detect_img = results[0].plot()
-                bb_center_orien(results, img_copy, H)  # Procesar orientación y centro de los robots
-    
+                robots = bb_center_orien(results, img_copy, H)  # Procesar orientación y centro de los robots
+                for robot_id, robot in robots.items():
+                    # Enviar coordenadas de los robots
+                    robot.send_data(RELAY_IP)
                 cv2.imshow("Model", detect_img)
                 cv2.imshow("Detections", img_copy)
             if cv2.waitKey(1) == ord('q'):
                 break
         else:
             print("No camera")
-        # Control de salida
+        # Control de salida 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             #print(f"FPS: {fps:.2f}")
             break
