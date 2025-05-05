@@ -12,7 +12,7 @@ class Kinematic
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         //Valores para el movimiento del robot
         //Ya te la sabes
-        float ANGULAR_CONSTANT =0.13f;
+        float ANGULAR_CONSTANT =0.08f;
         float LINEAR_CONSTANT = 0.04f;
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,
         float RADIUS = 0.03f;

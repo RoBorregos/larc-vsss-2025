@@ -25,10 +25,8 @@ Output Kinematic::GetVelocitiesForRotation(Transform target){
     output.b = rightVel * 60 / CIRCUMFERENCE;
 
     if(changeReference){
-        cout<<"rotated"<<endl;
-        float temp = output.a;
-        output.a = -output.b;
-        output.b = -temp;
+        output.a = -output.a;
+        output.b = -output.b;
     }
     return output;
 
@@ -50,7 +48,7 @@ Output Kinematic::GetVelocities(Transform target) {
     // Calculate the forward velocity and rotational velocity.
     float FrontVel = t.position.Magnitude() * LINEAR_CONSTANT;
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    float RotationVel = t.rotation * ANGULAR_CONSTANT * 35;
+    float RotationVel = t.rotation * ANGULAR_CONSTANT * 20;
     //     Constante angular de robot bidireccional   ^   cambiar para que si se mueva bien
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     //Get the velocities of the wheels in rad/s
@@ -60,9 +58,8 @@ Output Kinematic::GetVelocities(Transform target) {
     output.a = leftVel * 60 / CIRCUMFERENCE;
     output.b = rightVel * 60 / CIRCUMFERENCE;
     if(changeReference){
-        float temp = output.a;
-        output.a = -output.b;
-        output.b = -temp;
+        output.a = -output.a;
+        output.b = -output.b;
     }
 
     return output;

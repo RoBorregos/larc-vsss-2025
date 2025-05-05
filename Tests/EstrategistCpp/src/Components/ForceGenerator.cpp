@@ -110,7 +110,7 @@ Vector2 ForceGenerator::GetForce(Transform target, ForceType type, ForceMode mod
 Vector2 ForceGenerator::GetForce(Transform target, Transform goal, ForceType type, float dist, ForceMode mode){
     Vector2 force;
     Transform tempPos = CreatePositionInRect( goal, dist);
-    force = Atract(transform, target, impact, mode) + Repelent(tempPos, target, impact, mode);
+    force = Atract(transform, target, impact, mode) + Repelent(tempPos, target, impact, ForceMode::PROPORTIONAL);
     return force;
 }
 

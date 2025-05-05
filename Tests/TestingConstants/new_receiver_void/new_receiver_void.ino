@@ -34,13 +34,20 @@ byte packetBuffer[packetSize];  // Buffer to hold incoming packet
 const int motorSpeed = 255;
 
 // TB6612FNG Motor Driver pins
-#define MotorA1 17 
-#define MotorA2 19 // new prototype 
+#define MotorA1 19
+#define MotorA2 17 // new prototype 
+//For Robot Id 2  && Id 4
+/* #define MotorA1 17 
+#define MotorA2 19 // new prototype  */
 #define MotorA_PWM 1
 
 
-#define MotorB1 21
-#define MotorB2 2
+#define MotorB1 2
+#define MotorB2 21
+// For robot id 2
+/* #define MotorB1 21
+#define MotorB2 2 */
+
 #define MotorB_PWM 0
 
 //Encoders Pins
@@ -65,12 +72,12 @@ volatile unsigned int lpulses;
 
 //Constants for PID
 #define Rightkp 0.1
-#define Rightki 0.001
-#define Rightkd 0.037
+#define Rightki 0.003
+#define Rightkd 0.045
 
 #define Leftkp 0.1
-#define Leftki 0.001
-#define Leftkd 0.037
+#define Leftki 0.003
+#define Leftkd 0.045
 
 //Kinematics
 Kinematics kinematics(MOTOR_MAX_RPM, WHEEL_DIAMETER, LR_WHEEL_DISTANCE, PWM_BITS, VelConst, ThetaConst);
@@ -248,6 +255,10 @@ void loop() {
         previousUDPTime = currentUDPTime;
 
       }
+
+      
+     
+      
     VelocityTracker();
    
 

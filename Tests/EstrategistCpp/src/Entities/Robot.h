@@ -10,6 +10,8 @@ class Robot :public Entity{
     public :
         Kinematic kinematic; //Handles the robots kinematics. Generates the necesary rpm to achieve different objectives
         Robot(Transform& t, int i, float f, int portR, int portS); // transform, ID, impact, port
+
+        void GoTo(Transform objective);
 };
 
 
