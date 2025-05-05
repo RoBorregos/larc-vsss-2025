@@ -26,7 +26,7 @@ BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 #in HSV Ball detection 
-colorParams = [0, 86, 0, 13, 255, 255] #0, 203, 77, 9, 255, 228
+colorParams = [0, 144, 159, 15, 255, 255] #0, 203, 77, 9, 255, 228
 #checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
 #0, 188, 197, 179, 255, 255
 
@@ -214,7 +214,7 @@ def findObject(image, copy, H):
 
 
 def main():       
-    cap = cv2.VideoCapture(0) #2 for external devices, sometimes 0 idkw
+    cap = cv2.VideoCapture(0)#2 for external devices, sometimes 0 idkw
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
