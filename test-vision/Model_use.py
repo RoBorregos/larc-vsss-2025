@@ -9,16 +9,6 @@ from homography import getHomography
 import struct
 import socket
 from collections import deque
-from motpy import MultiObjectTracker
-
-#initialize tracker 
-tracker = MultiObjectTracker(
-    dt=0.1, #time interval between frames
-    tracker_kwargs={
-        "max_staleness": 10,
-        "min_iou": 0.3,
-    }
-)
 
 
 class RobotData:
@@ -54,7 +44,7 @@ class RobotData:
 RELAY_IP = "192.168.0.171"  # Replace with your esp
 
 #changes
-model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/detect/custom-yolov8m/weights/best.pt')
 
 
 realFieldCoors = [[0, 0], #tl
@@ -185,19 +175,22 @@ def moving_average_centroid(centroid, window_size=5):
 # Función para calcular la media móvil
 def moving_average(orientation_list, window_size=5):
     return sum(orientation_list) / len(orientation_list)  # Promedio de los valores disponibles
-    
+
+
 
 def bb_center_orien(results, img, H):
-    global orientation_history
+    global orientation_history, robots, tracker
     #robot_orien = 0
     robot_coors = (0.0, 0.0)
+
+    detections = []
 
     for res in results:
         boxes = res.boxes  # Variable con todas las bb detectadas en el frame
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0]
-            #track_id = box.id  # ID de seguimiento
-            class_id = int(box.cls[0]) + 1  # Índice de la clase detectada (patron detectado)
+            confidence = box.conf[0].item()
+            #class_id = int(box.cls[0]) + 1  # Índice de la clase detectada (patron detectado)
 
             # Centro del robot
             x_center = float((x1 + x2) / 2)
@@ -207,36 +200,33 @@ def bb_center_orien(results, img, H):
             roi = img[int(y1):int(y2), int(x1):int(x2)]
             color_centroid, _ = get_color_centroid(roi)
 
-            if isinstance(track_id, torch.Tensor):
-                track_id = int(track_id.item())
             if color_centroid is not None:
                 smoothed_centroid = moving_average_centroid(color_centroid)
-                
                 orien = get_orientation(roi, smoothed_centroid)               
                 
-                if orien is not None and isinstance(track_id, int):
+                if orien is not None:
                     orien = round(float(orien), 4)
                     # Agregar orientación al historial del robot
-                    print(f"Orien {track_id}: {orien}")
+                    print(f"Orien : {orien}")
                     # Obtener coordenadas reales
                     robot_coors = np.array([[x_center, y_center]], dtype="float32")
                     robot_coors = np.array([robot_coors])
                     real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
                     last_robot_data = {"x": real_robot_coors[0], "y": real_robot_coors[1], "orientation": orien} # Historial de datos del robot  
+                    
                     # Enviar coordenadas y orientación suavizada al robot
-                    #
-                    robots[track_id].update(real_robot_coors[0], real_robot_coors[1], orien)
-                    print(f"Robot {track_id}: {real_robot_coors[0]}, {real_robot_coors[1]}, {orien}")
+                    robots[robot_id].update(real_robot_coors[0], real_robot_coors[1], orien)
+                    print(f"Robot : {real_robot_coors[0]}, {real_robot_coors[1]}, {orien}")
 
                     # Dibujar el centro del robot
-                    x_center = int(x_center)
-                    y_center = int(y_center)
-                    cv2.circle(img, (x_center, y_center), 2, (0, 0, 255), -1)
+                    cv2.circle(img, (int(x_center), int(y_center)), 2, (0, 0, 255), -1)
+                    cv2.putText(img, f"ID: {robot_id}", (int(x_center), int(y_center) - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     return robots
                
                 
 def main():               
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(2)
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
