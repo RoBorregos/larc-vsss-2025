@@ -9,6 +9,16 @@ from homography import getHomography
 import struct
 import socket
 from collections import deque
+from motpy import MultiObjectTracker
+
+#initialize tracker 
+tracker = MultiObjectTracker(
+    dt=0.1, #time interval between frames
+    tracker_kwargs={
+        "max_staleness": 10,
+        "min_iou": 0.3,
+    }
+)
 
 
 class RobotData:
@@ -53,7 +63,7 @@ realFieldCoors = [[0, 0], #tl
                   [0, 130]] # bl
 
 hsvRanges = {
-    'blue' : {'lower':[84,81 , 0], 'upper': [120,255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'blue' : {'lower':[107,133 , 0], 'upper': [118, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
     'yellow' : {'lower': [18, 82, 0], 'upper':[28, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
@@ -161,7 +171,6 @@ predefined_ports = {
     4: 1204,   # Robot ID 4 with port 1204,
     5: 1205,   # Robot ID 5 with port 1205
     6: 1206,   # Robot ID 6 with port 1206
-
 }
 
 for robot_id, port in predefined_ports.items():
@@ -178,18 +187,17 @@ def moving_average(orientation_list, window_size=5):
     return sum(orientation_list) / len(orientation_list)  # Promedio de los valores disponibles
     
 
-# Modifica la función bb_center_orien para incluir la media móvil
 def bb_center_orien(results, img, H):
     global orientation_history
-    robot_orien = 0
+    #robot_orien = 0
     robot_coors = (0.0, 0.0)
 
     for res in results:
         boxes = res.boxes  # Variable con todas las bb detectadas en el frame
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0]
-            track_id = box.id  # ID de seguimiento
-            class_id = int(box.cls[0]) + 1  # Índice de la clase detectada
+            #track_id = box.id  # ID de seguimiento
+            class_id = int(box.cls[0]) + 1  # Índice de la clase detectada (patron detectado)
 
             # Centro del robot
             x_center = float((x1 + x2) / 2)
