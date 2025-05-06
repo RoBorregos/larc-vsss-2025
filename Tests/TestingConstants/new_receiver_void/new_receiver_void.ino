@@ -24,8 +24,8 @@ WiFiUDP udp;
 #include <PID.h>
 
 // Wi-Fi credentials
-const char* ssid = "Roborregos";
-const char* password = "RoBorregos2025";
+const char* ssid = "Tenda_18D250";
+const char* password = "julyhike529";
 
 unsigned int localUdpPort = 1001;       // Port to listen on
 const int packetSize = 8;       // Size of 2 floats (4 bytes each)
@@ -52,7 +52,7 @@ const int motorSpeed = 255;
 
 //Encoders Pins
 #define rEncoder 23
-#define lEncoder 16
+#define lEncoder 18
 #define NoTicks 350.0
 
 //Encoders variables

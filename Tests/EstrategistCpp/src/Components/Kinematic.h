@@ -22,6 +22,7 @@ class Kinematic
         //Functions to obtain the desaired rpm for the robot depending on the input (Transform or vector2)
         Output GetVelocities(Transform target);
         Output GetVelocities(Vector2 target);
+        Output GetVelocitiesForMagn(Vector2 target);
         Output GetVelocitiesForRotation(Transform target);
 
         Kinematic(const Kinematic& other) ;

@@ -14,9 +14,9 @@ using namespace std;
 
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Valores importantes para el comportamiento de los robots
 //Definen impacto sobre el atacante
-float vortexConstant = 0.02f;  //Vortice para los aliados
+float vortexConstant = 0.08f;  //Vortice para los aliados
 float repelentConstant = 0.02f; //Repelente para los enemigos
-float magneticConstant = 0.08f; //Magnetico para la pelota -> <Atrayente> y <Repelente> [Definido en la clase ForceGenerator]
+float magneticConstant = 0.1f; //Magnetico para la pelota -> <Atrayente> y <Repelente> [Definido en la clase ForceGenerator]
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
@@ -25,7 +25,7 @@ float magneticConstant = 0.08f; //Magnetico para la pelota -> <Atrayente> y <Rep
 //El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
 //##Valores definidos por la pelota
 const Vector2 PorteriaEnemiga(-7.6,12); //x /= -10 
-const Vector2 PorteriaAliada(-7.8,1.1); // y /= 10
+const Vector2 PorteriaAliada(-7.5,1.2); // y /= 10
 
 int main()
 {
@@ -37,14 +37,8 @@ int main()
     unordered_map<int, Entity*> entities;
     unordered_map<int, Robot*> robots;
     // create transforms(position classes) for each of the entities;    
-    vector<Transform> transforms(4,Transform());                         //Goal
-    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    //Posicion de limites de la pelota conversion a negativo y *10
-    //---------------------------------------------------- <50 cm
-    //        ^                             ^
-    //       -60                             -20
-    float maxDist = 4.5; //20 cm
-    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    vector<Transform> transforms(4,Transform());         
+    float maxDist = 4.5; //45 cm
     Vector2 pAliadaStart, pAliadaEnd;
     pAliadaStart = PorteriaAliada + Vector2(-maxDist,0); //Porteria Aliada
     pAliadaEnd = PorteriaAliada + Vector2(maxDist,0); //Porteria Aliada
@@ -58,22 +52,22 @@ int main()
     Ball ball (transforms[1], transforms[2], 0, magneticConstant , 1200 ); 
                                                                             entities[0] = &ball;
         robots[3] = new Robot(transforms[0],  3,     vortexConstant, 1202       ,1001); //robot with the correct udpPOR
-                                                                                       // entities[3] = robots[3];
+                                                                                        //entities[3] = robots[3];
         robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1201,       1001 );
                                                                                         entities[2] = robots[2];
             robots[3]->transform.SetTransform(50,10,3.14);
-            robots[2]->transform.SetTransform(20,20,3.14);
-            ball.transform.SetTransform(40,70,0);
+            robots[2]->transform.SetTransform(80,75,3.14);
+            ball.transform.SetTransform(75,70,0);
             ball.goal.SetTransform(PorteriaEnemiga,0);
     
     Transform DefenderObjective; 
-    Output attackerOut, defenderOut;
+    Output attackerOut;
     //Print all entities transform (position and rotation)
     
     vector<Transform> PenaltyPos{
-        Transform(-7.5,0.2, 0), 
-        Transform(-7.5,12, 0), 
-        Transform(-7.5,0.2, 0)
+        Transform(-7.5,5, 0), 
+        Transform(-7.5,5, 0), 
+        Transform(-7.5,5, 0)
     };
     thread commandThread([&]() {
         while (Playing || Penalty) {
@@ -99,7 +93,7 @@ int main()
 
         // Loop through all entities and receive position updates
        
-       for (auto entity : entities) {
+        for (auto entity : entities) {
             //cout << "------------------Receiving data for ID: " << entity.second->ID << endl;
             
             // Call ReceiveData to update the entity's transform
@@ -111,7 +105,8 @@ int main()
             }
             cout << "ID: " << entity.second->ID << " Transform: " << entity.second->transform << endl;
             // Print the updated position
-        }
+        } 
+ 
           
     if(Playing){
         for(auto r: entities){
@@ -121,6 +116,7 @@ int main()
         //Determine the velocity vector the robot should follow by checking each of the entities on the map
         Vector2 tforce, result;
         cout<<"Adding Forces:                          "<<endl;
+        bool Attacking = false;
         for (auto entitie: entities)
         {
             // if the entitie is the same as the attacker we continue
@@ -148,18 +144,20 @@ int main()
             {
                 cout<<"                              ";
 
-                Transform temporal = entitie.second->forceGenerator.CreatePositionInRect(ball.goal, -1.8);
+                Transform temporal = entitie.second->forceGenerator.CreatePositionInRect(ball.goal, -1.2);
 
                 float distance = (temporal.position - entities[attackerID]->transform.position).Magnitude();
                 cout<<"Distance: "<<distance<<endl;
-                if(distance > 1.5){
+                
+                if(distance > 2){
                     cout<<"Moving To Pos: "<< temporal<<endl;
                     tforce = entities[attackerID]->forceGenerator.GetForce(temporal, ForceType::REPELENT, ForceMode::CONSTANT);
-                    tforce *= 7;
+                    Attacking = false;
                 }else{
                     cout<<"Attacking to: "<< entitie.second->transform<<endl;
-                    tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform, ForceType::ATRACT, ForceMode::PROPORTIONAL);
+                    tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform, ball.goal , ForceType::MAGNETIC, 0.4,  ForceMode::CONSTANT);
                     tforce *= 3;
+                    Attacking = true;
                 }
 
                 cout<<"                ";
@@ -172,38 +170,30 @@ int main()
         cout<<"Result Force: "<< result<<endl;
         //Generating the rpm and sending it to the robot
         //here the kinematic component will transform this velocitie vectore into rpm the robot should follow
-        attackerOut = robots[attackerID]->kinematic.GetVelocities(result);
+        if(!Attacking){
+
+            attackerOut = robots[attackerID]->kinematic.GetVelocities(result);
+        }else{
+            attackerOut = robots[attackerID]->kinematic.GetVelocitiesForMagn(result);
+        }
         attackerOut.Scale(160.0f);
         cout<<"Attacker Move: "<<attackerOut<<endl;
         //Descomenta toda esta area para ver como se comporta el defensor
         Vector2 TrayectoryIntersection = porteriaAliada.Intersect(ball.transform);
         cout<<"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n  ---------- Defender: "<<endl;
 
-        if(TrayectoryIntersection.x > -1000){
+        if(TrayectoryIntersection.x > -1000 ){
             DefenderObjective = Transform (TrayectoryIntersection, 0);
             cout<<"New Objective: "<< DefenderObjective<<endl; 
         }
-        if((robots[defenderID]->transform.position - DefenderObjective.position).Magnitude() > 0.5){
-            cout<<" -- Moving To Position"<<endl;
-            defenderOut = robots[defenderID]->kinematic.GetVelocities(DefenderObjective);
-        }else if(robots[defenderID]->transform.rotation - DefenderObjective.rotation > 0.1) {
-            cout<<" -- Rotating To Rotation"<<endl;
-            defenderOut = robots[defenderID]->kinematic.GetVelocitiesForRotation(DefenderObjective);
-        }else{
-            cout<<" -- Staing in Position"<<endl;
-            defenderOut = Output(0,0);
-        }
-        defenderOut.Scale(120.0f);
+        robots[defenderID]->GoTo(DefenderObjective);
         
 
-
-        cout<<"Defender Move: "<< defenderOut<<endl;
 
         //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
         vector<int> errors(3,0);
         errors[0] = robots[attackerID]->communication.SendData(attackerOut);
         //Al igual que esta linea para el defensor
-        errors[1] = robots[defenderID]->communication.SendData(defenderOut);
         cout<<"//////////////////////////////Sending data to robots "<<endl;
         for(int i = 0; i < errors.size(); i++){
             if(errors[i] != 0){
@@ -211,7 +201,6 @@ int main()
             }
         }
         cout<<"//////////////////////////////Sended data to robots \n"<<endl;
-
 
         
     }else if (Penalty){

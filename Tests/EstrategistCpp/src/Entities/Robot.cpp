@@ -8,7 +8,7 @@ Robot::Robot(Transform& t, int i, float f, int portR, int portS) : Entity(t, i, 
 
 void Robot::GoTo(Transform objective){
     Output F;
-    if((transform.position - objective.position).Magnitude() > 0.8){
+    if((transform.position - objective.position).Magnitude() > 0.6){
         cout<<" -- Moving To Position"<<endl;
         F = kinematic.GetVelocities(objective);
     }else if(abs(transform.GetRotationalDifference(objective.rotation)) > 0.1) {
@@ -20,4 +20,5 @@ void Robot::GoTo(Transform objective){
     }
     F.Scale(120);
     communication.SendData(F);
+    cout<<" -- Sending Data: "<< F<<" To: "<<ID<<endl;
 }

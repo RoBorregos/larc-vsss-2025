@@ -33,8 +33,6 @@ Transform Transform::operator-(const Transform& b) const {
     t.position =  this->position - b.position ;
     t.SetAngule();     // Set the angle of the resulting Transform based on its position.
     t.CheckAngle();    // Enzure the resulting angle is valid
-    cout<<"Angle obj"<<t.rotation<<endl;
-    cout<<"My Angle: "<< rotation<<endl;
     t.rotation = b.GetRotationalDifference(t.rotation); // compute the rotational difference between the actual rotation and the b.rotation
     return t;
 }
@@ -59,6 +57,8 @@ void Transform::SetAngule() const {
 // Computes the shortest rotational difference between the current rotation and the target rotation.
 // Returns the difference in radians, accounting for wrap-around at 2π.
 float Transform::GetRotationalDifference(float objective) const{
+    CheckAngle();
+    
     float dif = objective - rotation;
     if(abs(dif) < pi){
         return dif; // If the difference is less than π, return it directly.
@@ -73,7 +73,8 @@ float Transform::GetRotationalDifference(float objective) const{
 void Transform::SetTransform(float x, float y, float r) {
     x = -x/10; y /=10; r = pi -r;
     velocities =  Vector2(x,y) - position;
-    angularVelocity = r - rotation;
+    velocities = velocities.Magnitude() < 0.2? Vector2(0,0) : velocities;
+    angularVelocity = r - rotation > 0.01 ? rotation : 0;
     position.x = x ;
     position.y = y;
     rotation =  r;
