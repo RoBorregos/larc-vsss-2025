@@ -18,7 +18,8 @@ Homography -> Manually set homography '''
 #fusion 
 model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSS_modelM/epoch80.pt')
 
-RELAY_IP = "192.168.0.171" 
+RELAY_IP = socket.gethostbyname(socket.gethostname())
+print(f"Relay IP: {RELAY_IP}")
 BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 
 
