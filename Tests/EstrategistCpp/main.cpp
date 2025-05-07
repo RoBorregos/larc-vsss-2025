@@ -252,7 +252,11 @@ int main()
 
     }
 
-
+    for(auto r: robots){
+        if(r.first > 0){
+            r.second->communication.SendData(Output(0,0));
+        }
+    }
     
     commandThread.join(); // Wait for the command thread to finish
     cout << "Program terminated." << endl;
