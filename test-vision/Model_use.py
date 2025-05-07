@@ -44,7 +44,7 @@ class RobotData:
 RELAY_IP = "192.168.0.171"  # Replace with your esp
 
 #changes
-model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/detect/custom-yolov8m/weights/best.pt')
+model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSS_modelM/epoch80.pt') #load model
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
@@ -229,39 +229,5 @@ def bb_center_orien(results, img, H):
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     return robots
                       
-def main():               
-    cap = cv2.VideoCapture(2)
-    cap.set(3, 640) #width
-    cap.set(4, 480) #height
-
-    H = getHomography(cap, realFieldCoors)
-
-    #main loop
-    while True:
-        tpast = time.time()
-        success, img = cap.read()
-
-        if success:
-            results = model.track(source=img, persist=True, show=False )
-            #results = model.predict(img)
-            if results:
-                res_img = results[0].plot()
-                bb_center_orien(results, img, H)
-                cv2.imshow("Model prediction", res_img)
-                cv2.imshow("Video", img)
-            else:
-                print("No se usa modelo")
-        else:
-            print("No success")
-        tnow = time.time()
-        totalTime = tnow - tpast
-        fps = 1 / totalTime
-        if cv2.waitKey(1) == ord('q'):
-            print(f"fps: {fps}")
-            break
-
-if __name__ == '__main__':
-    main()
-
 
 

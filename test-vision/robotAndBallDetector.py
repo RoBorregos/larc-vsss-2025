@@ -16,7 +16,7 @@ IP's-> robotAndBallDetector.py ,  ballDetector.py
 Homography -> Manually set homography '''
 
 #fusion 
-model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/detect/custom-yolov8m/weights/best.pt')
+model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSS_modelM/epoch80.pt')
 
 RELAY_IP = "192.168.0.171" 
 BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
