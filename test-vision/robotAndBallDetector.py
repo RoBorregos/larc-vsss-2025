@@ -16,7 +16,7 @@ IP's-> robotAndBallDetector.py ,  ballDetector.py
 Homography -> Manually set homography '''
 
 #fusion 
-model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt')
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/detect/custom-yolov8m/weights/best.pt')
 
 RELAY_IP = "192.168.0.171" 
 BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
@@ -214,7 +214,7 @@ def findObject(image, copy, H):
 
 
 def main():       
-    cap = cv2.VideoCapture(0)#2 for external devices, sometimes 0 idkw
+    cap = cv2.VideoCapture(2)#2 for external devices, sometimes 0 idkw
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 

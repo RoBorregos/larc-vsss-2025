@@ -46,19 +46,49 @@ RELAY_IP = "192.168.0.171"  # Replace with your esp
 #changes
 model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/detect/custom-yolov8m/weights/best.pt')
 
-
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
                   [150, 130], #br
                   [0, 130]] # bl
+# Define una lista para almacenar las últimas orientaciones
+orientation_history = {}
+centroid_history = deque(maxlen=5)  # Mantén un historial de los centroides
 
+global robots 
+robots = {}
+
+# Predefined robot ports for each identified pattern
+predefined_ports = {
+    1: 1201,  # Robot ID 1 with port 1201
+    2: 1202,  # Robot ID 2 with port 1202
+    3: 1203,  # Robot ID 3 with port 1203
+    4: 1204,   # Robot ID 4 with port 1204,
+    5: 1205,   # Robot ID 5 with port 1205
+    6: 1206,   # Robot ID 6 with port 1206
+    7: 1207,   # Robot ID 7 with port 1207
+    8: 1208,   # Robot ID 8 with port 1208
+    9: 1209,   # Robot ID 9 with port 1209
+    10: 1210,  # Robot ID 10 with port 1210
+    11: 1211,  # Robot ID 11 with port 1211
+    12: 1212,  # Robot ID 12 with port 1212
+    13: 1213,  # Robot ID 13 with port 1213
+    14: 1214,  # Robot ID 14 with port 1214
+    15: 1215,  # Robot ID 15 with port 1215
+    16: 1216,  # Robot ID 16 with port 1216
+    17: 1217,  # Robot ID 17 with port 1217
+    18: 1218,  # Robot ID 18 with port 1218
+    19: 1219,  # Robot ID 19 with port 1219
+    20: 1220   # Robot ID 20 with port 1220
+}
+
+for robot_id, port in predefined_ports.items():
+    robots[robot_id] = RobotData(port=port)  # Initialize each robot with its port
+
+#Modify depending on actual environment
 hsvRanges = {
     'blue' : {'lower':[107,133 , 0], 'upper': [118, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
     'yellow' : {'lower': [18, 82, 0], 'upper':[28, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
-
-    
-
 
 def auto_adjust_hsv(hsv_img, mask):
     """Ajusta dinámicamente los rangos HSV basándose en el histograma del canal H."""
@@ -76,7 +106,7 @@ def auto_adjust_hsv(hsv_img, mask):
         return lower_hsv, upper_hsv
     else:
         return None, None
-    
+   
 def get_color_centroid(img):
     blurred = cv2.GaussianBlur(img, (7,7), 0)
     hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -144,28 +174,6 @@ def get_orientation(img, color_centroid):
     else:
         return None
 
- 
-    
-# Define una lista para almacenar las últimas orientaciones
-orientation_history = {}
-centroid_history = deque(maxlen=5)  # Mantén un historial de los centroides
-
-global robots 
-robots = {}
-
-# Predefined robot ports
-predefined_ports = {
-    1: 1201,  # Robot ID 1 with port 1201
-    2: 1202,  # Robot ID 2 with port 1202
-    3: 1203,  # Robot ID 3 with port 1203
-    4: 1204,   # Robot ID 4 with port 1204,
-    5: 1205,   # Robot ID 5 with port 1205
-    6: 1206,   # Robot ID 6 with port 1206
-}
-
-for robot_id, port in predefined_ports.items():
-    robots[robot_id] = RobotData(port=port)  # Initialize each robot with its port
-
 def moving_average_centroid(centroid, window_size=5):
     centroid_history.append(centroid)
     avg_x = sum([c[0] for c in centroid_history]) / len(centroid_history)
@@ -176,21 +184,18 @@ def moving_average_centroid(centroid, window_size=5):
 def moving_average(orientation_list, window_size=5):
     return sum(orientation_list) / len(orientation_list)  # Promedio de los valores disponibles
 
-
-
 def bb_center_orien(results, img, H):
-    global orientation_history, robots, tracker
+    global orientation_history, robots
     #robot_orien = 0
     robot_coors = (0.0, 0.0)
 
-    detections = []
-
     for res in results:
         boxes = res.boxes  # Variable con todas las bb detectadas en el frame
+
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0]
-            confidence = box.conf[0].item()
-            #class_id = int(box.cls[0]) + 1  # Índice de la clase detectada (patron detectado)
+            #confidence = box.conf[0].item()
+            robot_id = int(box.cls[0]) + 1  # Índice de la clase detectada (patron detectado)
 
             # Centro del robot
             x_center = float((x1 + x2) / 2)
@@ -216,15 +221,14 @@ def bb_center_orien(results, img, H):
                     
                     # Enviar coordenadas y orientación suavizada al robot
                     robots[robot_id].update(real_robot_coors[0], real_robot_coors[1], orien)
-                    print(f"Robot : {real_robot_coors[0]}, {real_robot_coors[1]}, {orien}")
+                    print(f"Robot {robot_id}: {real_robot_coors[0]}, {real_robot_coors[1]}, {orien}")
 
                     # Dibujar el centro del robot
                     cv2.circle(img, (int(x_center), int(y_center)), 2, (0, 0, 255), -1)
                     cv2.putText(img, f"ID: {robot_id}", (int(x_center), int(y_center) - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     return robots
-               
-                
+                      
 def main():               
     cap = cv2.VideoCapture(2)
     cap.set(3, 640) #width
