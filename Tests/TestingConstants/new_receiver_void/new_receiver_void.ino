@@ -27,7 +27,7 @@ WiFiUDP udp;
 
 // Wi-Fi credentials
 const char* ssid = "Tenda_18D250";
-const char* password = "julyhike529";
+const char* password = "julyhike529_32";
 
 unsigned int localUdpPort = 1001;       // Port to listen on
 const int packetSize = 8;       // Size of 2 floats (4 bytes each)
@@ -54,7 +54,7 @@ const int motorSpeed = 255;
 
 //Encoders Pins
 #define rEncoder 23
-#define lEncoder 18
+#define lEncoder 16
 #define NoTicks 350.0
 
 //Encoders variables
@@ -249,7 +249,7 @@ void loop() {
       currentUDPTime = millis();
       bool deltaUDP = (currentUDPTime - deltaUDP ) > 35;
       if (packetSize && deltaUDP ) {
-        lastTimeRecived = milis();
+        lastTimeRecived =  millis();
         // Read the packet into the buffer
         udp.read(packetBuffer, sizeof(packetBuffer));
 
@@ -260,7 +260,7 @@ void loop() {
 
       }
       if(lastTimeRecived - millis() > 70){
-        lastTimeRecived = milis();
+        lastTimeRecived = millis();
         //Cambia los valores de m1, m2
       }
 

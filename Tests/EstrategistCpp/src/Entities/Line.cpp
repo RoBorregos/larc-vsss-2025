@@ -38,3 +38,22 @@ Vector2 Line::Intersect(Transform ball)  {
     return fi;
 }
 
+void Line::SetLine(Vector2 s, Vector2 f) {
+    start = s;
+    end = f;
+    if(s.x > f.x){
+        Vector2 t = s;
+        s = f;
+        f = t;
+    }
+    Vector2 dif = start -end;
+    m = dif.y / dif.x;
+    b = start.y - m* start.x;
+    cout<<"Line ----------- m: "<<m<< " -- b: "<<b<<endl;
+}
+
+
+Vector2 Line::MidPoint() {
+    return Vector2((start.x + end.x) / 2, (start.y + end.y) / 2);
+}
+

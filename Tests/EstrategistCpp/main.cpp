@@ -37,7 +37,7 @@ int main()
     unordered_map<int, Entity*> entities;
     unordered_map<int, Robot*> robots;
     // create transforms(position classes) for each of the entities;    
-    vector<Transform> transforms(4,Transform());         
+    vector<Transform> transforms(9 ,Transform());         
     float maxDist = 4.5; //45 cm
     Vector2 pAliadaStart, pAliadaEnd;
     pAliadaStart = PorteriaAliada + Vector2(-maxDist,0); //Porteria Aliada
@@ -49,12 +49,20 @@ int main()
 
     //Create the ball and add it to the entities5 map
     //      BallPos         GoalPoss    ID   ForceImpactVectorF PortR       PortS
-    Ball ball (transforms[1], transforms[2], 0, magneticConstant , 1200 ); 
+    Ball ball (transforms[0], transforms[1], 0, magneticConstant , 1200 ); 
                                                                             entities[0] = &ball;
-        robots[3] = new Robot(transforms[0],  3,     vortexConstant, 1202       ,1001); //robot with the correct udpPOR
-                                                                                        //entities[3] = robots[3];
-        robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1201,       1001 );
+        robots[3] = new Robot(transforms[2],  3,     vortexConstant, 1203,  1001); //robot with the correct udpPOR
+                                                                                        entities[3] = robots[3];
+        robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1202,  1001 );
                                                                                         entities[2] = robots[2];
+        robots[3] = new Robot(transforms[4], 1,     vortexConstant, 1201,  1001 );
+                                                                                        entities[1] = robots[3];
+        robots[-1] = new Robot(transforms[5], -1,  repelentConstant, 1204, 1001); //robot with the correct udpPOR
+                                                                                        entities[-1] = robots[-1];
+        robots[-2] = new Robot(transforms[6], -2,  repelentConstant, 1205, 1001);
+                                                                                        entities[-2] = robots[-2];
+        robots[-3] = new Robot(transforms[7], -3,  repelentConstant, 1206, 1001);
+                                                                                        entities[-3] = robots[-3];
             robots[3]->transform.SetTransform(50,10,3.14);
             robots[2]->transform.SetTransform(80,75,3.14);
             ball.transform.SetTransform(75,70,0);
@@ -87,12 +95,13 @@ int main()
     });
     int attackerID = 2; 
     int defenderID = 3; 
+    int otherID = 1;
     
     while (Penalty || Playing) {     
 
 
         // Loop through all entities and receive position updates
-       /*
+       
         for (auto entity : entities) {
             //cout << "------------------Receiving data for ID: " << entity.second->ID << endl;
             
@@ -105,7 +114,12 @@ int main()
             }
             cout << "ID: " << entity.second->ID << " Transform: " << entity.second->transform << endl;
             // Print the updated position
-        } */
+        } 
+        if((robots[attackerID]->transform.position - Ball.transform.position).Magnitude() > (robots[otherID]->transform.position - Ball.transform.position).Magnitude()){
+            int temp = attackerID;
+            attackerID = otherID;
+            otherID = temp;
+        }
  
           
     if(Playing){
@@ -175,6 +189,8 @@ int main()
         }else{
             attackerOut = robots[attackerID]->kinematic.GetVelocitiesForMagn(result);
         }
+
+        // Defender Movement
         attackerOut.Scale(160.0f);
         cout<<"Attacker Move: "<<attackerOut<<endl;
         //Descomenta toda esta area para ver como se comporta el defensor
@@ -186,9 +202,27 @@ int main()
         }
         robots[defenderID]->GoTo(DefenderObjective);
         
+        //OtherMovement 
+        Line SoportLine;
+        int NearestEnemyID = -1;
+        for(auto r: robots){
+            if(r.first < 0 ){
+               if( (r.second->transform.position  - robots[attackerID]->transform.position).Magnitude() 
+                        <  (robots[attackerID]->transform.position - robots[NearestEnemyID]->transform.position).Magnitude()){
+                    NearestEnemyID = r.first;
+                }
+            }
+        }
+        
+        SoportLine.SetLine(robots[attackerID]->transform.position, robots[NearestEnemyID]->transform.position);
+        Vector2 SupportPos = SoportLine.MidPoint();
+        if((SupportPos - robots[attackerID]->transform.position).Magnitude() > 5){
+            robots[otherID]->GoTo(Transform(SupportPos, 0));
+        }else{
+            robots[otherID]->communication.SendData(Output(0,0));
+        }
 
-
-        //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        //>>>>>>>>>>>>Sending data to the robots<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         vector<int> errors(3,0);
         errors[0] = robots[attackerID]->communication.SendData(attackerOut);
         //Al igual que esta linea para el defensor
@@ -199,6 +233,8 @@ int main()
             }
         }
         cout<<"//////////////////////////////Sended data to robots \n"<<endl;
+
+
 
         
     }else if (Penalty){
