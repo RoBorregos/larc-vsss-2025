@@ -44,7 +44,7 @@ class RobotData:
 RELAY_IP = "192.168.0.171"  # Replace with your esp
 
 #changes
-model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSS_modelM/epoch80.pt') #load model
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt') #load model
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
@@ -84,14 +84,20 @@ predefined_ports = {
 for robot_id, port in predefined_ports.items():
     robots[robot_id] = RobotData(port=port)  # Initialize each robot with its port
 
+'''hslRanges = {
+    'blue' : {'lower':[], 'upper': []}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'yellow' : {'lower': [], 'upper':[] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
+}'''
+
 #Modify depending on actual environment
-hsvRanges = {
-    'blue' : {'lower':[107,133 , 0], 'upper': [118, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
-    'yellow' : {'lower': [18, 82, 0], 'upper':[28, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
+hsvRanges = { #h_min =  101  h_max =  179  Sat_min =  152  Sat_max =  248  Val_min =  187  Val_max =  255
+    'blue' : {'lower':[101, 55 , 199], 'upper': [128, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'yellow' : {'lower': [13, 25, 136], 'upper':[62, 84, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
+
 def auto_adjust_hsv(hsv_img, mask):
-    """Ajusta dinámicamente los rangos HSV basándose en el histograma del canal H."""
+    """Ajusta dinámicamente los rangos HSL basándose en el histograma del canal H."""
     h_channel = hsv_img[:, :, 0]  # Extraer canal H
     masked_h = h_channel[mask > 0]  # Píxeles dentro de la máscara
 
@@ -108,8 +114,7 @@ def auto_adjust_hsv(hsv_img, mask):
         return None, None
    
 def get_color_centroid(img):
-    blurred = cv2.GaussianBlur(img, (7,7), 0)
-    hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    hsv_img = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)                                          #HSL USEEEEEEEEEEEEEE
     hsv_img = cv2.medianBlur(hsv_img, 5)  # Aplicar un filtro mediano para reducir ruido
     hsv_img = cv2.bilateralFilter(hsv_img, 9, 75, 75)  # Filtrado bilateral para preservar bordes
 
@@ -228,6 +233,40 @@ def bb_center_orien(results, img, H):
                     cv2.putText(img, f"ID: {robot_id}", (int(x_center), int(y_center) - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     return robots
-                      
+
+
+def main():               
+    cap = cv2.VideoCapture(0)
+    cap.set(3, 640) #width
+    cap.set(4, 480) #height
+
+    H = getHomography(cap, realFieldCoors)
+
+    #main loop
+    while True:
+        tpast = time.time()
+        success, img = cap.read()
+
+        if success:
+            results = model.track(source=img, persist=True, show=False )
+            #results = model.predict(img)
+            if results:
+                res_img = results[0].plot()
+                bb_center_orien(results, img, H)
+                cv2.imshow("Model prediction", res_img)
+                cv2.imshow("Video", img)
+            else:
+                print("No se usa modelo")
+        else:
+            print("No success")
+        tnow = time.time()
+        totalTime = tnow - tpast
+        fps = 1 / totalTime
+        if cv2.waitKey(1) == ord('q'):
+            print(f"fps: {fps}")
+            break
+
+if __name__ == '__main__':
+    main()                  
 
 

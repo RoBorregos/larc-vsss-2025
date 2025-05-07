@@ -18,10 +18,12 @@ def colorPicker(window):
     cv2.createTrackbar("Val Max", window, 255, 255, empty)
 
     #Video capture and settings
-    video = cv2.VideoCapture(2)
+    video = cv2.VideoCapture(0)
     video.set(3, 640) #width
     video.set(4, 480) #Height
     video.set(10, 150) #brightness
+
+#h_min =  0  h_max =  28  Sat_min =  80  Sat_max =  130  Val_min =  79  Val_max =  255
 
     #images processing
     #preprocess
@@ -47,10 +49,13 @@ def colorPicker(window):
 
 # Operaciones morfológicas
         kernel = np.ones((5, 5), np.uint8)
-        maskOpened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        maskClosed = cv2.morphologyEx(maskOpened, cv2.MORPH_CLOSE, kernel)
+        '''maskOpened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
+        maskClosed = cv2.morphologyEx(maskOpened, cv2.MORPH_CLOSE, kernel)'''
 
-        result = cv2.bitwise_and(img, img, mask = maskOpened)
+        dilatedMask = cv2.dilate(mask, kernel, iterations=1)
+        erotedMask = cv2.erode(dilatedMask, kernel, iterations=1)
+        cv2.imshow("Mascara eroted", erotedMask)
+        result = cv2.bitwise_and(img, img, mask=erotedMask)
 
         print("h_min = ", h_min, " h_max = ", h_max, " Sat_min = ", s_min, " Sat_max = ", s_max, " Val_min = ", v_min, " Val_max = ", v_max)
         cv2.imshow("Mask", mask)
@@ -64,3 +69,5 @@ cv2.namedWindow("TrackBars")
 cv2.resizeWindow("TrackBars", 640, 240)
 colorPicker("TrackBars")
 
+
+#h_min =  0  h_max =  52  Sat_min =  46  Sat_max =  255  Val_min =  202  Val_max =  255

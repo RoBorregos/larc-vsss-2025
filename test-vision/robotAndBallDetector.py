@@ -16,29 +16,28 @@ IP's-> robotAndBallDetector.py ,  ballDetector.py
 Homography -> Manually set homography '''
 
 #fusion 
-model = YOLO('/home/alberto/Coding/LARCVSSS/larc-vsss-2025/VSSS_modelM/epoch80.pt')
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt')
 
 RELAY_IP = socket.gethostbyname(socket.gethostname())
 print(f"Relay IP: {RELAY_IP}")
 BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 
-
 #backup coordinates
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 #in HSV Ball detection 
-colorParams = [0, 144, 159, 15, 255, 255] #0, 203, 77, 9, 255, 228
+colorParams = [0, 61, 0, 20, 239, 255] #0, 203, 77, 9, 255, 228                                CHECK FOR HSL USEEEEEEREEFWEFRG
 #checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
+#h_min =  0  h_max =  28  Sat_min =  80  Sat_max =  130  Val_min =  79  Val_max =  255
+
 #0, 188, 197, 179, 255, 255
 
 realFieldCoors = [[0, 0], #tl
-                  [150, 0], #tr
-                  [150, 130], #br
-                  [0, 130]] # bl
+                  [130, 0], #tr
+                  [130, 150], #br
+                  [0, 150]] # bl
 
-CAMERA_HEIGHT = 200 #cm
 clicked_points = []
-
 
 #Communication python to esp32
 def send_coordinates(x_coord, y_coord, relay_ip, relay_port):
@@ -79,7 +78,6 @@ def filter_noise(pts, center, radius_factor=1.2):
     filtered_pts = pts[valid_index]
 
     return filtered_pts
-
 
 #draw mid lines and referal points
 def mids(img, tl, tr, br, bl):
@@ -169,27 +167,33 @@ def polynomial_extrapolation(positions, degree=2):
 #main function. Returns object center with img preprocessing
 def findObject(image, copy, H): 
     global ball_positions #allows the function to modify the global variable
-    imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)                            
 
     # Ball mask, already have refObj
-    lower = np.array(colorParams[0:3])
+    lower = np.array(colorParams[0:3]) 
     upper = np.array(colorParams[3:6])
-    mask = cv2.inRange(imgHSV, lower, upper)
+    mask = cv2.inRange(imgHSV, lower, upper)#
     
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    '''kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-    cv2.imshow("Better mask", mask)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)'''
+    kernel = np.ones((5, 5), np.uint8)
+    
+    dilatedMask = cv2.dilate(mask, kernel, iterations=1)
+    #result = cv2.bitwise_and(img, img, mask=dilatedMask)
+    cv2.imshow("Better mask", dilatedMask) #YA SOLO APLICA QUE AGARRE EL AREA MAS GRANDE
 
-    objCenter,objPts = findContoursAndSize(mask, copy)
+    objCenter,objPts = findContoursAndSize(dilatedMask, copy)
     
     #if the center is detected, get it's coordinates in real field coordinates
     if objCenter:
-        cv2.circle(copy, (int(objCenter[0]), int(objCenter[1])),2, (255,0,0), 5)
+        # Filter contours by size and select the largest one
+        largest_contour = max(objPts, key=lambda pt: cv2.contourArea(np.array([pt])))
+        objCenter = (largest_contour[0], largest_contour[1])
+        cv2.circle(copy, (int(objCenter[0]), int(objCenter[1])), 2, (255,0,0), 5)
         #give the correct format to the pt for use in perspectiveTransform
         objCenterPt = np.array([objCenter[0], objCenter[1]], dtype="float32")
         print(f"Normal: {objCenterPt[0]}, {objCenterPt[1]}")
-        
 
         # Agregar las coordenadas suavizadas a la lista de posiciones
         ball_positions.append((objCenterPt[0], objCenterPt[1]))
@@ -215,7 +219,7 @@ def findObject(image, copy, H):
 
 
 def main():       
-    cap = cv2.VideoCapture(2)#2 for external devices, sometimes 0 idkw
+    cap = cv2.VideoCapture(0) #2 for external devices, sometimes 0 idkw
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
@@ -235,13 +239,12 @@ def main():
         if success:
             # Detección de robots con el modelo YOLO
             img_copy = img.copy()  # Copia del frame para detección de la pelota
-            results = model.track(img)
+            results = model(img)
 
             # Detección de pelota
             objCoorsCenter = findObject(img, img_copy, H)  # Coordenadas reales de la pelota
             if objCoorsCenter[0] != 0 and objCoorsCenter[1] != 0:
                 send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, BALL)
-
                 print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
             else:
                 send_coordinates(0, 0, RELAY_IP, BALL)
