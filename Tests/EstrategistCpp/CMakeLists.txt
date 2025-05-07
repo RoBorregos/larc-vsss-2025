@@ -6,12 +6,13 @@ add_subdirectory(src/Components)
 add_subdirectory(src/DataTypes)
 add_subdirectory(src/Entities)
 
+
+
 target_link_libraries(EstrategistF
 PUBLIC
     Components
     DataTypes
     Entities
-    ws2_32
 )
 
 

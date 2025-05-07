@@ -170,3 +170,5 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 Tests/TestingConstants/new_receiver_void.zip
+
+dataset-generator+

@@ -5,11 +5,12 @@
 // Class created to send messages directly to the robot.
 #include <iostream>
 #include <cstring>
+#include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <ws2tcpip.h>
+#include <netdb.h>
 #include <map>
 #include <unordered_map>
 using namespace std;

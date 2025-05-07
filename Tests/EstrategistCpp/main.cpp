@@ -92,7 +92,7 @@ int main()
 
 
         // Loop through all entities and receive position updates
-       
+       /*
         for (auto entity : entities) {
             //cout << "------------------Receiving data for ID: " << entity.second->ID << endl;
             
@@ -105,7 +105,7 @@ int main()
             }
             cout << "ID: " << entity.second->ID << " Transform: " << entity.second->transform << endl;
             // Print the updated position
-        } 
+        } */
  
           
     if(Playing){

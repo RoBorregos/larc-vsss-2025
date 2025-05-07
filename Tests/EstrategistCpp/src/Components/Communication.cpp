@@ -1,6 +1,5 @@
 #include "Communication.h"
 #include <iostream>
-#pragma comment(lib, "ws2_32.lib")
 
 Communication::Communication(Transform& t, int id, int portA, int portB) : robotID(id), portR(portA), portS(portB), transform(t) {
     ips[1] = "192.168.0.216"; // Attacker Dflt
@@ -15,9 +14,9 @@ int Communication::SendData(Output data)
         std::string ip = ips[robotID]; // Get the IP address for the robot ID
         //cout<< "                            Sending to Ip = "<<ip<<" For ID = "<<robotID<<endl;
 
-        SOCKET udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
-        if (udpSocket == INVALID_SOCKET) {
-            WSACleanup();
+        socklen_t udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+        if (udpSocket == -1) {
+            close(udpSocket);
             return 3;
         }
     
@@ -49,7 +48,7 @@ int Communication::SendData(Output data)
             sizeof(esp32Addr)
         );
     
-        if (sendResult == SOCKET_ERROR) {
+        if (sendResult == -1) {
             close(udpSocket);
             return 5;
         }     
@@ -62,8 +61,8 @@ int Communication::ReceiveData() {
 
 
 
-    SOCKET receive_py = socket(AF_INET, SOCK_DGRAM,0); // Create a UDP socket, using IPv4 (AF_INET) and datagram (SOCK_DGRAM) protocol for UDP
-    if (receive_py == INVALID_SOCKET) { // Check if socket creation was successful
+    socklen_t receive_py = socket(AF_INET, SOCK_DGRAM,0); // Create a UDP socket, using IPv4 (AF_INET) and datagram (SOCK_DGRAM) protocol for UDP
+    if (receive_py == -1) { // Check if socket creation was successful
         return 3;
     }
 
@@ -82,7 +81,7 @@ int Communication::ReceiveData() {
 
 
     char hostname[NI_MAXHOST]; // Buffer to store the hostname
-    if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR) {
+    if (gethostname(hostname, sizeof(hostname)) == -1) {
         close(receive_py);
         return 4;
     }
@@ -94,24 +93,23 @@ int Communication::ReceiveData() {
 
 
     int opt = 1;
-    if (setsockopt(receive_py, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) == SOCKET_ERROR) {
-       // std::cerr << "Failed to set SO_REUSEADDR: " << WSAGetLastError() << std::endl;
+    if (setsockopt(receive_py, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) == -1) {
+       // std::cerr << "Failed to set SO_REUSEADDR: " << perror() << std::endl;
         close(receive_py);
         return 6; // Return a new error code for this failure
     }
 
 
-    if (bind(receive_py, (struct sockaddr*)&position_addr, sizeof(position_addr)) == SOCKET_ERROR) { // Bind the socket to the address and port
+    if (bind(receive_py, (struct sockaddr*)&position_addr, sizeof(position_addr)) == -1) { // Bind the socket to the address and port
       cout<<"                   Port: "<<this->portR<<endl;
-      int error_code = WSAGetLastError();
-      std::cerr << "Bind failed with error: " << error_code << std::endl;
+      cout << "Bind failed with error: " << "error_code" << endl;
         close(receive_py);
         return 5;
     }
 
     char buffer[BUFFER_SIZE] = {0};
     struct sockaddr_in python_addr;
-    int python_addL = sizeof(python_addr);
+    socklen_t python_addL = sizeof(python_addr);
 
 //////// 
 
@@ -154,12 +152,11 @@ int Communication::ReceiveData() {
         }
         else {
             std::cerr << "Received unexpected data size: " << received_bytes << " bytes" << std::endl;
-            if (received_bytes == SOCKET_ERROR) {
-                int error_code = WSAGetLastError();
-                std::cerr << "recvfrom failed with error: " << error_code << std::endl;
+            if (received_bytes == -1) {
+                cout << "recvfrom failed with error: " << "error_code" << std::endl;
                 
             }
-            close(receive_py)
+            close(receive_py);
             return 1;
         }
         close(receive_py);
