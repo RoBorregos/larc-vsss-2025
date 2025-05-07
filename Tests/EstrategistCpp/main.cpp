@@ -171,7 +171,6 @@ int main()
         //Generating the rpm and sending it to the robot
         //here the kinematic component will transform this velocitie vectore into rpm the robot should follow
         if(!Attacking){
-
             attackerOut = robots[attackerID]->kinematic.GetVelocities(result);
         }else{
             attackerOut = robots[attackerID]->kinematic.GetVelocitiesForMagn(result);
@@ -181,7 +180,6 @@ int main()
         //Descomenta toda esta area para ver como se comporta el defensor
         Vector2 TrayectoryIntersection = porteriaAliada.Intersect(ball.transform);
         cout<<"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n  ---------- Defender: "<<endl;
-
         if(TrayectoryIntersection.x > -1000 ){
             DefenderObjective = Transform (TrayectoryIntersection, 0);
             cout<<"New Objective: "<< DefenderObjective<<endl; 
@@ -212,7 +210,7 @@ int main()
         }
     }
     
-    this_thread::sleep_for(chrono::milliseconds(20));
+    this_thread::sleep_for(chrono::milliseconds(15));
 
    
 

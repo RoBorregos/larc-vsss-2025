@@ -1,5 +1,7 @@
 // Add this near the top of your ESP32 sketch, after your existing declarations
 //destiny data
+long long lastTimeRecived;
+
 float pwmM1 ;
 float pwmM2 ;
 
@@ -140,6 +142,7 @@ void setup() {
   currentTime = micros();
   previousUDPTime = millis();
   currentUDPTime = millis();
+  lastTimeRecived = millis();
 }
 
 void Rpulses() {
@@ -246,6 +249,7 @@ void loop() {
       currentUDPTime = millis();
       bool deltaUDP = (currentUDPTime - deltaUDP ) > 35;
       if (packetSize && deltaUDP ) {
+        lastTimeRecived = milis();
         // Read the packet into the buffer
         udp.read(packetBuffer, sizeof(packetBuffer));
 
@@ -254,6 +258,10 @@ void loop() {
         memcpy(&pwmM2, &packetBuffer[4], sizeof(float));
         previousUDPTime = currentUDPTime;
 
+      }
+      if(lastTimeRecived - millis() > 70){
+        lastTimeRecived = milis();
+        //Cambia los valores de m1, m2
       }
 
       

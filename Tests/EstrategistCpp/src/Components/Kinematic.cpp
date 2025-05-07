@@ -49,7 +49,7 @@ Output Kinematic::GetVelocities(Transform target) {
     // Calculate the forward velocity and rotational velocity.
     float FrontVel = t.position.Magnitude() * LINEAR_CONSTANT*0.08f;
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    float RotationVel = t.rotation * ANGULAR_CONSTANT * 1.5;
+    float RotationVel = t.rotation * ANGULAR_CONSTANT * 2;
     //     Constante angular de robot bidireccional   ^   cambiar para que si se mueva bien
     //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     //Get the velocities of the wheels in rad/s

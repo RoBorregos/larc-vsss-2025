@@ -1,7 +1,5 @@
 #include "Communication.h"
 #include <iostream>
-#include <winsock2.h>
-#include <ws2tcpip.h>
 #pragma comment(lib, "ws2_32.lib")
 
 Communication::Communication(Transform& t, int id, int portA, int portB) : robotID(id), portR(portA), portS(portB), transform(t) {
@@ -14,15 +12,9 @@ Communication::Communication(Transform& t, int id, int portA, int portB) : robot
 
 int Communication::SendData(Output data) 
     {
-        // Init Winsock
         std::string ip = ips[robotID]; // Get the IP address for the robot ID
         //cout<< "                            Sending to Ip = "<<ip<<" For ID = "<<robotID<<endl;
-        WSADATA wsaData;
-        int startupResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
-        if (startupResult != 0) {
-            return 2;
-        }
-    
+
         SOCKET udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
         if (udpSocket == INVALID_SOCKET) {
             WSACleanup();
@@ -40,8 +32,7 @@ int Communication::SendData(Output data)
         
         const char* esp32_ip = ip.c_str() ; // pointer to const char 
         if (inet_pton(AF_INET, esp32_ip, &esp32Addr.sin_addr) <= 0) {
-            closesocket(udpSocket);
-            WSACleanup();
+            close(udpSocket);
             return 4;
         }
     
@@ -59,8 +50,7 @@ int Communication::SendData(Output data)
         );
     
         if (sendResult == SOCKET_ERROR) {
-            closesocket(udpSocket);
-            WSACleanup();
+            close(udpSocket);
             return 5;
         }     
         return 0;
@@ -70,15 +60,10 @@ int Communication::ReceiveData() {
     #define BUFFER_SIZE 255 // Define the buffer size for receiving data
 
 
-    WSADATA wsaData;
-    int result = WSAStartup(MAKEWORD(2, 2), &wsaData); // Initialize Winsock with version 2.2 
-    if (result != 0) { // Check if WSAStartup was successful
-        return 2;
-    }
+
 
     SOCKET receive_py = socket(AF_INET, SOCK_DGRAM,0); // Create a UDP socket, using IPv4 (AF_INET) and datagram (SOCK_DGRAM) protocol for UDP
     if (receive_py == INVALID_SOCKET) { // Check if socket creation was successful
-        WSACleanup(); // Clean up Winsock
         return 3;
     }
 
@@ -98,8 +83,7 @@ int Communication::ReceiveData() {
 
     char hostname[NI_MAXHOST]; // Buffer to store the hostname
     if (gethostname(hostname, sizeof(hostname)) == SOCKET_ERROR) {
-        closesocket(receive_py);
-        WSACleanup();
+        close(receive_py);
         return 4;
     }
     //struct sockaddr_in* local_addr = (struct sockaddr_in*)addr_result->ai_addr;
@@ -112,8 +96,7 @@ int Communication::ReceiveData() {
     int opt = 1;
     if (setsockopt(receive_py, SOL_SOCKET, SO_REUSEADDR, (const char*)&opt, sizeof(opt)) == SOCKET_ERROR) {
        // std::cerr << "Failed to set SO_REUSEADDR: " << WSAGetLastError() << std::endl;
-        closesocket(receive_py);
-        WSACleanup();
+        close(receive_py);
         return 6; // Return a new error code for this failure
     }
 
@@ -122,8 +105,7 @@ int Communication::ReceiveData() {
       cout<<"                   Port: "<<this->portR<<endl;
       int error_code = WSAGetLastError();
       std::cerr << "Bind failed with error: " << error_code << std::endl;
-        closesocket(receive_py); // Close the receive socket
-        WSACleanup(); // Clean up Winsock
+        close(receive_py);
         return 5;
     }
 
@@ -152,8 +134,7 @@ int Communication::ReceiveData() {
                if(x== 0 && y == 0){
                    std::cout<<"Recived 0"<<endl;
                    
-                   closesocket(receive_py);
-                   WSACleanup();
+                   close(receive_py);
                    return 0;
                }
                 transform.SetTransform(x,y,theta);
@@ -168,8 +149,7 @@ int Communication::ReceiveData() {
          //   std::cout << "Received coordinates from " << python_ip << ": x=" 
           //            << x << ", y=" << y << std::endl;
             transform.SetTransform(x,y,0.0f); // theta is not used in this case
-        closesocket(receive_py);
-        WSACleanup();
+        close(receive_py);
 
         }
         else {
@@ -179,12 +159,10 @@ int Communication::ReceiveData() {
                 std::cerr << "recvfrom failed with error: " << error_code << std::endl;
                 
             }
-            closesocket(receive_py);
-            WSACleanup();
+            close(receive_py)
             return 1;
         }
-        closesocket(receive_py);
-        WSACleanup();
+        close(receive_py);
         return 0;
     
     //´procedimiento deone obtengas la info

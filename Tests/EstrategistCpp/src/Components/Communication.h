@@ -5,14 +5,15 @@
 // Class created to send messages directly to the robot.
 #include <iostream>
 #include <cstring>
-#include <winsock2.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <ws2tcpip.h>
 #include <map>
 #include <unordered_map>
 using namespace std;
 
-// Link with Winsock library
-#pragma comment(lib, "ws2_32.lib")
 
 // Handles communication with a robot via network sockets.
 // This class is responsible for sending data and reciving data 
