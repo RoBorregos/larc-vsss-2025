@@ -14,6 +14,7 @@ public:
     Vector2 Intersect(Transform ball);
     void SetLine(Vector2 s, Vector2 f);
     Line(Vector2 s,  Vector2 f);
+    Line();
     
 
 };

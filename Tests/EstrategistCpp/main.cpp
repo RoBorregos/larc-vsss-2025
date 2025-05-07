@@ -113,13 +113,15 @@ int main()
                 continue;
             }
             cout << "ID: " << entity.second->ID << " Transform: " << entity.second->transform << endl;
-            // Print the updated position
+            // Print the updated positionBall
         } 
-        if((robots[attackerID]->transform.position - Ball.transform.position).Magnitude() > (robots[otherID]->transform.position - Ball.transform.position).Magnitude()){
+        cout<<"Recived Data: "<<endl;
+        if((robots[attackerID]->transform.position - ball.transform.position).Magnitude() > (robots[otherID]->transform.position - ball.transform.position).Magnitude()){
             int temp = attackerID;
             attackerID = otherID;
             otherID = temp;
         }
+        cout<<"Attacker ID: "<<attackerID<<endl;
  
           
     if(Playing){

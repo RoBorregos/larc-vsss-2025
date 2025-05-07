@@ -16,6 +16,10 @@ Line::Line(Vector2 s, Vector2 f) : start(s), end(f) {
     cout<<"Line ----------- m: "<<m<< " -- b: "<<b<<endl;
 }
 
+Line::Line() : start(0, 0), end(0, 0), m(0), b(0) {
+    cout<<"Line ----------- m: "<<m<< " -- b: "<<b<<endl;
+}
+
 Vector2 Line::Intersect(Transform ball)  {
     
     cout<<"\n///////////cheking intersect to a horizontalLine: \n"<<endl;
