@@ -59,13 +59,13 @@ robots = {}
 
 # Predefined robot ports for each identified pattern
 predefined_ports = {
-    1: 1201,  # Robot ID 1 with port 1201
+    1: 1203,  # Robot ID 1 with port 1203
     2: 1202,  # Robot ID 2 with port 1202
     3: 1203,  # Robot ID 3 with port 1203
-    4: 1204,   # Robot ID 4 with port 1204,
+    4: 1202,   # Robot ID 4 with port 1204,
     5: 1205,   # Robot ID 5 with port 1205
     6: 1206,   # Robot ID 6 with port 1206
-    7: 1207,   # Robot ID 7 with port 1207
+    7: 1202,   # Robot ID 7 with port 1207
     8: 1208,   # Robot ID 8 with port 1208
     9: 1209,   # Robot ID 9 with port 1209
     10: 1210,  # Robot ID 10 with port 1210
@@ -76,7 +76,7 @@ predefined_ports = {
     15: 1215,  # Robot ID 15 with port 1215
     16: 1216,  # Robot ID 16 with port 1216
     17: 1217,  # Robot ID 17 with port 1217
-    18: 1218,  # Robot ID 18 with port 1218
+    18: 1201,  # Robot ID 18 with port 1218
     19: 1219,  # Robot ID 19 with port 1219
     20: 1220   # Robot ID 20 with port 1220
 }
@@ -129,10 +129,10 @@ def get_color_centroid(img):
         mask = cv2.inRange(hsv_img, lower, upper)
 
         # Ajuste dinámico de los valores HSV
-        #lower_hsv, upper_hsv = auto_adjust_hsv(hsv_img, mask)
-        #if lower_hsv is not None and upper_hsv is not None:
-        mask = cv2.inRange(hsv_img, lower, upper)
         kernel = np.ones((5, 5), np.uint8)
+        lower_hsv, upper_hsv = auto_adjust_hsv(hsv_img, mask)
+        if lower_hsv is not None and upper_hsv is not None:
+            mask = cv2.inRange(hsv_img, lower_hsv, upper_hsv)
 
         dilatedMask = cv2.dilate(mask, kernel, iterations=1)
         erotedMask = cv2.erode(dilatedMask, kernel, iterations=1)
@@ -221,7 +221,7 @@ def bb_center_orien(results, img, H):
                 if orien is not None:
                     orien = round(float(orien), 4)
                     # Agregar orientación al historial del robot
-                    print(f"Orien : {orien}")
+                    #print(f"Orien : {orien}")
                     # Obtener coordenadas reales
                     robot_coors = np.array([[x_center, y_center]], dtype="float32")
                     robot_coors = np.array([robot_coors])
@@ -234,8 +234,8 @@ def bb_center_orien(results, img, H):
 
                     # Dibujar el centro del robot
                     cv2.circle(img, (int(x_center), int(y_center)), 2, (0, 0, 255), -1)
-                    cv2.putText(img, f"ID: {robot_id}", (int(x_center), int(y_center) - 10),
-                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                    #cv2.putText(img, f"ID: {robot_id}", (int(x_center), int(y_center) - 10),
+                                #cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     return robots
 
 
