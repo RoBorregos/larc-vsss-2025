@@ -26,7 +26,7 @@ BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 #in HSV Ball detection 
-colorParams = [0, 42, 186, 39, 174, 255] # 0, 85, 0, 24, 157, 255  Most reliable for competition
+colorParams = [0, 85, 0, 24, 157, 255] # 0, 85, 0, 24, 157, 255  Most reliable for competition
 #h_min =  0  h_max =  28  Sat_min =  80  Sat_max =  130  Val_min =  79  Val_max =  255
 
 realFieldCoors = [[0, 0], #tl

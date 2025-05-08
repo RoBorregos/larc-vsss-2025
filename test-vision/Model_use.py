@@ -103,8 +103,8 @@ for robot_id, port in predefined_ports.items():
 
 #Modify depending on actual environment
 hsvRanges = { 
-    'blue' : {'lower':[110, 34 , 135], 'upper': [150, 157, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
-    'yellow' : {'lower': [0, 0, 235], 'upper':[42, 33, 255]} #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
+    'blue' : {'lower':[101, 102 , 131], 'upper': [161, 255, 255]},
+    'yellow' : {'lower': [24, 42, 0], 'upper':[52, 255, 255] }
 }
 
 #'blue' : {'lower':[101, 102 , 131], 'upper': [161, 255, 255]}
