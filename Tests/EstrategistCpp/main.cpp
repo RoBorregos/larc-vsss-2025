@@ -51,19 +51,9 @@ int main()
     //      BallPos         GoalPoss    ID   ForceImpactVectorF PortR       PortS
     Ball ball (transforms[0], transforms[1], 0, magneticConstant , 1200 ); 
                                                                             entities[0] = &ball;
-        robots[3] = new Robot(transforms[2],  3,     vortexConstant, 1203,  1001); //robot with the correct udpPOR
-                                                                                        entities[3] = robots[3];
-        robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1202,  1001 );
+       robots[2] = new Robot(transforms[4], 2,     vortexConstant, 1201,  1001 );
                                                                                         entities[2] = robots[2];
-        robots[3] = new Robot(transforms[4], 1,     vortexConstant, 1201,  1001 );
-                                                                                        entities[1] = robots[3];
-        robots[-1] = new Robot(transforms[5], -1,  repelentConstant, 1204, 1001); //robot with the correct udpPOR
-                                                                                        entities[-1] = robots[-1];
-        robots[-2] = new Robot(transforms[6], -2,  repelentConstant, 1205, 1001);
-                                                                                        entities[-2] = robots[-2];
-        robots[-3] = new Robot(transforms[7], -3,  repelentConstant, 1206, 1001);
-                                                                                        entities[-3] = robots[-3];
-            robots[3]->transform.SetTransform(50,10,3.14);
+            robots[2]->transform.SetTransform(50,10,3.14);
             robots[2]->transform.SetTransform(80,75,3.14);
             ball.transform.SetTransform(75,70,0);
             ball.goal.SetTransform(PorteriaEnemiga,0);
@@ -94,8 +84,7 @@ int main()
         }
     });
     int attackerID = 2; 
-    int defenderID = 3; 
-    int otherID = 1;
+    int defenderID = 2; 
     
     while (Penalty || Playing) {     
 
@@ -115,13 +104,6 @@ int main()
             cout << "ID: " << entity.second->ID << " Transform: " << entity.second->transform << endl;
             // Print the updated positionBall
         } 
-        cout<<"Recived Data: "<<endl;
-        if((robots[attackerID]->transform.position - ball.transform.position).Magnitude() > (robots[otherID]->transform.position - ball.transform.position).Magnitude()){
-            int temp = attackerID;
-            attackerID = otherID;
-            otherID = temp;
-        }
-        cout<<"Attacker ID: "<<attackerID<<endl;
  
           
     if(Playing){
@@ -191,7 +173,7 @@ int main()
         }else{
             attackerOut = robots[attackerID]->kinematic.GetVelocitiesForMagn(result);
         }
-
+/*
         // Defender Movement
         attackerOut.Scale(160.0f);
         cout<<"Attacker Move: "<<attackerOut<<endl;
@@ -214,16 +196,9 @@ int main()
                     NearestEnemyID = r.first;
                 }
             }
-        }
+        }*/
         
-        SoportLine.SetLine(robots[attackerID]->transform.position, robots[NearestEnemyID]->transform.position);
-        Vector2 SupportPos = SoportLine.MidPoint();
-        if((SupportPos - robots[attackerID]->transform.position).Magnitude() > 5){
-            robots[otherID]->GoTo(Transform(SupportPos, 0));
-        }else{
-            robots[otherID]->communication.SendData(Output(0,0));
-        }
-
+   
         //>>>>>>>>>>>>Sending data to the robots<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
         vector<int> errors(3,0);
         errors[0] = robots[attackerID]->communication.SendData(attackerOut);
