@@ -91,8 +91,8 @@ for robot_id, port in predefined_ports.items():
 
 #Modify depending on actual environment
 hsvRanges = { #h_min =  101  h_max =  179  Sat_min =  152  Sat_max =  248  Val_min =  187  Val_max =  255
-    'blue' : {'lower':[101, 55 , 199], 'upper': [128, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
-    'yellow' : {'lower': [13, 25, 136], 'upper':[62, 84, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
+    'blue' : {'lower':[101, 102 , 131], 'upper': [161, 255, 255]}, #h_min =  95  h_max =  111  Sat_min =  122  Sat_max =  255  Val_min =  80  Val_max =  255
+    'yellow' : {'lower': [24, 42, 0], 'upper':[52, 255, 255] } #Ah_min =  4  h_max =  55  Sat_min =  19  Sat_max =  196  Val_min =  51  Val_max =  255
 }
 
 
@@ -129,11 +129,15 @@ def get_color_centroid(img):
         mask = cv2.inRange(hsv_img, lower, upper)
 
         # Ajuste dinámico de los valores HSV
-        lower_hsv, upper_hsv = auto_adjust_hsv(hsv_img, mask)
-        if lower_hsv is not None and upper_hsv is not None:
-            mask = cv2.inRange(hsv_img, lower_hsv, upper_hsv)
+        #lower_hsv, upper_hsv = auto_adjust_hsv(hsv_img, mask)
+        #if lower_hsv is not None and upper_hsv is not None:
+        mask = cv2.inRange(hsv_img, lower, upper)
+        kernel = np.ones((5, 5), np.uint8)
 
-        contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        dilatedMask = cv2.dilate(mask, kernel, iterations=1)
+        erotedMask = cv2.erode(dilatedMask, kernel, iterations=1)
+
+        contours, _ = cv2.findContours(erotedMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
          # Aplicar morfología para limpiar la máscara
         kernel = np.ones((5, 5), np.uint8)
@@ -233,40 +237,5 @@ def bb_center_orien(results, img, H):
                     cv2.putText(img, f"ID: {robot_id}", (int(x_center), int(y_center) - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
     return robots
-
-
-def main():               
-    cap = cv2.VideoCapture(0)
-    cap.set(3, 640) #width
-    cap.set(4, 480) #height
-
-    H = getHomography(cap, realFieldCoors)
-
-    #main loop
-    while True:
-        tpast = time.time()
-        success, img = cap.read()
-
-        if success:
-            results = model.track(source=img, persist=True, show=False )
-            #results = model.predict(img)
-            if results:
-                res_img = results[0].plot()
-                bb_center_orien(results, img, H)
-                cv2.imshow("Model prediction", res_img)
-                cv2.imshow("Video", img)
-            else:
-                print("No se usa modelo")
-        else:
-            print("No success")
-        tnow = time.time()
-        totalTime = tnow - tpast
-        fps = 1 / totalTime
-        if cv2.waitKey(1) == ord('q'):
-            print(f"fps: {fps}")
-            break
-
-if __name__ == '__main__':
-    main()                  
 
 

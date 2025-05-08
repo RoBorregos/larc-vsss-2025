@@ -26,11 +26,9 @@ BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 #in HSV Ball detection 
-colorParams = [0, 61, 0, 20, 239, 255] #0, 203, 77, 9, 255, 228                                CHECK FOR HSL USEEEEEEREEFWEFRG
+colorParams = [0, 85, 0, 24, 157, 255] #0, 61, 0, 20, 239, 255                            CHECK FOR HSL USEEEEEEREEFWEFRG
 #checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
 #h_min =  0  h_max =  28  Sat_min =  80  Sat_max =  130  Val_min =  79  Val_max =  255
-
-#0, 188, 197, 179, 255, 255
 
 realFieldCoors = [[0, 0], #tl
                   [130, 0], #tr
@@ -188,8 +186,6 @@ def findObject(image, copy, H):
     #if the center is detected, get it's coordinates in real field coordinates
     if objCenter:
         # Filter contours by size and select the largest one
-        largest_contour = max(objPts, key=lambda pt: cv2.contourArea(np.array([pt])))
-        objCenter = (largest_contour[0], largest_contour[1])
         cv2.circle(copy, (int(objCenter[0]), int(objCenter[1])), 2, (255,0,0), 5)
         #give the correct format to the pt for use in perspectiveTransform
         objCenterPt = np.array([objCenter[0], objCenter[1]], dtype="float32")
