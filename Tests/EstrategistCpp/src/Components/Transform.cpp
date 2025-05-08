@@ -71,10 +71,10 @@ float Transform::GetRotationalDifference(float objective) const{
 // Sets the Transform's position and rotation.
 // Ensures the rotation is within the valid range [0, 2π].
 void Transform::SetTransform(float x, float y, float r) {
-    x = -x/10; y /=10; r = pi -r;
+    x = x/10; y /=-10; r = +- r;
     velocities =  Vector2(x,y) - position;
     velocities = velocities.Magnitude() < 0.2? Vector2(0,0) : velocities;
-    angularVelocity = r - rotation > 0.01 ? rotation : 0;
+    angularVelocity = r - rotation > 0.01 ? r - rotation : 0;
     position.x = x ;
     position.y = y;
     rotation =  r;

@@ -5,13 +5,18 @@
 using namespace std;
 
 Line::Line(Vector2 s, Vector2 f) : start(s), end(f) {
-    if(s.x > f.x){
+    if(s.y == f.y && s.x > f.x){
+        Vector2 t = s;
+        s = f;
+        f = t;
+    }
+    if(s.x == f.x && s.y > f.y){
         Vector2 t = s;
         s = f;
         f = t;
     }
     Vector2 dif = start -end;
-    m = dif.y / dif.x;
+    m = dif.x ? dif.y / dif.x: 0;
     b = start.y - m* start.x;
     cout<<"Line ----------- m: "<<m<< " -- b: "<<b<<endl;
 }
@@ -32,6 +37,12 @@ Vector2 Line::Intersect(Transform ball)  {
         if(start.x <  intersection_y && intersection_y < end.x){
             fi = Vector2(intersection_y, end.y);
         }
+    else if(end.x == end.y){
+        float intersection_x = _m* end.x +_b;
+        if(start.y < intersection_x && intersection_x < end.y){
+            fi = Vector2(start.x, intersection_y);
+        }
+    }
     }else{
         float fy = (m - _m) ?  (-b*_m + _b*m) / (m - _m): -1000;
         float fx = (fy - b)/m;

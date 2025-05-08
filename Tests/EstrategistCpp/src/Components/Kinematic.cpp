@@ -73,9 +73,9 @@ Output Kinematic::GetVelocities(Vector2 target) {
     //difference and multiply by the constants
     // Calculate the forward velocity and rotational velocity.
     cout<<"                     Angle Dif:"<<transform.GetRotationalDifference(target.GetAngle()) <<endl;
-    float FrontVel = target.Magnitude() * LINEAR_CONSTANT *1.5;
+    float FrontVel = target.Magnitude() * LINEAR_CONSTANT *1.2;
                                                            // 2.2
-    float RotationVel = transform.GetRotationalDifference(target.GetAngle()) * ANGULAR_CONSTANT * 0.5 ; //0.8
+    float RotationVel = transform.GetRotationalDifference(target.GetAngle()) * ANGULAR_CONSTANT * 1.5 ; //0.8
     //Get the velocities of the wheels in rad/s
     output.a = FrontVel/ RADIUS - WHEEL_DISTANCE / (2*RADIUS) * RotationVel; 
     output.b = FrontVel/ RADIUS + WHEEL_DISTANCE / (2*RADIUS) * RotationVel;
