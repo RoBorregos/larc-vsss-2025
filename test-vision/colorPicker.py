@@ -1,6 +1,10 @@
 import cv2
 import numpy as np
 
+#MEDIO FUNCIONA, PRUEBA PARA PELOTAA
+#h_min =  14  h_max =  105  Sat_min =  98  Sat_max =  209  Val_min =  31  Val_max =  255
+
+#hsl para todos los coloires, lab para naranja
 #Function for createTrackbars to work
 def empty(value):
     pass
@@ -18,7 +22,7 @@ def colorPicker(window):
     cv2.createTrackbar("Val Max", window, 255, 255, empty)
 
     #Video capture and settings
-    video = cv2.VideoCapture(0)
+    video = cv2.VideoCapture(2)
     video.set(3, 640) #width
     video.set(4, 480) #Height
     video.set(10, 150) #brightness

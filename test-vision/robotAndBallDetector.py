@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from size_measure import clockwise_pts, middle
-from homography import getHomography
+from homography import getHomography, warpChange, autoGetHomography
 import time
 import socket
 import struct
@@ -26,14 +26,13 @@ BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 #in HSV Ball detection 
-colorParams = [0, 85, 0, 24, 157, 255] #0, 61, 0, 20, 239, 255                            CHECK FOR HSL USEEEEEEREEFWEFRG
-#checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
+colorParams = [0, 42, 186, 39, 174, 255] # 0, 85, 0, 24, 157, 255  Most reliable for competition
 #h_min =  0  h_max =  28  Sat_min =  80  Sat_max =  130  Val_min =  79  Val_max =  255
 
 realFieldCoors = [[0, 0], #tl
-                  [130, 0], #tr
+                  [150, 0], #tr
                   [130, 150], #br
-                  [0, 150]] # bl
+                  [0, 130]] # bl
 
 clicked_points = []
 
@@ -165,28 +164,26 @@ def polynomial_extrapolation(positions, degree=2):
 #main function. Returns object center with img preprocessing
 def findObject(image, copy, H): 
     global ball_positions #allows the function to modify the global variable
-    imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)                            
+    imgBlur = cv2.GaussianBlur(image, (7,7), 0)
+    imgHSV = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV)                            
 
     # Ball mask, already have refObj
     lower = np.array(colorParams[0:3]) 
     upper = np.array(colorParams[3:6])
     mask = cv2.inRange(imgHSV, lower, upper)#
     
-    '''kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)'''
     kernel = np.ones((5, 5), np.uint8)
     
     dilatedMask = cv2.dilate(mask, kernel, iterations=1)
-    #result = cv2.bitwise_and(img, img, mask=dilatedMask)
-    cv2.imshow("Better mask", dilatedMask) #YA SOLO APLICA QUE AGARRE EL AREA MAS GRANDE
+    erotedMask = cv2.erode(dilatedMask, kernel, iterations=1)
+    result = cv2.bitwise_and(image, image, mask=erotedMask)
+    cv2.imshow("Better mask", erotedMask) #YA SOLO APLICA QUE AGARRE EL AREA MAS GRANDE
 
-    objCenter,objPts = findContoursAndSize(dilatedMask, copy)
-    
+    objCenter,objPts = findContoursAndSize(dilatedMask, copy) #returns biggest contour
     #if the center is detected, get it's coordinates in real field coordinates
     if objCenter:
         # Filter contours by size and select the largest one
-        cv2.circle(copy, (int(objCenter[0]), int(objCenter[1])), 2, (255,0,0), 5)
+        cv2.circle(image, (int(objCenter[0]), int(objCenter[1])), 2, (255,0,0), 5)
         #give the correct format to the pt for use in perspectiveTransform
         objCenterPt = np.array([objCenter[0], objCenter[1]], dtype="float32")
         print(f"Normal: {objCenterPt[0]}, {objCenterPt[1]}")
@@ -203,11 +200,11 @@ def findObject(image, copy, H):
             x_extrapolated = polynomial_extrapolation(ball_positions_np[:, 0])
             y_extrapolated = polynomial_extrapolation(ball_positions_np[:, 1])
             objCenterPt = (x_extrapolated, y_extrapolated)
-        cv2.circle(copy, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
+        cv2.circle(image, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
         print(f"Extrapolado: {objCenterPt[0]}, {objCenterPt[1]}")
 
         realFldCoors = cv2.perspectiveTransform(np.array([[[objCenterPt[0], objCenterPt[1]]]], dtype="float32"), H)[0][0]
-        cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
+        cv2.putText(image, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
     else:
@@ -215,30 +212,31 @@ def findObject(image, copy, H):
 
 
 def main():       
-    cap = cv2.VideoCapture(0) #2 for external devices, sometimes 0 idkw
+    cap = cv2.VideoCapture(2) #2 for external devices, sometimes 0 idkw
     cap.set(3, 640) #width
     cap.set(4, 480) #height
 
     print("Homography " \
     "Calibration. Click the four corners of the field in order TL, TR, BR, BL")
+    
     H = getHomography(cap, realFieldCoors)
-
-    window_name = "Detección"
-    #cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    matrix = warpChange()
+    newH = autoGetHomography(realFieldCoors)
 
     # Bucle principal
     while True:
         tpast = time.time()
-        
         success, img = cap.read()
 
         if success:
             # Detección de robots con el modelo YOLO
-            img_copy = img.copy()  # Copia del frame para detección de la pelota
-            results = model(img)
+            field = cv2.warpPerspective(img, matrix, (640, 480))
+            field_copy = field.copy()  # Copia del frame para detección de la pelota
+            results = model(field) #use YOLO custom model on warped field
+            cv2.imshow("Field", field)
 
             # Detección de pelota
-            objCoorsCenter = findObject(img, img_copy, H)  # Coordenadas reales de la pelota
+            objCoorsCenter = findObject(field, field_copy, newH)  # Coordenadas reales de la pelota
             if objCoorsCenter[0] != 0 and objCoorsCenter[1] != 0:
                 send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, BALL)
                 print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
@@ -248,12 +246,13 @@ def main():
             #Detección de robots
             if results:
                 detect_img = results[0].plot()
-                robots = bb_center_orien(results, img_copy, H)  # Procesar orientación y centro de los robots
+                robots = bb_center_orien(results, field_copy, newH)  # Procesar orientación y centro de los robots
                 for robot_id, robot in robots.items():
                     # Enviar coordenadas de los robots
                     robot.send_data(RELAY_IP)
                 cv2.imshow("Model", detect_img)
-                cv2.imshow("Detections", img_copy)
+                cv2.imshow("Detections", field_copy)
+                cv2.imshow("Field", field)
             if cv2.waitKey(1) == ord('q'):
                 break
         else:
