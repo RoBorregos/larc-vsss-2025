@@ -16,7 +16,7 @@ IP's-> robotAndBallDetector.py ,  ballDetector.py
 Homography -> Manually set homography '''
 
 #fusion 
-model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt')
+model = YOLO('/home/balzero/Documents/Roborregos/AnotherVsssssss/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt')
 
 RELAY_IP = socket.gethostbyname(socket.gethostname())
 print(f"Relay IP: {RELAY_IP}")
@@ -248,7 +248,6 @@ def main():
                 detect_img = results[0].plot()
                 robots = bb_center_orien(results, field_copy, newH)  # Procesar orientación y centro de los robots
                 for robot_id, robot in robots.items():
-                    # Enviar coordenadas de los robots
                     robot.send_data(RELAY_IP)
                 cv2.imshow("Model", detect_img)
                 cv2.imshow("Detections", field_copy)

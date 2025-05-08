@@ -12,13 +12,14 @@ from collections import deque
 
 
 class RobotData:
-    def __init__(self, x=0.0, y=0.0, orientation=0.0, port = 1200):
+    def __init__(self, x=0.0, y=0.0, orientation=0.0, port = 1200, patterns = []):
         self.x = x
         self.y = y
         self.orientation = orientation
         self.port = port
         self.centroid_history = deque(maxlen=5) #a centroid history for each robot
         self.orientation_history = deque(maxlen=5)
+        self.patterns = patterns  
     def update(self, x, y, orientation):
         self.x = x
         self.y = y
@@ -57,11 +58,13 @@ class RobotData:
         sock.sendto(data, (relay_ip, self.port))
         # Close the socket
         sock.close()
+        print(self)
     
 
 
+
 #changes
-model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt') #load model
+model = YOLO('/home/balzero/Documents/Roborregos/AnotherVsssssss/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt') #load model
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
@@ -76,30 +79,14 @@ robots = {}
 
 # Predefined robot ports for each identified pattern
 predefined_ports = {
-    1: 1203,  # Robot ID 1 with port 1203
-    2: 1202,  # Robot ID 2 with port 1202
-    3: 1203,  # Robot ID 3 with port 1203
-    4: 1202,   # Robot ID 4 with port 1204,
-    5: 1205,   # Robot ID 5 with port 1205
-    6: 1206,   # Robot ID 6 with port 1206
-    7: 1202,   # Robot ID 7 with port 1207
-    8: 1208,   # Robot ID 8 with port 1208
-    9: 1209,   # Robot ID 9 with port 1209
-    10: 1210,  # Robot ID 10 with port 1210
-    11: 1211,  # Robot ID 11 with port 1211
-    12: 1212,  # Robot ID 12 with port 1212
-    13: 1213,  # Robot ID 13 with port 1213
-    14: 1214,  # Robot ID 14 with port 1214
-    15: 1215,  # Robot ID 15 with port 1215
-    16: 1216,  # Robot ID 16 with port 1216
-    17: 1217,  # Robot ID 17 with port 1217
-    18: 1201,  # Robot ID 18 with port 1218
-    19: 1219,  # Robot ID 19 with port 1219
-    20: 1220   # Robot ID 20 with port 1220
+    1201: [14,3,4],  # Robot 2
+    1202: [12,5,7],
+    1203: [9,1,8]
+    # Add more robots and their ports as needed
 }
 
-for robot_id, port in predefined_ports.items():
-    robots[robot_id] = RobotData(port=port)  # Initialize each robot with its port
+for port, patters in predefined_ports.items():
+    robots[port] = RobotData(port=port, patterns = patters)  # Initialize each robot with its port
 
 #Modify depending on actual environment
 hsvRanges = { 
@@ -195,8 +182,15 @@ def bb_center_orien(results, img, H):
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0]
             #confidence = box.conf[0].item()
-            robot_id = int(box.cls[0]) + 1  # Índice de la clase detectada (patron detectado)
-
+            patternID = int(box.cls[0]) + 1  # Índice de la clase detectada (patron detectado)
+            robot_id = None
+            for port, robot in robots.items():
+                if patternID in robot.patterns:
+                    robot_id = port
+                    break
+            if( robot_id is None):
+                print("No se detectó el patrón") # de los patrones detectados no estan los ya definidos
+                continue
             # Centro del robot
             x_center = float((x1 + x2) / 2)
             y_center = float((y1 + y2) / 2)

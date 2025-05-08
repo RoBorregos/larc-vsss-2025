@@ -31,7 +31,7 @@ def colorPicker(window):
 
     #images processing
     #preprocess
-    #img = cv2.imread('/home/daniela/Desktop/VSSS/larc-vsss-2025/test-vision/WhatsApp Image 2025-04-27 at 10.23.45 PM.jpeg')
+    #img = cv2.imread('/home/balzero/Documents/Roborregos/AnotherVsssssss/larc-vsss-2025/test-vision/WhatsApp Image 2025-04-27 at 10.23.45 PM.jpeg')
     
     while True:
         ret, img = video.read()
