@@ -37,10 +37,7 @@ float magneticConstant = 0.1f; //Magnetico para la pelota -> <Atrayente> y <Repe
 //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
 
-//Dentro del codigo, cada una de las posiciones de las entidades estan definidas por transform. Tienen este valor como referencia
-//Por lo que puedes cambiar dentro de el vector de transform o en el mapa de entidades las posiciones de los obejtos.
-//El id esta hecho para pelota = 0; alidados = 1,2,3; enemigos = -1,-2,-3;
-//##Valores definidos por la pelota
+//##Valores calibrados por la pelota
 const Vector2 PorteriaEnemiga(12.53,-7.67); //x /= -10 
 const Vector2 PorteriaAliada(0.87,-6.63); // y /= 10
 
@@ -56,7 +53,7 @@ int main()
     // create transforms(position classes) for each of the entities;    
     vector<Transform> transforms(9 ,Transform());    
     
-                //---------------------------------------Gaols Position-----------------------
+                //---------------------------------------Gaols Position----------------------------//
                 float maxDist = 4.5; //45 cm
                 Vector2 pAliadaStart, pAliadaEnd;
                 pAliadaStart = PorteriaAliada + Vector2(0,-maxDist); //Porteria Aliada
@@ -72,42 +69,47 @@ int main()
     //      BallPos         GoalPoss    ID   ForceImpactVectorF PortR       PortS
     Ball ball (transforms[0], transforms[1], 0, magneticConstant , 1200 ); 
                                                                             entities[0] = &ball;
-    robots[2] = new Robot(transforms[4], 2,     vortexConstant, 1202,  1001 );
-    robots[1] = new Robot(transforms[3], 1,     vortexConstant, 1201,  1001 );
+
+    /********************Creation Of each Robot in the scenario*************************/
+
+    robots[1] = new Robot(transforms[4], 1,     vortexConstant, 1201,  1001 );
+    robots[2] = new Robot(transforms[3], 2,     vortexConstant, 1202,  1001 );
     robots[3] = new Robot(transforms[5], 3,    repelentConstant, 1203,  1001 );
     robots[-1] = new Robot(transforms[6], -1,    repelentConstant, 1204,  1001 );
     robots[-2] = new Robot(transforms[7], -2,    repelentConstant, 1205,  1001 );
     robots[-3] = new Robot(transforms[8], -3,    repelentConstant, 1206,  1001 );
     ball.goal.SetTransform(PorteriaEnemiga,0);
-                                                for(auto r: robots){
-                                                    entities[r.first] = r.second;
-                                                }
-
-                                                vector<thread> threads;
-                                                for (auto& entityPair : entities) {
-                                                    threads.emplace_back(ReceiveDataAsync, entityPair.second, ref(Playing), ref(Penalty));
-                                                }
+            
+    //**************  Robots in Entities  ***********//
+            for(auto r: robots){
+                entities[r.first] = r.second;
+            }
+    //*************  Communication in Threads  *****************/
+            vector<thread> threads;
+            for (auto& entityPair : entities) {
+                threads.emplace_back(ReceiveDataAsync, entityPair.second, ref(Playing), ref(Penalty));
+            }
     
     Transform DefenderObjective; 
+    Transform OtherObjective;
     Output attackerOut;
-    //Print all entities transform (position and rotation)
     
+    //Positions for Reset
     vector<Transform> PenaltyPos{
         Transform(7.5,5, 0), 
         Transform(7.5,5, 0), 
         Transform(7.5,5, 0)
     };
 
-
+//Punto Central Por si Acaso
     Line LineBetweenGoals (PorteriaEnemiga, PorteriaAliada);
     Vector2 Center = LineBetweenGoals.MidPoint();
 
-
+//Thread to recive inputs
     thread commandThread([&]() {
         while (Playing || Penalty) {
             cout << "Enter command (stop/change): ";
             cin >> cmd;
-
             if (cmd == "s") {
                 Playing = false;
                 Penalty = false;
@@ -116,8 +118,7 @@ int main()
                 Playing = !Playing;
             } else {
                 cout << "Unknown cmd: " << cmd << endl;
-            }
-            
+            } 
             this_thread::sleep_for(chrono::milliseconds(30));
         }
     });
@@ -125,14 +126,18 @@ int main()
 
     int attackerID = 1; 
     int defenderID = 2; 
-    
+    int otherID = 3;
 
 
     while (Penalty || Playing) {     
 
-        // Loop through all entities and receive position updates
+        //Main Loop
     if(Playing){
-        //Determine the velocity vector the robot should follow by checking each of the entities on the map
+        //If the game is going
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////Attacker Play
         Vector2 tforce, result;
         cout<<"Adding Forces:                          "<<endl;
         bool Attacking = false;
@@ -161,19 +166,18 @@ int main()
             //This way the robot will always push the ball pointing to the goal
             else
             {
-                cout<<"                              ";
-
+                ///////// -- First Go to the Optimal Pos and later use Magnetic for easy response 
                 Transform temporal = entitie.second->forceGenerator.CreatePositionInRect(ball.goal, -1.2);
 
+
+                //distance from player to the temporal position
                 float distance = (temporal.position - entities[attackerID]->transform.position).Magnitude();
-                cout<<"Distance: "<<distance<<endl;
+                
                 
                 if(distance > 2){
-                    cout<<"Moving To Pos: "<< temporal<<endl;
                     tforce = entities[attackerID]->forceGenerator.GetForce(temporal, ForceType::REPELENT, ForceMode::CONSTANT);
                     Attacking = false;
                 }else{
-                    cout<<"Attacking to: "<< entitie.second->transform<<endl;
                     tforce = entitie.second->forceGenerator.GetForce(entities[attackerID]->transform, ball.goal , ForceType::MAGNETIC, 0.4,  ForceMode::CONSTANT);
                     tforce *= 3;
                     Attacking = true;
@@ -186,50 +190,60 @@ int main()
             result += tforce;
         }
         
-        //Walls repulsiveForce
-        result += (Center - robots[attackerID]->transform.position) * 0.5f;
+        //Walls repulsiveForce (Fuerza del robot hacia el centro )
+        // Esta fuerza se puede cambiar dependiendo del estado de los demas objetos
+        result += (Center - robots[attackerID]->transform.position) * 0.3f;
 
-        cout<<"Result Force: "<< result<<endl;
+
+        attackerOut = robots[attackerID]->kinematic.GetVelocities(result);
         //Generating the rpm and sending it to the robot
         //here the kinematic component will transform this velocitie vectore into rpm the robot should follow
-        if(!Attacking){
-            attackerOut = robots[attackerID]->kinematic.GetVelocities(result);
-        }else{
-            attackerOut = robots[attackerID]->kinematic.GetVelocitiesForMagn(result);
-        }
         attackerOut.Scale(160.0f);
         robots[attackerID]->communication.SendData(attackerOut);
         cout<<"Attacker Move: "<<attackerOut<<endl;
         //Al igual que esta linea para el defensor
 
 
-        // Defender Movement
-        //Descomenta toda esta area para ver como se comporta el defensor
+////////////////////////////////////////////////////////////////////////////////////////////////// - Defender Play
+        //Primero determina si con la velocidad actual de la pelota podria haber alguna colision
         Vector2 TrayectoryIntersection = porteriaAliada.Intersect(ball.transform);
         cout<<"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n  ---------- Defender: "<<endl;
+        //Si es que existe el caso, Determina ese punto de colision como objetivo
         if(TrayectoryIntersection.x > -1000 ){
             DefenderObjective = Transform (TrayectoryIntersection, 0);
             cout<<"New Objective: "<< DefenderObjective<<endl; 
         }
+        //Mover el robot a la posicion
         robots[defenderID]->GoTo(DefenderObjective);
 
-        /*
-        //OtherMovement 
+
+///////////////////////////////////////////////////////////////////////////////////////////////// - Support Play
+        //Busqueda por el enemigo mas cercano a el atacante
         Line SoportLine;
         int NearestEnemyID = -1;
+        double dist;
         for(auto r: robots){
             if(r.first < 0 ){
                if( (r.second->transform.position  - robots[attackerID]->transform.position).Magnitude() 
                         <  (robots[attackerID]->transform.position - robots[NearestEnemyID]->transform.position).Magnitude()){
                     NearestEnemyID = r.first;
+                    dist = (robots[attackerID]->transform.position - robots[NearestEnemyID]->transform.position).Magnitude();
                 }
             }
-        }*/
+        }
+        //Crea una linea entre el atacante y el enemigo y verifica si es que se puede acercar para proteger
+        SoportLine.SetLine(robots[attackerID]->transform.position, robots[NearestEnemyID]->transform.position);
+        Vector2 MidPointAt_EN = SoportLine.MidPoint();
+        if(dist > 1.5){
+            OtherObjective = Transform(MidPointAt_EN, 0);
+        }
+        robots[otherID]->GoTo(OtherObjective);
         
    
 
         
     }else if (Penalty){
+        //Mover cada robot a una posicion especifica
         cout<<"Moving Robots to Place..."<<endl;
         int i = 0;
         for(auto r: robots){
@@ -244,7 +258,7 @@ int main()
 
     }
 
-
+    //Turn Off all the robots
     for(int i = 0; i < 3; i++){
         for(auto r: robots){
             if(r.first > 0){
@@ -252,15 +266,15 @@ int main()
             }
         }
     }
-
+    // Elimin all the threads for comm
     for (auto& thread : threads) {
         if (thread.joinable()) {
             thread.join();
         }
     }
         
-    
-    commandThread.join(); // Wait for the command thread to finish
+    // Elim the last thread
+    commandThread.join(); 
     cout << "Program terminated." << endl;
     return 0;
 }
@@ -270,25 +284,30 @@ int main()
 
 
 /*
-En resumen: Ahora lo que tienes que hacer es modificar los valores de las constantes para que el movimiento sea más fluido
------Primero esta que el robot vaya hacia la pelota
 
-------------------------------------Orden de acciones a cometer-------------------------------------------------------
-<variable, archivo>
-(par1, par2)
 
-- Primero definir variables para que funcione el campo vectorial base : Que el robot vaya a la pelota 
-++ Variable que define -> <magneticConstant, main.cpp> <ANGULAR_CONSTANT, Kinematic.h> <LINEAR_CONSTANT, Kinematic.h> 
+------------------------------------En resumen: -------------------------------------------------------
+- Inclusión de cabeceras y definición de constantes para el comportamiento de los robots (vortex, repulsivo, magnético).
+- Definición de posiciones clave en el campo (porterías, línea central).
+- Inicialización de variables de control de juego (Playing, Penalty) y estructuras para entidades y robots.
+- Creación e inicialización de la pelota y los robots, asignando sus posiciones y parámetros.
+- Inserción de los robots en el mapa de entidades.
+- Lanzamiento de hilos para recibir datos de cada entidad de forma asíncrona.
+- Definición de posiciones para situaciones de penalización.
+- Cálculo del punto central del campo.
+- Lanzamiento de un hilo para recibir comandos del usuario (stop/change).
+- Bucle principal:
+    - Si está en modo juego:
+        - Cálculo de fuerzas sobre el atacante (repulsivas, vórtice, magnéticas) y envío de comandos de movimiento.
+        - Cálculo de la posición objetivo del defensor en función de la trayectoria de la pelota y movimiento hacia ella.
+        - Determinación del enemigo más cercano al atacante y posicionamiento del robot de soporte.
+    - Si está en modo penalización:
+        - Movimiento de los robots a posiciones predefinidas.
+    - Pausa breve para evitar consumo excesivo de CPU.
+- Al finalizar el bucle:
+    - Apagado de los robots (envío de comandos de parada).
+    - Espera a que terminen todos los hilos de comunicación y de comandos.
+    - Mensaje de finalización del programa.
 
-- Ahora que ya sabemos que funciona toca configurar las constantes de movimiento para que funcione de manera magnetica
-**Acciones a realizar <- Modificar el tipo de accion (cambiar de atrayente a magnetica) <main.cpp>
-++ Variable que define -> < proporcion entre atrayente y repelente, ForceGenerator.cpp>   <distancia de la pelota al punto excluyente, main.cpp>
-?? Dato: La funcion atrayente es constante en cualquier punto del mapa mientras que la funcion repelente es proporcional a la distancia del Robot
-
-- Finalmente poner a probar el portero solo es cambiar las variables de movimiento bidireccional y definir los limites de las porterias
-**Acciones a realizar <- Quitar de comentario a la accion de portero <main.cpp>
-++ Variable que define -> <Constante angular de robot bidireccional, Kinematic.cpp>  <(start, end), main.cpp>
-??Dato: puede que la constante del robot bidireccional puede que sea mejor ponerla a 1 despues de probar lo anterior 
-
--------------------------------------------------------------Reperir------------------------------------------------------------------------------------------------
+-------------------------------------------------------------------------------------------------------------------------------------------------------------
 */

@@ -33,10 +33,8 @@ Output Kinematic::GetVelocitiesForRotation(Transform target){
 
 }
 
-// Function: GetVelocities
-// Computes the wheel velocities (in RPM) required to move the robot from its current transform
-// to the target transform.
 
+//This Function does not take into consideration the Angule of the Transform. It creates another from the difference of positions
 Output Kinematic::GetVelocities(Transform target) {
     Output output;
     //Get the difference between the two transforms.
@@ -48,10 +46,7 @@ Output Kinematic::GetVelocities(Transform target) {
     }
     // Calculate the forward velocity and rotational velocity.
     float FrontVel = t.position.Magnitude() * LINEAR_CONSTANT*0.08f;
-    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     float RotationVel = t.rotation * ANGULAR_CONSTANT * 2;
-    //     Constante angular de robot bidireccional   ^   cambiar para que si se mueva bien
-    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
     //Get the velocities of the wheels in rad/s
     float leftVel = FrontVel/ RADIUS - WHEEL_DISTANCE / (2*RADIUS) * RotationVel; 
     float rightVel = FrontVel/ RADIUS + WHEEL_DISTANCE / (2*RADIUS) * RotationVel;
@@ -72,41 +67,20 @@ Output Kinematic::GetVelocities(Vector2 target) {
     //Get the target magnitude of the target and get the angular 
     //difference and multiply by the constants
     // Calculate the forward velocity and rotational velocity.
-    cout<<"                     Angle Dif:"<<transform.GetRotationalDifference(target.GetAngle()) <<endl;
     float FrontVel = target.Magnitude() * LINEAR_CONSTANT *1.2;
-                                                           // 2.2
-    float RotationVel = transform.GetRotationalDifference(target.GetAngle()) * ANGULAR_CONSTANT * 1.5 ; //0.8
+    float RotationVel = transform.GetRotationalDifference(target.GetAngle()) * ANGULAR_CONSTANT * 1.5 ; 
     //Get the velocities of the wheels in rad/s
     output.a = FrontVel/ RADIUS - WHEEL_DISTANCE / (2*RADIUS) * RotationVel; 
     output.b = FrontVel/ RADIUS + WHEEL_DISTANCE / (2*RADIUS) * RotationVel;
     
     //Convert to RPM
-    
     output.a = output.a * 60 / CIRCUMFERENCE;
     output.b = output.b * 60 / CIRCUMFERENCE;
 
     return output;
 }
 
-Output Kinematic::GetVelocitiesForMagn(Vector2 target) {
-    Output output;
-    //Get the target magnitude of the target and get the angular 
-    //difference and multiply by the constants
-    // Calculate the forward velocity and rotational velocity.
-    cout<<"                     Angle Dif:"<<transform.GetRotationalDifference(target.GetAngle()) <<endl;
-    float FrontVel = target.Magnitude() * LINEAR_CONSTANT *1.5;
-    float RotationVel = transform.GetRotationalDifference(target.GetAngle()) * ANGULAR_CONSTANT * 0.5;
-    //Get the velocities of the wheels in rad/s
-    output.a = FrontVel/ RADIUS - WHEEL_DISTANCE / (2*RADIUS) * RotationVel; 
-    output.b = FrontVel/ RADIUS + WHEEL_DISTANCE / (2*RADIUS) * RotationVel;
-    
-    //Convert to RPM
-    
-    output.a = output.a * 60 / CIRCUMFERENCE;
-    output.b = output.b * 60 / CIRCUMFERENCE;
 
-    return output;
-}
 
 Kinematic::Kinematic(const Kinematic& other) : transform(other.transform) {
     CIRCUMFERENCE = other.CIRCUMFERENCE;

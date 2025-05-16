@@ -8,13 +8,17 @@ Robot::Robot(Transform& t, int i, float f, int portR, int portS) : Entity(t, i, 
 
 void Robot::GoTo(Transform objective){
     Output F;
+    
     if((transform.position - objective.position).Magnitude() > 0.6){
+        //si esta muy lejos, ve a tal posicion
         cout<<" -- Moving To Position"<<endl;
         F = kinematic.GetVelocities(objective);
     }else if(abs(transform.GetRotationalDifference(objective.rotation)) > 0.1) {
+        //Si esta en la posicion pero no en el angulo, gira para apuntar
         cout<<" -- Rotating To Rotation"<<endl;
         F = kinematic.GetVelocitiesForRotation(objective);
     }else{
+        //Si todo esta correcto,  para
         cout<<" -- Staing in Position"<<endl;
         F = Output(0,0);
     }

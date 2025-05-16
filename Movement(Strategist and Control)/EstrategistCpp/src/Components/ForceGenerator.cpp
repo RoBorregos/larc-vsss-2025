@@ -6,6 +6,11 @@ using namespace std;
     // the origine variable defines the object that recives the force
     // the target variable defines the object that creates the force
 
+    //------------------FUN Fact: 
+    //            - El modo proporcional es para aquellos objetos que no queremos que afecten en gran medida. 
+    //              Solo es dividir el vector normalizado por la magnitud de distancia
+    //            - Caso contrario, el constante es solo normalizado y es justo si queremos que afecte en gran medida
+
         Vector2 Repelent(Transform& target, Transform& origin, float impact, ForceMode mode){
             Vector2 force, dif;
             dif = origin.position - target.position;
@@ -48,18 +53,7 @@ using namespace std;
             force *= (impact) *( signbit(origin.angularVelocity) ? 1 : -1);
             return force;
         }
-        // In this case, to create a magnetic field, I have to set a second transform that would act as the position of the goal
-        // so at the end the the magnetic field will always target towards the goal
-        /* 
-            B######     ball
-            #\#####         
-            ##T####     tempPos
-            ###\###
-            ####\##
-            #####\#
-            ######G     Goal
-        */
-    //
+
 
 ForceGenerator::ForceGenerator(Transform& t, float &i) : transform(t), impact(i) {
 }
@@ -80,13 +74,6 @@ Transform ForceGenerator::CreatePositionInRect( Transform goal, float dist){
 }
 
 
-// Function: GetForce
-// Calculates the force vector to be applied to the object based on the target Transform and force type.
-// Parameters:
-// - target: The Transform object creating the force.
-// - type: The type of force to be applied (e.g., attractive, repellent).
-// Returns:
-// - A Vector2 object representing the calculated force.
 Vector2 ForceGenerator::GetForce(Transform target, ForceType type, ForceMode mode){
     Vector2 force;
     enum ForceType myVar = type;
@@ -106,7 +93,7 @@ Vector2 ForceGenerator::GetForce(Transform target, ForceType type, ForceMode mod
     }
     return force;
 }
-// same function as before, just used to select the magnetic force
+// same function as before, just used to select the magnetic force, because it needs more data
 Vector2 ForceGenerator::GetForce(Transform target, Transform goal, ForceType type, float dist, ForceMode mode){
     Vector2 force;
     Transform tempPos = CreatePositionInRect( goal, dist);

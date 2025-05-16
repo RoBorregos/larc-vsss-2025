@@ -259,10 +259,11 @@ void loop() {
         previousUDPTime = currentUDPTime;
 
       }
-      if(lastTimeRecived - millis() > 70){
-        lastTimeRecived = millis();
-        //Cambia los valores de m1, m2
-      }
+      if (isnan(pwmM1) || isnan(pwmM2)) {
+          Serial.println("Received NaN values in UDP data!");
+          pwmM1 = 0; // Set default value
+          pwmM2 = 0; // Set default value
+        }
 
       
      
