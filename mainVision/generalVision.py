@@ -16,7 +16,7 @@ IP's-> robotAndBallDetector.py ,  ballDetector.py
 Homography -> Manually set homography '''
 
 #fusion 
-model = YOLO('/home/balzero/Documents/Roborregos/AnotherVsssssss/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt')
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt')
 
 RELAY_IP = socket.gethostbyname(socket.gethostname())
 print(f"Relay IP: {RELAY_IP}")
@@ -26,8 +26,8 @@ BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 ball_positions = []
 MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
 #in HSV Ball detection 
-colorParams = [0, 85, 0, 24, 157, 255] # 0, 85, 0, 24, 157, 255  Most reliable for competition
-#h_min =  0  h_max =  28  Sat_min =  80  Sat_max =  130  Val_min =  79  Val_max =  255
+colorParams = [0, 192, 115, 50, 247, 255] #  0, 98, 90, 24, 246, 255Most reliable for competition
+#h_min =  0  h_max =  81  Sat_min =  113  Sat_max =  255  Val_min =  0  Val_max =  255
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr

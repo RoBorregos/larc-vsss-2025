@@ -59,12 +59,9 @@ class RobotData:
         # Close the socket
         sock.close()
         print(self)
-    
-
-
 
 #changes
-model = YOLO('/home/balzero/Documents/Roborregos/AnotherVsssssss/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt') #load model
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt') #load model
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
@@ -79,9 +76,7 @@ robots = {}
 
 # Predefined robot ports for each identified pattern
 predefined_ports = {
-    1201: [14,3,4],  # Robot 2
-    1202: [12,5,7],
-    1203: [9,1,8]
+    1201: [7,8,9]  # Robot 1
     # Add more robots and their ports as needed
 }
 
@@ -90,8 +85,8 @@ for port, patters in predefined_ports.items():
 
 #Modify depending on actual environment
 hsvRanges = { 
-    'blue' : {'lower':[101, 102 , 131], 'upper': [161, 255, 255]},
-    'yellow' : {'lower': [24, 42, 0], 'upper':[52, 255, 255] }
+    'blue' : {'lower':[100, 172 , 154], 'upper': [136, 255, 255]},
+    'yellow' : {'lower': [22, 0, 163], 'upper':[33, 255, 255] }
 }
 
 #'blue' : {'lower':[101, 102 , 131], 'upper': [161, 255, 255]}
