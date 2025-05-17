@@ -181,7 +181,7 @@ VSSSModel
 #VSSSModel/yolo11n.pt
 #VSSSModel/yolov8s.pt
 
-
+/communication
 /communication/udp communication_vsss
 
 **.pt
