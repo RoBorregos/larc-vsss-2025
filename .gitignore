@@ -185,5 +185,5 @@ VSSSModel
 /communication/udp communication_vsss
 
 **.pt
-/VSSS_modelM/runs
+/vsss_modelM/runs
 

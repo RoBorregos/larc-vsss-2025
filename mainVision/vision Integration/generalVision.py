@@ -1,28 +1,43 @@
-
 import cv2
 import numpy as np
-from size_measure import clockwise_pts, middle
-from homography import getHomography
+from mainVision.libs.size_measure import clockwise_pts, middle
+from mainVision.libs.homography import getHomography, warpChange, autoGetHomography
 import time
 import socket
 import struct
 from scipy.spatial import KDTree
+from ultralytics import YOLO
+from Model_use import bb_center_orien 
 
-#in HSV 
-colorParams = [0, 203, 77, 9, 255, 228] #most accurate HSV values for test ball (bright orange) 0, 63, 255, 179, 255, 255
-#checa la foto donde esta la terminal medio cubierta con los valores HSV que probaste con Alberto
-#refColorParams = [0, 0, 0, 0, 0, 0]  # white 
+'''                        HC
+HSV's -> Check for local circumstances in real competition
+HSV's -> For robots 
+IP's-> robotAndBallDetector.py ,  ballDetector.py
+Homography -> Manually set homography '''
+
+#fusion 
+model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt')
+
+RELAY_IP = socket.gethostbyname(socket.gethostname())
+print(f"Relay IP: {RELAY_IP}")
+BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
+
+#backup coordinates
+ball_positions = []
+MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
+#in HSV Ball detection 
+colorParams = [0, 192, 115, 50, 247, 255] #  0, 98, 90, 24, 246, 255Most reliable for competition
+#h_min =  0  h_max =  81  Sat_min =  113  Sat_max =  255  Val_min =  0  Val_max =  255
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
-                  [150, 130], #br
+                  [130, 150], #br
                   [0, 130]] # bl
 
-CAMERA_HEIGHT = 200 #cm
 clicked_points = []
 
 #Communication python to esp32
-def send_coordinates(x, y, relay_ip, relay_port):
+def send_coordinates(x_coord, y_coord, relay_ip, relay_port):
     """
     Send two float coordinates to C++ relay via UDP
     Args:
@@ -35,7 +50,7 @@ def send_coordinates(x, y, relay_ip, relay_port):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     # Pack the two float values into bytes
     # 'ff' format means two 32-bit float values
-    data = struct.pack('ff', x, y) # Use 'e' for 16-bit floats 
+    data = struct.pack('ff', x_coord, y_coord) # Use 'e' for 16-bit floats 
     # Send the data
     sock.sendto(data, (relay_ip, relay_port))
     # Close the socket
@@ -129,40 +144,49 @@ def findContoursAndSize(img, copy):
             clockCoor = clockwise_pts(box_pts)
             cX = np.average(clockCoor[:, 0])
             cY = np.average(clockCoor[:, 1]) 
-            '''cv2.drawContours(copy, [clockCoor.astype("int")], -1, (255, 255, 0), 2) #draw ball's bounding box
-            for (x, y) in clockCoor: 
-                cv2.circle(copy, (int(x), int(y)), 5, (0, 0, 255), -1) # circles in edges
-            mids(copy, clockCoor[0], clockCoor[1], clockCoor[2], clockCoor[3]) #mid lines in shape
-            topLeft = tuple(clockCoor[0])
-            bottomRight = tuple(clockCoor[2])'''
             
             return (cX, cY), form_pts
     return (0, 0), None
 
+#returns the next position of the ball using polynomial extrapolation
+#this is used to predict the next position of the ball
+#in case the ball is not detected in the current frame
+def polynomial_extrapolation(positions, degree=2):
+    n = len(positions)
+    if n < degree + 1:
+        return positions[-1]  # Nqot enough points for a fit
+    times = np.arange(n)
+    poly_coeffs = np.polyfit(times, positions, degree)
+    next_time = n
+    next_position = np.polyval(poly_coeffs, next_time)
+    return next_position
+
 #main function. Returns object center with img preprocessing
-def findObject(image, copy, kf_x, kf_y): 
+def findObject(image, copy, H): 
     global ball_positions #allows the function to modify the global variable
-    imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    imgBlur = cv2.GaussianBlur(image, (7,7), 0)
+    imgHSV = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV)                            
 
     # Ball mask, already have refObj
-    lower = np.array(colorParams[0:3])
+    lower = np.array(colorParams[0:3]) 
     upper = np.array(colorParams[3:6])
-    mask = cv2.inRange(imgHSV, lower, upper)
+    mask = cv2.inRange(imgHSV, lower, upper)#
     
-    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
-    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=2)
-    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=2)
-    cv2.imshow("Better mask", mask)
+    kernel = np.ones((5, 5), np.uint8)
+    
+    dilatedMask = cv2.dilate(mask, kernel, iterations=1)
+    erotedMask = cv2.erode(dilatedMask, kernel, iterations=1)
+    result = cv2.bitwise_and(image, image, mask=erotedMask)
+    cv2.imshow("Better mask", erotedMask) #YA SOLO APLICA QUE AGARRE EL AREA MAS GRANDE
 
-    objCenter,objPts = findContoursAndSize(mask, copy)
-    
+    objCenter,objPts = findContoursAndSize(dilatedMask, copy) #returns biggest contour
     #if the center is detected, get it's coordinates in real field coordinates
     if objCenter:
-        cv2.circle(copy, (int(objCenter[0]), int(objCenter[1])),2, (255,0,0), 5)
+        # Filter contours by size and select the largest one
+        cv2.circle(image, (int(objCenter[0]), int(objCenter[1])), 2, (255,0,0), 5)
         #give the correct format to the pt for use in perspectiveTransform
         objCenterPt = np.array([objCenter[0], objCenter[1]], dtype="float32")
         print(f"Normal: {objCenterPt[0]}, {objCenterPt[1]}")
-        
 
         # Agregar las coordenadas suavizadas a la lista de posiciones
         ball_positions.append((objCenterPt[0], objCenterPt[1]))
@@ -176,57 +200,69 @@ def findObject(image, copy, kf_x, kf_y):
             x_extrapolated = polynomial_extrapolation(ball_positions_np[:, 0])
             y_extrapolated = polynomial_extrapolation(ball_positions_np[:, 1])
             objCenterPt = (x_extrapolated, y_extrapolated)
-        # Calcular la media móvil
-        avg_x = sum(pos[0] for pos in ball_positions) / len(ball_positions)
-        avg_y = sum(pos[1] for pos in ball_positions) / len(ball_positions)
-        cv2.circle(copy, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
-        cv2.circle(copy, (int(avg_x), int(avg_y)), 2, (0, 0, 255), 5) #draw the moving average point
-        print(f"Media móvil: {avg_x}, {avg_y}")
+        cv2.circle(image, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
         print(f"Extrapolado: {objCenterPt[0]}, {objCenterPt[1]}")
 
-        #realFieldCoors2 = cv2.perspectiveTransform(np.array([[[avg_x, avg_y]]], dtype="float32"), H)[0][0]
         realFldCoors = cv2.perspectiveTransform(np.array([[[objCenterPt[0], objCenterPt[1]]]], dtype="float32"), H)[0][0]
-        cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
-        #cv2.putText(copy, f"({realFieldCoors2[0]:.1f}, {realFieldCoors2[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
+        cv2.putText(image, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
 
         return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
     else:
         return (0, 0)
+
+
+def main():       
+    cap = cv2.VideoCapture(2) #2 for external devices, sometimes 0 idkw
+    cap.set(3, 640) #width
+    cap.set(4, 480) #height
+
+    print("Homography " \
+    "Calibration. Click the four corners of the field in order TL, TR, BR, BL")
+    
+    H = getHomography(cap, realFieldCoors)
+    matrix = warpChange()
+    newH = autoGetHomography(realFieldCoors)
+
+    # Bucle principal
+    while True:
+        tpast = time.time()
+        success, img = cap.read()
+
+        if success:
+            # Detección de robots con el modelo YOLO
+            field = cv2.warpPerspective(img, matrix, (640, 480))
+            field_copy = field.copy()  # Copia del frame para detección de la pelota
+            results = model(field) #use YOLO custom model on warped field
+            cv2.imshow("Field", field)
+
+            # Detección de pelota
+            objCoorsCenter = findObject(field, field_copy, newH)  # Coordenadas reales de la pelota
+            if objCoorsCenter[0] != 0 and objCoorsCenter[1] != 0:
+                send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, BALL)
+                print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
+            else:
+                send_coordinates(0, 0, RELAY_IP, BALL)
+
+            #Detección de robots
+            if results:
+                detect_img = results[0].plot()
+                robots = bb_center_orien(results, field_copy, newH)  # Procesar orientación y centro de los robots
+                for robot_id, robot in robots.items():
+                    robot.send_data(RELAY_IP)
+                cv2.imshow("Model", detect_img)
+                cv2.imshow("Detections", field_copy)
+                cv2.imshow("Field", field)
+            if cv2.waitKey(1) == ord('q'):
+                break
+        else:
+            print("No camera")
+        # Control de salida 
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            #print(f"FPS: {fps:.2f}")
+            break
         
-        
-cap = cv2.VideoCapture(0) #2 for external devices
-cap.set(3, 640) #width
-cap.set(4, 480) #height
+    cap.release()
+    cv2.destroyAllWindows()
 
-print("Homography Calibration. Click the four corners of the field in order TL, TR, BR, BL")
-H = getHomography(cap, realFieldCoors)
-
-#Declaring relay port and ip of the esp32  
-RELAY_IP = "192.168.0.171"  # Replace with your esp
-PORT_IP = 1234
-
-while True:
-    tpast = time.time()
-
-    success, img = cap.read()
-    if success:
-        img_copy = img.copy()
-        #coordinates of the center 
-        objCoorsCenter = findObject(img, img_copy, kf_x, kf_y)
-        
-        send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, PORT_IP)
-        print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
-        
-        cv2.imshow("Test", img_copy)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        print(f"fps: {fps}")
-        break
-    #get execution time
-    tnow = time.time()
-    totalTime = tnow - tpast
-    fps = 1 / totalTime
-    #print(f"Tiempo de ejecución: {totalTime}")
-
-cap.release()
-cv2.destroyAllWindows()
-
+if __name__ == '__main__':
+    main()

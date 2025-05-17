@@ -5,7 +5,7 @@ import time
 import math
 import numpy as np
 import json #if communication tells you he needs the info in json format
-from homography import getHomography, warpChange, autoGetHomography
+from mainVision.libs.homography import getHomography, warpChange, autoGetHomography
 import struct
 import socket
 from collections import deque
@@ -88,9 +88,6 @@ hsvRanges = {
     'blue' : {'lower':[100, 172 , 154], 'upper': [136, 255, 255]},
     'yellow' : {'lower': [22, 0, 163], 'upper':[33, 255, 255] }
 }
-
-#'blue' : {'lower':[101, 102 , 131], 'upper': [161, 255, 255]}
-#'yellow' : {'lower': [24, 42, 0], 'upper':[52, 255, 255] }
 
 def auto_adjust_hsv(hsv_img, mask):
     """Ajusta dinámicamente los rangos HSL basándose en el histograma del canal H."""
