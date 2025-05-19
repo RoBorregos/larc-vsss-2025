@@ -2,6 +2,9 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
+
+
+
 #define MotorRA 26
 #define MotorRB 27
 #define MotorR_PWM 25
@@ -10,9 +13,7 @@
 #define MotorLB 21
 #define MotorL_PWM 23
 
-
-
-
+// Example function to drive motors in Arduino IDE
 void Drive(int MotorL, int MotorR) {
   // Left motor control
   if (MotorL > 0) {
@@ -45,19 +46,16 @@ void Drive(int MotorL, int MotorR) {
   analogWrite(MotorR_PWM, Rspeed);
 }
 
-
-
-RF24 radio(9, 10); // CE, CSN
-
-
-const byte address[6] = "00001";
+RF24 radio(9, 10); // CE, CSN pins of the NRF24L01 modul
+const byte address[6] = "00001"; // Address for the RF communication
 
 void setup() {
   Serial.begin(9600);
   radio.begin();
-  radio.openReadingPipe(0, address);
-  radio.setPALevel(RF24_PA_MIN);
-  radio.startListening();
+  radio.openReadingPipe(0, address); 
+  radio.setPALevel(RF24_PA_MIN); // Set power level to minimum
+  radio.startListening(); // Start listening for incoming messages
+  
   pinMode(MotorRA, OUTPUT);
   pinMode(MotorRB, OUTPUT);
   pinMode(MotorR_PWM, OUTPUT);
