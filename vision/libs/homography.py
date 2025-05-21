@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 
-CAMERA_HEIGHT = 200 #cm
+CAMERA_HEIGHT = 200 
 clicked_points = []
 width = 640
 height = 480
@@ -19,8 +19,9 @@ def getHomography(cap, realCoor):
 
     cv2.namedWindow("Calibration")
     cv2.setMouseCallback("Calibration", mouse_callback)
-
-    while len(clicked_points) < 4: #<4 because 0 will also be a point (0,1,2,3) = len 4
+    
+    #<4 because 0 will also be a point (0,1,2,3) = len 4
+    while len(clicked_points) < 4: 
         success, img = cap.read()
         if not success:
             continue
@@ -56,19 +57,3 @@ def warpChange():
     clickedOriginal = np.array(clicked_points, dtype=np.float32)
     matrix = cv2.getPerspectiveTransform(clickedOriginal, objectivePoints)
     return matrix
-
-'''cover = cv2.imread("/home/daniela/Desktop/Roborregos/Murtazas Workshop Basic/Resources/lena.png")
-print(cover.shape)
-
-
-width, height = 250, 350
-#points array from the img, you can specify some with Paint, to find the coordinates you want
-pts1 = np.float32([[111,219],[287, 188],[154, 482],[352,440]])
-
-pts2 = np.float32([[0,0],[width,0],[0, height],[width, height]])
-matrix = cv2.getPerspectiveTransform(pts1, pts2)
-coverOutput = cv2.warpPerspective(cover, matrix, (width, height))
-
-cv2.imshow("Output", coverOutput)
-cv2.imshow("Imagen", cover)
-cv2.waitKey(0)'''

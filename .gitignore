@@ -176,10 +176,6 @@ dataset-generator/Resources
 !dataset-generator/Resources/data.yaml
 
 VSSSModel
-#VSSSModel/runs/detect         First model, not fully trained
-#!VSSSModel/runs/detect/custom_VSSS_model/weights/best.pt
-#VSSSModel/yolo11n.pt
-#VSSSModel/yolov8s.pt
 
 /communication
 /communication/udp communication_vsss

@@ -4,8 +4,7 @@ import cv2
 import time
 import math
 import numpy as np
-import json #if communication tells you he needs the info in json format
-from mainVision.libs.homography import getHomography, warpChange, autoGetHomography
+from vision.libs.homography import getHomography, warpChange, autoGetHomography
 import struct
 import socket
 from collections import deque
@@ -60,16 +59,15 @@ class RobotData:
         sock.close()
         print(self)
 
-#changes
 model = YOLO('/home/daniela/Desktop/VSSS/larc-vsss-2025/VSSS_modelM/runs/epoch80.pt') #load model
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
                   [150, 130], #br
                   [0, 130]] # bl
-# Define una lista para almacenar las últimas orientaciones
+# Array with last orientations
 orientation_history = {}
-centroid_history = deque(maxlen=5)  # Mantén un historial de los centroides
+centroid_history = deque(maxlen=5)  
 
 global robots 
 robots = {}
@@ -90,15 +88,15 @@ hsvRanges = {
 }
 
 def auto_adjust_hsv(hsv_img, mask):
-    """Ajusta dinámicamente los rangos HSL basándose en el histograma del canal H."""
-    h_channel = hsv_img[:, :, 0]  # Extraer canal H
-    masked_h = h_channel[mask > 0]  # Píxeles dentro de la máscara
+    """Dynamically adjust HSV ranges based on channel H histogram."""
+    h_channel = hsv_img[:, :, 0]  # Get H channel
+    masked_h = h_channel[mask > 0] 
+     # Checks for pixels in the mask
+    if len(masked_h) > 0: 
+        lower_h = np.percentile(masked_h, 5)  # inferior percentile(5%)
+        upper_h = np.percentile(masked_h, 95)  # Superior percentile(95%)
 
-    if len(masked_h) > 0:  # Verifica si hay píxeles en la máscara
-        lower_h = np.percentile(masked_h, 5)  # Percentil inferior (5%)
-        upper_h = np.percentile(masked_h, 95)  # Percentil superior (95%)
-
-        # Ajustar los rangos dinámicamente (usando valores predeterminados para S y V)
+        # Dynamically adjust parameters
         lower_hsv = np.array([lower_h, 50, 50])
         upper_hsv = np.array([upper_h, 255, 255])
 
@@ -119,9 +117,8 @@ def get_color_centroid(img):
 
         mask = cv2.inRange(hsv_img, lower, upper)
 
-        # Ajuste dinámico de los valores HSV
+        # HSV dynamic auto calibration
         kernel = np.ones((5, 5), np.uint8)
-        
 
         dilatedMask = cv2.dilate(mask, kernel, iterations=1)
         erotedMask = cv2.erode(dilatedMask, kernel, iterations=1)
@@ -165,29 +162,30 @@ def get_orientation(img, color_centroid):
 
 def bb_center_orien(results, img, H):
     global orientation_history, robots
-    #robot_orien = 0
     robot_coors = (0.0, 0.0)
 
     for res in results:
-        boxes = res.boxes  # Variable con todas las bb detectadas en el frame
+        # Detected bounding boxes in a frame
+        boxes = res.boxes  
 
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0]
             #confidence = box.conf[0].item()
-            patternID = int(box.cls[0]) + 1  # Índice de la clase detectada (patron detectado)
+            # Detected pattern class
+            patternID = int(box.cls[0]) + 1  
             robot_id = None
             for port, robot in robots.items():
                 if patternID in robot.patterns:
                     robot_id = port
                     break
             if( robot_id is None):
-                print("No se detectó el patrón") # de los patrones detectados no estan los ya definidos
+                print("No se detectó el patrón") 
                 continue
-            # Centro del robot
+            # Robot's center
             x_center = float((x1 + x2) / 2)
             y_center = float((y1 + y2) / 2)
 
-            # ROI para calcular la orientación
+            # image to get orientation
             roi = img[int(y1):int(y2), int(x1):int(x2)]
             color_centroid, _ = get_color_centroid(roi)
 
@@ -200,17 +198,17 @@ def bb_center_orien(results, img, H):
                     robots[robot_id].orientation_history.append(orien)
                     smoothed_orien = robots[robot_id].moving_average_orientation()
                     
-                    # Obtener coordenadas reales
+                    # Get real coordinates
                     robot_coors = np.array([[x_center, y_center]], dtype="float32")
                     robot_coors = np.array([robot_coors])
                     real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
                     last_robot_data = {"x": real_robot_coors[0], "y": real_robot_coors[1], "orientation": orien} # Historial de datos del robot  
                     
-                    # Enviar coordenadas y orientación suavizada al robot
+                    # Send robot's position and smoothed coordinates
                     robots[robot_id].update(real_robot_coors[0], real_robot_coors[1], smoothed_orien)
                     print(f"Robot {robot_id}: {real_robot_coors[0]}, {real_robot_coors[1]}, {orien}")
 
-                    # Dibujar el centro del robot
+                    # draw robot center
                     cv2.circle(img, (int(x_center), int(y_center)), 2, (0, 0, 255), -1)
                     cv2.putText(img, f"ID: {robot_id}", (int(x_center), int(y_center) - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)

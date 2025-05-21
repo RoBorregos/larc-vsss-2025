@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
-from mainVision.libs.size_measure import clockwise_pts, middle
-from mainVision.libs.homography import getHomography, warpChange, autoGetHomography
+from vision.libs.size_measure import clockwise_pts, middle
+from vision.libs.homography import getHomography, warpChange, autoGetHomography
 import time
 import socket
 import struct
@@ -24,10 +24,10 @@ BALL = 1200 #for ball detections, IP for robot detections is in Model_use.py
 
 #backup coordinates
 ball_positions = []
-MOVING_AVG_WINDOW = 5 #Tamaño de la ventana para la media movil
+MOVING_AVG_WINDOW = 5 #Used in media movil
 #in HSV Ball detection 
-colorParams = [0, 192, 115, 50, 247, 255] #  0, 98, 90, 24, 246, 255Most reliable for competition
-#h_min =  0  h_max =  81  Sat_min =  113  Sat_max =  255  Val_min =  0  Val_max =  255
+colorParams = [0, 192, 115, 50, 247, 255]
+
 
 realFieldCoors = [[0, 0], #tl
                   [150, 0], #tr
@@ -56,20 +56,20 @@ def send_coordinates(x_coord, y_coord, relay_ip, relay_port):
     # Close the socket
     sock.close()
 
-'''Removes noise, uses center of obj and pts near it to calculate a median of 
- the distances between them, and find the points that are in that valid area'''
 def filter_noise(pts, center, radius_factor=1.2):
+    '''Removes noise, uses center of obj and pts near it to calculate a median of 
+    the distances between them, and find the points that are in that valid area'''
     if pts is None or len(pts) == 0:
         return None
 
-    #radio del circulo
+    #circle radius
     distances = np.linalg.norm(pts - center, axis=1)
     median_radius = np.median(distances)
 
-    #construir el kdTree
+    #set kdTree
     kdTree = KDTree(pts)
 
-    #Filtrar puntos válidos
+    #Filter valid points
     valid_index = kdTree.query_ball_point(center, radius_factor * median_radius)
     valid_index = np.array(valid_index)
     filtered_pts = pts[valid_index]
@@ -106,7 +106,7 @@ def findContoursAndSize(img, copy):
     if not contours:
         return (0, 0), None
     
-    # Filtrar por área y circularidad
+    # Filter by area 
     valid_contours = []
     for cnt in contours:
         area = cv2.contourArea(cnt)
@@ -115,7 +115,7 @@ def findContoursAndSize(img, copy):
             continue
         circularity = 4 * np.pi * area / (perimeter ** 2)
         
-        if area > 10 and 0.2 < circularity < 1.2:  # Ajusta estos valores
+        if area > 10 and 0.2 < circularity < 1.2:  
             valid_contours.append(cnt)
 
     if len(valid_contours) > 0:  
@@ -124,10 +124,11 @@ def findContoursAndSize(img, copy):
         cnt = contours[0] #first contour (biggest)
         
         #puntos del contorno
-        epsilon = 0.01 * cv2.arcLength(cnt,True) #tolerancia para la simplificación del contorno.
+        epsilon = 0.01 * cv2.arcLength(cnt,True)
         approx = cv2.approxPolyDP(cnt, epsilon, True)
-        form_pts = approx.squeeze() #total ball pts to use in the KD-Tree
+        #total ball pts to use in the KD-Tree
 
+        form_pts = approx.squeeze() 
         #calculate an approximate center before calculating with real ones
         moments = cv2.moments(cnt)
         if moments["m00"] != 0:
@@ -148,13 +149,14 @@ def findContoursAndSize(img, copy):
             return (cX, cY), form_pts
     return (0, 0), None
 
-#returns the next position of the ball using polynomial extrapolation
-#this is used to predict the next position of the ball
-#in case the ball is not detected in the current frame
 def polynomial_extrapolation(positions, degree=2):
+    '''returns the next position of the ball using polynomial extrapolation
+    this is used to predict the next position of the ball
+    in case the ball is not detected in the current frame'''
     n = len(positions)
     if n < degree + 1:
-        return positions[-1]  # Nqot enough points for a fit
+        # Not enough points for a fit
+        return positions[-1]  
     times = np.arange(n)
     poly_coeffs = np.polyfit(times, positions, degree)
     next_time = n
@@ -163,7 +165,8 @@ def polynomial_extrapolation(positions, degree=2):
 
 #main function. Returns object center with img preprocessing
 def findObject(image, copy, H): 
-    global ball_positions #allows the function to modify the global variable
+     #allows the function to modify the global variable
+    global ball_positions
     imgBlur = cv2.GaussianBlur(image, (7,7), 0)
     imgHSV = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV)                            
 
@@ -177,9 +180,10 @@ def findObject(image, copy, H):
     dilatedMask = cv2.dilate(mask, kernel, iterations=1)
     erotedMask = cv2.erode(dilatedMask, kernel, iterations=1)
     result = cv2.bitwise_and(image, image, mask=erotedMask)
-    cv2.imshow("Better mask", erotedMask) #YA SOLO APLICA QUE AGARRE EL AREA MAS GRANDE
+    cv2.imshow("Better mask", erotedMask) 
 
-    objCenter,objPts = findContoursAndSize(dilatedMask, copy) #returns biggest contour
+    #returns biggest contour
+    objCenter,objPts = findContoursAndSize(dilatedMask, copy) 
     #if the center is detected, get it's coordinates in real field coordinates
     if objCenter:
         # Filter contours by size and select the largest one
@@ -188,25 +192,27 @@ def findObject(image, copy, H):
         objCenterPt = np.array([objCenter[0], objCenter[1]], dtype="float32")
         print(f"Normal: {objCenterPt[0]}, {objCenterPt[1]}")
 
-        # Agregar las coordenadas suavizadas a la lista de posiciones
+        # Add smoothed coordinates to the positions array
         ball_positions.append((objCenterPt[0], objCenterPt[1]))
         if len(ball_positions) > MOVING_AVG_WINDOW:
-            ball_positions.pop(0) #mantain window size
+             #mantain window size
+            ball_positions.pop(0)
 
         #apply polynomial extrapolation to the last 5 points
         if len(ball_positions) >= MOVING_AVG_WINDOW:
-            # Extrapolar la posición de la pelota
+            # Extrapolate ball's position
             ball_positions_np = np.array(ball_positions)
             x_extrapolated = polynomial_extrapolation(ball_positions_np[:, 0])
             y_extrapolated = polynomial_extrapolation(ball_positions_np[:, 1])
             objCenterPt = (x_extrapolated, y_extrapolated)
-        cv2.circle(image, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
+        #draw the polynomial extrapolation point
+        cv2.circle(image, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) 
         print(f"Extrapolado: {objCenterPt[0]}, {objCenterPt[1]}")
 
         realFldCoors = cv2.perspectiveTransform(np.array([[[objCenterPt[0], objCenterPt[1]]]], dtype="float32"), H)[0][0]
         cv2.putText(image, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
-
-        return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
+        #return real coordinates
+        return (realFldCoors[0], realFldCoors[1]) 
     else:
         return (0, 0)
 
@@ -223,30 +229,34 @@ def main():
     matrix = warpChange()
     newH = autoGetHomography(realFieldCoors)
 
-    # Bucle principal
+    # Main loop
     while True:
         tpast = time.time()
         success, img = cap.read()
 
         if success:
-            # Detección de robots con el modelo YOLO
+            # YOLO robot's detection
             field = cv2.warpPerspective(img, matrix, (640, 480))
-            field_copy = field.copy()  # Copia del frame para detección de la pelota
-            results = model(field) #use YOLO custom model on warped field
+            # Frame copy for ball detection
+            field_copy = field.copy()  
+            #use YOLO custom model on warped field
+            results = model(field) 
             cv2.imshow("Field", field)
 
-            # Detección de pelota
-            objCoorsCenter = findObject(field, field_copy, newH)  # Coordenadas reales de la pelota
+            # Ball detection
+            # Real ball coordinates
+            objCoorsCenter = findObject(field, field_copy, newH)  
             if objCoorsCenter[0] != 0 and objCoorsCenter[1] != 0:
                 send_coordinates(objCoorsCenter[0], objCoorsCenter[1], RELAY_IP, BALL)
                 print(f"x: {objCoorsCenter[0]}, y: {objCoorsCenter[1]}")
             else:
                 send_coordinates(0, 0, RELAY_IP, BALL)
 
-            #Detección de robots
+            #Robot's detection
             if results:
                 detect_img = results[0].plot()
-                robots = bb_center_orien(results, field_copy, newH)  # Procesar orientación y centro de los robots
+                # Process orientation and robot's center
+                robots = bb_center_orien(results, field_copy, newH)  
                 for robot_id, robot in robots.items():
                     robot.send_data(RELAY_IP)
                 cv2.imshow("Model", detect_img)
@@ -256,7 +266,7 @@ def main():
                 break
         else:
             print("No camera")
-        # Control de salida 
+        # Exit control
         if cv2.waitKey(1) & 0xFF == ord('q'):
             #print(f"FPS: {fps:.2f}")
             break

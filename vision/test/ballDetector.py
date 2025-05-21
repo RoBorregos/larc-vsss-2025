@@ -1,8 +1,8 @@
 
 import cv2
 import numpy as np
-from mainVision.libs.size_measure import clockwise_pts, middle
-from mainVision.libs.homography import getHomography
+from vision.libs.size_measure import clockwise_pts, middle
+from vision.libs.homography import getHomography
 import time
 import socket
 import struct
@@ -41,20 +41,20 @@ def send_coordinates(x, y, relay_ip, relay_port):
     # Close the socket
     sock.close()
 
-'''Removes noise, uses center of obj and pts near it to calculate a median of 
- the distances between them, and find the points that are in that valid area'''
 def filter_noise(pts, center, radius_factor=1.2):
+    '''Removes noise, uses center of obj and pts near it to calculate a median of 
+    the distances between them, and find the points that are in that valid area'''
     if pts is None or len(pts) == 0:
         return None
 
-    #radio del circulo
+    #circle radius
     distances = np.linalg.norm(pts - center, axis=1)
     median_radius = np.median(distances)
 
-    #construir el kdTree
+    #set kdTree
     kdTree = KDTree(pts)
 
-    #Filtrar puntos válidos
+    #Filter valid pts
     valid_index = kdTree.query_ball_point(center, radius_factor * median_radius)
     valid_index = np.array(valid_index)
     filtered_pts = pts[valid_index]
@@ -81,8 +81,9 @@ def mids(img, tl, tr, br, bl):
     cv2.line(img, (int(topX), int(topY)), (int(bottomX), int(bottomY)), (255,255,255), 2)
     cv2.line(img, (int(leftX), int(leftY)), (int(rightX), int(rightY)), (255,255,255), 2)
 
-#Returns center and general ball points
+
 def findContoursAndSize(img, copy):
+    '''Returns center and general ball points'''
     area = 0
     (cX, cY) = (0, 0)
     objCenter = 0
@@ -91,7 +92,6 @@ def findContoursAndSize(img, copy):
     if not contours:
         return (0, 0), None
     
-    # Filtrar por área y circularidad
     valid_contours = []
     for cnt in contours:
         area = cv2.contourArea(cnt)
@@ -100,18 +100,21 @@ def findContoursAndSize(img, copy):
             continue
         circularity = 4 * np.pi * area / (perimeter ** 2)
         
-        if area > 10 and 0.2 < circularity < 1.2:  # Ajusta estos valores
+        if area > 10 and 0.2 < circularity < 1.2:  
             valid_contours.append(cnt)
 
     if len(valid_contours) > 0:  
         # Select biggest contour
         contours = sorted(valid_contours, key=cv2.contourArea, reverse=True)
-        cnt = contours[0] #first contour (biggest)
+        #first contour (biggest)
+        cnt = contours[0] 
         
-        #puntos del contorno
-        epsilon = 0.01 * cv2.arcLength(cnt,True) #tolerancia para la simplificación del contorno.
+        #contour points
+        #simplification tolerance
+        epsilon = 0.01 * cv2.arcLength(cnt,True) 
         approx = cv2.approxPolyDP(cnt, epsilon, True)
-        form_pts = approx.squeeze() #total ball pts to use in the KD-Tree
+        #total ball pts to use in the KD-Tree
+        form_pts = approx.squeeze() 
 
         #calculate an approximate center before calculating with real ones
         moments = cv2.moments(cnt)
@@ -129,19 +132,14 @@ def findContoursAndSize(img, copy):
             clockCoor = clockwise_pts(box_pts)
             cX = np.average(clockCoor[:, 0])
             cY = np.average(clockCoor[:, 1]) 
-            '''cv2.drawContours(copy, [clockCoor.astype("int")], -1, (255, 255, 0), 2) #draw ball's bounding box
-            for (x, y) in clockCoor: 
-                cv2.circle(copy, (int(x), int(y)), 5, (0, 0, 255), -1) # circles in edges
-            mids(copy, clockCoor[0], clockCoor[1], clockCoor[2], clockCoor[3]) #mid lines in shape
-            topLeft = tuple(clockCoor[0])
-            bottomRight = tuple(clockCoor[2])'''
             
             return (cX, cY), form_pts
     return (0, 0), None
 
 #main function. Returns object center with img preprocessing
 def findObject(image, copy, kf_x, kf_y): 
-    global ball_positions #allows the function to modify the global variable
+    #allows the function to modify the global variable
+    global ball_positions 
     imgHSV = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
 
     # Ball mask, already have refObj
@@ -164,32 +162,33 @@ def findObject(image, copy, kf_x, kf_y):
         print(f"Normal: {objCenterPt[0]}, {objCenterPt[1]}")
         
 
-        # Agregar las coordenadas suavizadas a la lista de posiciones
+        # Add smoothed coordinates to the positions array 
         ball_positions.append((objCenterPt[0], objCenterPt[1]))
         if len(ball_positions) > MOVING_AVG_WINDOW:
             ball_positions.pop(0) #mantain window size
 
         #apply polynomial extrapolation to the last 5 points
         if len(ball_positions) >= MOVING_AVG_WINDOW:
-            # Extrapolar la posición de la pelota
+            # Extrapolate ball's position
             ball_positions_np = np.array(ball_positions)
             x_extrapolated = polynomial_extrapolation(ball_positions_np[:, 0])
             y_extrapolated = polynomial_extrapolation(ball_positions_np[:, 1])
             objCenterPt = (x_extrapolated, y_extrapolated)
-        # Calcular la media móvil
+        # Calculate moving average
         avg_x = sum(pos[0] for pos in ball_positions) / len(ball_positions)
         avg_y = sum(pos[1] for pos in ball_positions) / len(ball_positions)
-        cv2.circle(copy, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) #draw the polynomial extrapolation point
-        cv2.circle(copy, (int(avg_x), int(avg_y)), 2, (0, 0, 255), 5) #draw the moving average point
+        #draw the polynomial extrapolation point
+        cv2.circle(copy, (int(objCenterPt[0]), int(objCenterPt[1])), 2, (0, 255, 0), 5) 
+        #draw the moving average point
+        cv2.circle(copy, (int(avg_x), int(avg_y)), 2, (0, 0, 255), 5) 
         print(f"Media móvil: {avg_x}, {avg_y}")
         print(f"Extrapolado: {objCenterPt[0]}, {objCenterPt[1]}")
 
         #realFieldCoors2 = cv2.perspectiveTransform(np.array([[[avg_x, avg_y]]], dtype="float32"), H)[0][0]
         realFldCoors = cv2.perspectiveTransform(np.array([[[objCenterPt[0], objCenterPt[1]]]], dtype="float32"), H)[0][0]
         cv2.putText(copy, f"({realFldCoors[0]:.1f}, {realFldCoors[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
-        #cv2.putText(copy, f"({realFieldCoors2[0]:.1f}, {realFieldCoors2[1]:.1f}) cm", (int(objCenter[0] + 50), int(objCenter[1] + 20)),cv2.FONT_HERSHEY_SCRIPT_SIMPLEX, 0.5, (255, 255, 255), 2)
-
-        return (realFldCoors[0], realFldCoors[1]) #regresar coordenadas REALES
+        #return real field coordinates
+        return (realFldCoors[0], realFldCoors[1]) 
     else:
         return (0, 0)
         

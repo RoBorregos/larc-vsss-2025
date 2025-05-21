@@ -1,17 +1,13 @@
 import cv2
 import numpy as np
 
-#MEDIO FUNCIONA, PRUEBA PARA PELOTAA
-#h_min =  14  h_max =  105  Sat_min =  98  Sat_max =  209  Val_min =  31  Val_max =  255
-
-#hsl para todos los coloires, lab para naranja
 #Function for createTrackbars to work
 def empty(value):
     pass
 
 def autoHSVPicker():
     pass
-#aplicar preprocess aqui
+#preprocess 
 def colorPicker(window):
     #Trackbars creation
     cv2.createTrackbar("Hue Min", window, 1, 179, empty)
@@ -26,19 +22,12 @@ def colorPicker(window):
     video.set(3, 640) #width
     video.set(4, 480) #Height
     video.set(10, 150) #brightness
-
-#h_min =  0  h_max =  28  Sat_min =  80  Sat_max =  130  Val_min =  79  Val_max =  255
-
-    #images processing
-    #preprocess
-    #img = cv2.imread('/home/balzero/Documents/Roborregos/AnotherVsssssss/larc-vsss-2025/test-vision/WhatsApp Image 2025-04-27 at 10.23.45 PM.jpeg')
     
     while True:
         ret, img = video.read()
         imgBlur = cv2.GaussianBlur(img, (7,7), 0)
         imgHSV = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV)
 
-#'lower': [4, 19, 51], 'upper':[55, 196, 255]
 
         h_min = cv2.getTrackbarPos("Hue Min", "TrackBars")
         h_max = cv2.getTrackbarPos("Hue Max", "TrackBars")
@@ -47,14 +36,11 @@ def colorPicker(window):
         v_min = cv2.getTrackbarPos("Val Min", "TrackBars")
         v_max = cv2.getTrackbarPos("Val Max", "TrackBars")
 
-        lower = np.array([h_min, s_min, v_min]) #Valores de una libreria llamada CVZone (10, 55, 215)
-        upper = np.array([h_max, s_max, v_max]) #para naranja (42, 255, 255)
+        lower = np.array([h_min, s_min, v_min]) 
+        upper = np.array([h_max, s_max, v_max])
         mask = cv2.inRange(imgHSV, lower, upper)
 
-# Operaciones morfológicas
         kernel = np.ones((5, 5), np.uint8)
-        '''maskOpened = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel)
-        maskClosed = cv2.morphologyEx(maskOpened, cv2.MORPH_CLOSE, kernel)'''
 
         dilatedMask = cv2.dilate(mask, kernel, iterations=1)
         erotedMask = cv2.erode(dilatedMask, kernel, iterations=1)
@@ -73,5 +59,3 @@ cv2.namedWindow("TrackBars")
 cv2.resizeWindow("TrackBars", 640, 240)
 colorPicker("TrackBars")
 
-
-#h_min =  0  h_max =  52  Sat_min =  46  Sat_max =  255  Val_min =  202  Val_max =  255
