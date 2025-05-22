@@ -6,10 +6,10 @@ using namespace std;
     // the origine variable defines the object that recives the force
     // the target variable defines the object that creates the force
 
-    //------------------FUN Fact: 
-    //            - El modo proporcional es para aquellos objetos que no queremos que afecten en gran medida. 
-    //              Solo es dividir el vector normalizado por la magnitud de distancia
-    //            - Caso contrario, el constante es solo normalizado y es justo si queremos que afecte en gran medida
+//------------------FUN Fact: 
+//            - The proportional mode is for those objects that we don't want to have a big impact.
+//              You just divide the normalized vector by the distance magnitude.
+//            - On the other hand, the constant mode is just normalized and is suitable if we want it to have a big impact.
 
         Vector2 Repelent(Transform& target, Transform& origin, float impact, ForceMode mode){
             Vector2 force, dif;

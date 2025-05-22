@@ -9,7 +9,7 @@ Kinematic::Kinematic(Transform &t) : transform(t) {
 }
 
 
-
+//Function to get the correct rotation without the movemnt through the plane
 Output Kinematic::GetVelocitiesForRotation(Transform target){
     Output output;
     target.rotation = transform.GetRotationalDifference(target.rotation); 

@@ -8,10 +8,8 @@ class Kinematic
 {
     public:
         Transform &transform;
-        //Constants
+        //Constants for the movement in the wheels
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        //Valores para el movimiento del robot
-        //Ya te la sabes
         float ANGULAR_CONSTANT =0.08f;
         float LINEAR_CONSTANT = 0.04f;
         //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<,
@@ -22,7 +20,6 @@ class Kinematic
         //Functions to obtain the desaired rpm for the robot depending on the input (Transform or vector2)
         Output GetVelocities(Transform target);
         Output GetVelocities(Vector2 target);
-        Output GetVelocitiesForMagn(Vector2 target);
         Output GetVelocitiesForRotation(Transform target);
 
         Kinematic(const Kinematic& other) ;
