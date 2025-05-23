@@ -13,7 +13,12 @@ Kinematics::Kinematics(float motor_max_rpm, float wheel_diameter, float lr_wheel
 }
   
   
-
+/*
+ * This function calculates the required RPM for each wheel to achieve the desired robot velocities.
+ * It takes the following parameter:
+ *   - ObVel: a velocities object representing the desired robot velocities (x, y, z).
+ * Returns an output object containing the RPM for each wheel.
+ */
 output Kinematics::getRPM(velocities ObVel) //Obtener las velocidades de las llantas con el angulo y la velocidad
 {
   output rpm;
@@ -31,6 +36,13 @@ output Kinematics::getRPM(velocities ObVel) //Obtener las velocidades de las lla
   return rpm;
 }
 
+
+/*
+ * This function calculates the required PWM values for each wheel to achieve the desired robot velocities.
+ * It takes the following parameter:
+ *   - ObVel: a velocities object representing the desired robot velocities (x, y, z).
+ * Returns an output object containing the PWM values for each wheel.
+ */
 output Kinematics::getPWM(velocities ObVel)
 {
   output rpm;
@@ -43,7 +55,15 @@ output Kinematics::getPWM(velocities ObVel)
 
   return pwm;
 }
-//Function to determine the velocities of the robot in the x and y plane with the real wheel velocities
+
+
+/*
+ * This function calculates the robot's velocities (x, y, z) based on the actual wheel RPMs and the robot's orientation.
+ * It takes the following parameters:
+ *   - actualRPM: an output object containing the actual RPMs of each wheel.
+ *   - theta: the orientation angle of the robot (in radians).
+ * Returns a velocities object with the calculated x, y, and z velocities.
+ */
 velocities Kinematics::getVelocities(output actualRPM, float theta)
 {
   velocities vel;

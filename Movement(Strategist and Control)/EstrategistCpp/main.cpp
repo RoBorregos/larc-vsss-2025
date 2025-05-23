@@ -212,7 +212,7 @@ int main()
         //Al igual que esta linea para el defensor
 
 
-////////////////////////////////////////////////////////////////////////////////////////////////// - Defender Play
+//////// - Defender Play
         //Primero determina si con la velocidad actual de la pelota podria haber alguna colision
         Vector2 TrayectoryIntersection = porteriaAliada.Intersect(ball.transform);
         cout<<"<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<\n  ---------- Defender: "<<endl;
@@ -225,7 +225,7 @@ int main()
         robots[defenderID]->GoTo(DefenderObjective);
 
 
-///////////////////////////////////////////////////////////////////////////////////////////////// - Support Play
+/////// - Support Play
         //Search of the nearest enemy to the attacker
         Line SoportLine;
         int NearestEnemyID = -1;
@@ -291,30 +291,3 @@ int main()
 
 
 
-/*
-
-
-------------------------------------Sequence of actions: -------------------------------------------------------
-- Inclusion of headers and definition of constants for robot behavior (vortex, repulsive, magnetic).
-- Definition of key positions on the field (goals, center line).
-- Initialization of game control variables (Playing, Penalty) and structures for entities and robots.
-- Creation and initialization of the ball and robots, assigning their positions and parameters.
-- Insertion of robots into the entity map.
-- Launching threads to receive data from each entity asynchronously.
-- Definition of positions for penalty situations.
-- Calculation of the center point of the field.
-- Launching a thread to receive user commands (stop/change).
-- Main loop:
-    - If in game mode:
-        - Calculation of forces on the attacker (repulsive, vortex, magnetic) and sending movement commands.
-        - Calculation of the defender's target position based on the ball's trajectory and movement toward it.
-        - Determines the closest enemy to the attacker and positions the support robot.
-    - If in penalty mode:
-        - Moves the robots to predefined positions.
-        - Brief pause to avoid excessive CPU consumption.
-    - At the end of the loop:
-        - Shuts down the robots (sends stop commands).
-        - Waits for all communication and command threads to terminate.
-        - Program termination message.
--------------------------------------------------------------------------------------------------------------------------------------------------------------
-*/
