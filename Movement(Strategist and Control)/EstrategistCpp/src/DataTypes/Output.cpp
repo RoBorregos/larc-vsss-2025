@@ -9,7 +9,15 @@ Output::Output(float a_, float b_){
     a = a_;
     b = b_;
 }
-// This function serves as a way to normalize the output of the robot to a certain scale
+
+
+/*
+ * This function normalizes the output values a and b to a specified maximum scale.
+ * It takes the following parameter:
+ *   - MAX: the maximum allowed absolute value for a or b.
+ * If either a or b exceeds MAX in absolute value, both are scaled proportionally so that the largest equals MAX.
+ */
+
 void Output::Scale(float MAX){
     if(abs(a) > MAX || abs(b) > MAX){
         if(abs(a) > abs(b)){

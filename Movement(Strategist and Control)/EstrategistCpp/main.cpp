@@ -15,10 +15,16 @@
 using namespace std;
 
 mutex entityMutex;
-
-//This function is to define the structure of the thread that will be assigned for each of the entities that recieve data from vision
-//It recieves the entitie, and the bools that determine the state of the game
-//Thus the information will be 
+/*
+ * This function defines the structure of the thread assigned to each entity that receives data from the vision system.
+ * It takes the following parameters:
+ *   - entity: pointer to the Entity object that wait for data
+ *   - running: atomic boolean reference indicating if the game is running.
+ *   - penalty: atomic boolean reference indicating if the game is in penalty mode.
+ * The thread continuously receives data for the entity while either 'running' or 'penalty' is true.
+ * It updates the entity's transform if data is received successfully, or prints an error if not.
+ * The thread sleeps briefly between iterations to avoid busy-waiting.
+ */
 void ReceiveDataAsync(Entity* entity, atomic<bool>& running, atomic<bool>& penalty) {
     while (running || penalty) {
         int result = entity->communication.ReceiveData(); //Function set to wait
@@ -32,11 +38,11 @@ void ReceiveDataAsync(Entity* entity, atomic<bool>& running, atomic<bool>& penal
     }
 }
 
-//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Values for the vector field
+//< Values for the vector field
 float vortexConstant = 0.08f;   //Vortex for allies 
 float repelentConstant = 0.02f; //Repelent for enemies
 float magneticConstant = 0.1f;  //Magnetic ball ->  <Atractive> and <Repelent>  [Defined in the class ForceGenerator]
-//<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+//<
 
 
 //##Values Calibrated with the ball
@@ -55,7 +61,7 @@ int main()
     // create transforms(position classes) for each of the entities;    
     vector<Transform> transforms(9 ,Transform());    
     
-    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< Goal Position
+    // Goal Position
     float maxDist = 4.5; //45 cm
     Vector2 pAliadaStart, pAliadaEnd;
     pAliadaStart = PorteriaAliada + Vector2(0,-maxDist); //Porteria Aliada
@@ -63,7 +69,7 @@ int main()
         Line porteriaAliada (pAliadaStart, pAliadaEnd);
     cout<<"Limits Line: "<<endl;
     cout<< "Start: "<<pAliadaStart<<" End: "<<pAliadaEnd<<endl;
-    //<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    //
 
     
     

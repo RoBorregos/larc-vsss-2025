@@ -6,6 +6,13 @@ Communication::Communication(Transform& t, int id, int portA, int portB) : robot
 }
 
 
+/*
+ * This function sends output data (two floats) to the robot via UDP.
+ * It takes the following parameter:
+ *   - data: an Output object containing the values to send.
+ * Returns 0 on success, or an error code if sending fails.
+ */
+
 int Communication::SendData(Output data) 
     {
         std::string ip = ips[robotID]; // Get the IP address for the robot ID
@@ -52,6 +59,13 @@ int Communication::SendData(Output data)
         return 0;
 }
 
+
+/*
+ * This function receives data via UDP and updates the associated Transform object.
+ * It returns 0 on success, or an error code if receiving fails.
+ * The function listens for incoming UDP packets, extracts position and orientation data,
+ * and updates the transform accordingly.
+ */
 int Communication::ReceiveData() {
     #define BUFFER_SIZE 255 // Define the buffer size for receiving data
 
@@ -62,14 +76,6 @@ int Communication::ReceiveData() {
     if (receive_py == -1) { // Check if socket creation was successful
         return 3;
     }
-
-
-    /* 
-    struct addrinfo hints = {0}, *addr_result = nullptr;
-    hints.ai_family = AF_INET; // IPv4
-    hints.ai_socktype = SOCK_DGRAM; // UDP
-    hints.ai_flags = AI_PASSIVE; // For binding to any address
-    */
 
     struct sockaddr_in position_addr; // Define a structure to hold the server address information for the vision ball
     memset(&position_addr, 0, sizeof(position_addr)); // Initialize the server address structure to zero   
@@ -82,10 +88,7 @@ int Communication::ReceiveData() {
         close(receive_py);
         return 4;
     }
-    //struct sockaddr_in* local_addr = (struct sockaddr_in*)addr_result->ai_addr;
-    //position_addr.sin_addr = local_addr->sin_addr; // Use the local IP address
     position_addr.sin_addr.s_addr = INADDR_ANY; // Using an external python IP address
-    //freeaddrinfo(addr_result); // Free the addrinfo structure
 
 
 
@@ -107,8 +110,6 @@ int Communication::ReceiveData() {
     char buffer[BUFFER_SIZE] = {0};
     struct sockaddr_in python_addr;
     socklen_t python_addL = sizeof(python_addr);
-
-//////// 
 
     int received_bytes = recvfrom(receive_py, buffer, BUFFER_SIZE, 0, 
         (struct sockaddr*)&python_addr, &python_addL);

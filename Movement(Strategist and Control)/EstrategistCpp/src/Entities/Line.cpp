@@ -3,6 +3,14 @@
 #include <cmath>
 
 using namespace std;
+/*
+ * This constructor initializes a Line object with the given start and end points.
+ * It takes the following parameters:
+ *   - s: a Vector2 representing the start point of the line.
+ *   - f: a Vector2 representing the end point of the line.
+ * If the line is either horizontal or vertical and the start point is after the end point, it swaps them to maintain sequence order.
+ * It calculates the slope (m) and y-intercept (b) of the line.
+ */
 
 Line::Line(Vector2 s, Vector2 f) : start(s), end(f) {
     if(s.y == f.y && s.x > f.x){
@@ -21,15 +29,21 @@ Line::Line(Vector2 s, Vector2 f) : start(s), end(f) {
     cout<<"Line ----------- m: "<<m<< " -- b: "<<b<<endl;
 }
 
+/*
+ * This default constructor initializes a Line object with both start and end points at (0, 0),
+ * and sets the slope (m) and y-intercept (b) to 0.
+ */
+
 Line::Line() : start(0, 0), end(0, 0), m(0), b(0) {
     cout<<"Line ----------- m: "<<m<< " -- b: "<<b<<endl;
 }
-// Calculates the intersection point between the line and the ball's trajectory (represented by a Transform).
-// Returns a Vector2 with the intersection position, or (-1000, -1000) if there is no valid intersection.
 
-// Calculates the intersection point between the line and the ball's trajectory (represented by a Transform).
-// Returns a Vector2 with the intersection position, or (-1000, -1000) if there is no valid intersection.
-
+/*
+ * This function calculates the intersection point between the line and the ball's trajectory (represented by a Transform).
+ * It takes the following parameter:
+ *   - ball: a Transform object representing the ball's position and velocity.
+ * Returns a Vector2 with the intersection position, or (-1000, -1000) if there is no valid intersection.
+ */
 Vector2 Line::Intersect(Transform ball)  {
     // Prints info about the line intersection
     cout<<"\n///////////cheking intersect to a horizontalLine: \n"<<endl;
@@ -40,19 +54,19 @@ Vector2 Line::Intersect(Transform ball)  {
 
     // If the line is horizontal.
     if(end.y == start.y ){
-        float intersection_y = _m ? (end.y-_b)/_m: -1000; // Calculates the x-coordinate of the intersection.
+        float intersection_y = _m ? (end.y-_b)/_m: -1000; 
         if(start.x <  intersection_y && intersection_y < end.x){
-            fi = Vector2(intersection_y, end.y); // If it's within the segment, save the point.
+            fi = Vector2(intersection_y, end.y); 
         }
     // If the line is vertical.
     else if(end.x == end.y){
-        float intersection_x = _m* end.x +_b; // Calculates the y-coordinate of the intersection.
+        float intersection_x = _m* end.x +_b; 
         if(start.y < intersection_x && intersection_x < end.y){
-            fi = Vector2(start.x, intersection_y); // If it's within the segment, save the point.
+            fi = Vector2(start.x, intersection_y); 
         }
     }
     }else{
-        // For two lines with slope != ( 0 || INF ) , calculate the intersection between two lines.
+     
         float fy = (m - _m) ?  (-b*_m + _b*m) / (m - _m): -1000;
         float fx = (fy - b)/m;
         fi = Vector2(fx, fy);
@@ -62,7 +76,14 @@ Vector2 Line::Intersect(Transform ball)  {
     return fi;
 }
 
-// Sets the initial and final points of the line and calculates its slope and y-intercept.
+/*
+ * This function sets the initial and final points of the line and calculates its slope and y-intercept.
+ * It takes the following parameters:
+ *   - s: a Vector2 representing the start point of the line.
+ *   - f: a Vector2 representing the end point of the line.
+ * If the line is horizontal or vertical and the start point is after the end point, it swaps them to maintain order.
+ * It calculates the slope (m) and y-intercept (b) of the line.
+ */
 void Line::SetLine(Vector2 s, Vector2 f) {
     start = s;
     end = f;
