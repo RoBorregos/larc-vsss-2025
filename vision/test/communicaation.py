@@ -11,14 +11,9 @@ def send_coordinates(x_coord, y_coord, relay_ip, relay_port=1234):
         relay_ip (str): IP address of the C++ relay
         relay_port (int): UDP port of the C++ relay
     """
-    # Create UDP socket
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # Pack the two float values into bytes
-    # 'ff' format means two 32-bit float values
-    data = struct.pack('ff', x_coord, y_coord) # Use 'e' for 16-bit floats 
-    # Send the data
+    data = struct.pack('ff', x_coord, y_coord) 
     sock.sendto(data, (relay_ip, relay_port))
-    # Close the socket
     sock.close()
 
 if __name__ == "__main__":

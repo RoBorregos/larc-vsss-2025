@@ -20,12 +20,28 @@ class RobotData:
         self.orientation_history = deque(maxlen=5)
         self.patterns = patterns  
     def update(self, x, y, orientation):
+        """
+        Updates the robot's position and orientation.
+        
+        Args:
+            x (float): New X-coordinate.
+            y (float): New Y-coordinate.
+            orientation (float): New orientation in radians.
+        """
         self.x = x
         self.y = y
         self.orientation = orientation
 
     def moving_average_centroid(self, centroid):
-        """Calculate moving average of centroids for this robot"""
+        """
+        Calculates the moving average of centroids for smoothing.
+        
+        Args:
+            centroid (tuple): Current centroid (x, y).
+        
+        Returns:
+            tuple: Smoothed centroid (x, y).
+        """
         if centroid is not None:
             self.centroid_history.append(centroid)
             if len(self.centroid_history) > 0:
@@ -35,7 +51,15 @@ class RobotData:
         return centroid
 
     def moving_average_orientation(self, new_orientation=None):
-        """Calculate moving average of orientations for this robot"""
+        """
+        Calculates the moving average of orientations for smoothing.
+        
+        Args:
+            new_orientation (float): Current orientation in radians.
+        
+        Returns:
+            float: Smoothed orientation in radians.
+        """
         if new_orientation is not None:
             self.orientation_history.append(new_orientation)
         if len(self.orientation_history) > 0:
@@ -47,15 +71,14 @@ class RobotData:
     
     def send_data(self, relay_ip):
         """
-        Send the robot's data (x, y, orientation) to the specified relay IP and port.
+        Sends the robot's data (x, y, orientation) to the specified relay IP and port.
+        
+        Args:
+            relay_ip (str): IP address of the relay.
         """
-        # Create UDP socket
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        # Pack the data into bytes
         data = struct.pack('fff', self.x, self.y, float(self.orientation))
-        # Send the data
         sock.sendto(data, (relay_ip, self.port))
-        # Close the socket
         sock.close()
         print(self)
 
@@ -88,15 +111,22 @@ hsvRanges = {
 }
 
 def auto_adjust_hsv(hsv_img, mask):
-    """Dynamically adjust HSV ranges based on channel H histogram."""
-    h_channel = hsv_img[:, :, 0]  # Get H channel
+    """
+    Dynamically adjusts HSV ranges based on the histogram of the H channel.
+    
+    Args:
+        hsv_img (ndarray): HSV image.
+        mask (ndarray): Binary mask for the region of interest.
+    
+    Returns:
+        tuple: Lower and upper HSV bounds.
+    """
+    h_channel = hsv_img[:, :, 0] 
     masked_h = h_channel[mask > 0] 
-     # Checks for pixels in the mask
     if len(masked_h) > 0: 
-        lower_h = np.percentile(masked_h, 5)  # inferior percentile(5%)
-        upper_h = np.percentile(masked_h, 95)  # Superior percentile(95%)
+        lower_h = np.percentile(masked_h, 5) 
+        upper_h = np.percentile(masked_h, 95)  
 
-        # Dynamically adjust parameters
         lower_hsv = np.array([lower_h, 50, 50])
         upper_hsv = np.array([upper_h, 255, 255])
 
@@ -105,6 +135,15 @@ def auto_adjust_hsv(hsv_img, mask):
         return None, None
    
 def get_color_centroid(img):
+    """
+    Detects the centroid of the largest colored region in the image.
+    
+    Args:
+        img (ndarray): Input image.
+    
+    Returns:
+        tuple: Centroid coordinates (x, y) and the detected color.
+    """
     imgBlur = cv2.GaussianBlur(img, (7,7), 0)
     hsv_img = cv2.cvtColor(imgBlur, cv2.COLOR_BGR2HSV)                                          
 
@@ -117,7 +156,6 @@ def get_color_centroid(img):
 
         mask = cv2.inRange(hsv_img, lower, upper)
 
-        # HSV dynamic auto calibration
         kernel = np.ones((5, 5), np.uint8)
 
         dilatedMask = cv2.dilate(mask, kernel, iterations=1)
@@ -126,7 +164,6 @@ def get_color_centroid(img):
         contours, _ = cv2.findContours(erotedMask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         if contours:
-            #returns the biggest contour based on it's area
             largest_cnt = max(contours, key=cv2.contourArea)
             area = cv2.contourArea(largest_cnt)
             if area > max_area:
@@ -134,17 +171,25 @@ def get_color_centroid(img):
                 max_area = area
                 M = cv2.moments(largest_cnt)
                 if M['m00'] > 0:
-                    cX = int(M["m10"] / M['m00']) #X entre area
-                    cY = int(M['m01'] / M['m00']) #Y entre area
+                    cX = int(M["m10"] / M['m00']) 
+                    cY = int(M['m01'] / M['m00']) 
                     centroid = (cX, cY)
                     biggest_color = color
     
-    #if not contours found, return None
     return centroid, biggest_color
 
 def get_orientation(img, color_centroid):
+    """
+    Calculates the orientation of the robot based on its centroid and a color marker.
+    
+    Args:
+        img (ndarray): Region of interest containing the robot.
+        color_centroid (tuple): Centroid of the color marker.
+    
+    Returns:
+        float: Orientation in radians.
+    """
     bb_shape = img.shape
-    #the img here is only used for debug (to see the orientation line)
     if color_centroid != None:
         cX = float(bb_shape[0] / 2)
         cY = float(bb_shape[1] / 2)
@@ -161,17 +206,26 @@ def get_orientation(img, color_centroid):
         return None
 
 def bb_center_orien(results, img, H):
+    """
+    Processes bounding boxes detected by YOLO to calculate robot positions and orientations.
+    
+    Args:
+        results (list): YOLO detection results.
+        img (ndarray): Input image.
+        H (ndarray): Homography matrix for perspective transformation.
+    
+    Returns:
+        dict: Updated robot data.
+    """
     global orientation_history, robots
     robot_coors = (0.0, 0.0)
 
     for res in results:
-        # Detected bounding boxes in a frame
         boxes = res.boxes  
 
         for box in boxes:
             x1, y1, x2, y2 = box.xyxy[0]
             #confidence = box.conf[0].item()
-            # Detected pattern class
             patternID = int(box.cls[0]) + 1  
             robot_id = None
             for port, robot in robots.items():
@@ -181,11 +235,9 @@ def bb_center_orien(results, img, H):
             if( robot_id is None):
                 print("No se detectó el patrón") 
                 continue
-            # Robot's center
             x_center = float((x1 + x2) / 2)
             y_center = float((y1 + y2) / 2)
 
-            # image to get orientation
             roi = img[int(y1):int(y2), int(x1):int(x2)]
             color_centroid, _ = get_color_centroid(roi)
 
@@ -198,17 +250,14 @@ def bb_center_orien(results, img, H):
                     robots[robot_id].orientation_history.append(orien)
                     smoothed_orien = robots[robot_id].moving_average_orientation()
                     
-                    # Get real coordinates
                     robot_coors = np.array([[x_center, y_center]], dtype="float32")
                     robot_coors = np.array([robot_coors])
                     real_robot_coors = cv2.perspectiveTransform(robot_coors, H)[0][0]
                     last_robot_data = {"x": real_robot_coors[0], "y": real_robot_coors[1], "orientation": orien} # Historial de datos del robot  
                     
-                    # Send robot's position and smoothed coordinates
                     robots[robot_id].update(real_robot_coors[0], real_robot_coors[1], smoothed_orien)
                     print(f"Robot {robot_id}: {real_robot_coors[0]}, {real_robot_coors[1]}, {orien}")
 
-                    # draw robot center
                     cv2.circle(img, (int(x_center), int(y_center)), 2, (0, 0, 255), -1)
                     cv2.putText(img, f"ID: {robot_id}", (int(x_center), int(y_center) - 10),
                                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)

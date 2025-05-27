@@ -8,19 +8,38 @@ height = 480
 objectivePoints = np.float32([[0, height], [0,0], [width, 0], [width, height]])
 
 def mouse_callback(event, x, y, _, __):
+    """
+    Callback function to capture mouse clicks and store the clicked points.
+    
+    Args:
+        event (int): Type of mouse event (e.g., left button click).
+        x (int): X-coordinate of the mouse click.
+        y (int): Y-coordinate of the mouse click.
+        _ (int): Unused parameter.
+        __ (int): Unused parameter.
+    """
     if event == cv2.EVENT_LBUTTONDOWN:
         print(f"Clicked: {x}, {y}")
         clicked_points.append((x, y))
 
 
 def getHomography(cap, realCoor):
+    """
+    Computes the homography matrix based on user-clicked points and real-world coordinates.
+    
+    Args:
+        cap (cv2.VideoCapture): Video capture object for live feed.
+        realCoor (list): List of real-world coordinates corresponding to the clicked points.
+    
+    Returns:
+        ndarray: Homography matrix mapping pixel coordinates to real-world coordinates.
+    """
     global clicked_points
     clicked_points = []
 
     cv2.namedWindow("Calibration")
     cv2.setMouseCallback("Calibration", mouse_callback)
     
-    #<4 because 0 will also be a point (0,1,2,3) = len 4
     while len(clicked_points) < 4: 
         success, img = cap.read()
         if not success:
@@ -44,7 +63,15 @@ def getHomography(cap, realCoor):
     return H
 
 def autoGetHomography(realCoor):
-
+    """
+    Automatically computes the homography matrix using predefined pixel coordinates.
+    
+    Args:
+        realCoor (list): List of real-world coordinates corresponding to the predefined pixel points.
+    
+    Returns:
+        ndarray: Homography matrix mapping pixel coordinates to real-world coordinates.
+    """
     pxCoors = np.array([(0,0), (width, 0), (width, height), (0, height)])
     realCoors = np.array(realCoor, dtype = "float32")
 
@@ -54,6 +81,12 @@ def autoGetHomography(realCoor):
 
 
 def warpChange():
+    """
+    Computes the perspective transformation matrix for warping the image.
+    
+    Returns:
+        ndarray: Perspective transformation matrix.
+    """
     clickedOriginal = np.array(clicked_points, dtype=np.float32)
     matrix = cv2.getPerspectiveTransform(clickedOriginal, objectivePoints)
     return matrix

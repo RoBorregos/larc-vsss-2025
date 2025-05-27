@@ -9,6 +9,12 @@ def autoHSVPicker():
     pass
 #preprocess 
 def colorPicker(window):
+    """
+    Creates trackbars for HSV range selection and processes video input to filter colors.
+    
+    Args:
+        window (str): Name of the window where trackbars will be displayed.
+    """
     #Trackbars creation
     cv2.createTrackbar("Hue Min", window, 1, 179, empty)
     cv2.createTrackbar("Hue Max", window, 179, 179, empty)
