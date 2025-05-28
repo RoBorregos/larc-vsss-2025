@@ -1,3 +1,4 @@
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -169,3 +170,16 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+dataset-generator/dataset
+dataset-generator/Resources
+!dataset-generator/Resources/data.yaml
+
+VSSSModel
+
+/communication
+/communication/udp communication_vsss
+
+**.pt
+/vsss_modelM/runs
+
