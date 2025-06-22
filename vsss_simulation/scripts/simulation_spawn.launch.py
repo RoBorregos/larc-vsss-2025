@@ -19,10 +19,6 @@ def generate_launch_description():
     camera_file = os.path.join(pkg_share, 'urdf', 'camera.urdf')
     robot_description = Command(['xacro ', xacro_file])
 
-    controller_config = os.path.join(pkg_share, 'config', 'diff_drive_controllers.yaml')
-
-    world_file = os.path.join(pkg_share, 'worlds', 'nothing.sdf')
-
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='true'),
 
@@ -35,7 +31,6 @@ def generate_launch_description():
                     'gazebo.launch.py'
                 )
             ]),
-            launch_arguments={'world': world_file}.items()
         ),
 
         # Robot State Publisher
