@@ -1,13 +1,15 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro" name="vsss_robot">
 
     <!-- Parameters -->
+
+    <xacro:arg name='robot_name' default="robot"/>
     <xacro:property name="wheel_radius" value="0.05"/>
     <xacro:property name="wheel_width" value="0.02"/>
     <xacro:property name="wheel_separation" value="0.25"/>
     <xacro:property name="body_size" value="0.3"/>
 
     <!-- Base Link -->
-    <link name="base_link">
+    <link name="$(arg robot_name)_base_link">
         <visual>
             <origin xyz="0 0 ${body_size / 2}" rpy="0 0 0"/>
             <geometry>
@@ -115,35 +117,35 @@
 
     <!-- Wheel Joints -->
     <joint name="left_wheel_joint" type="continuous">
-        <parent link="base_link"/>
+        <parent link="$(arg robot_name)_base_link"/>
         <child link="left_wheel_link"/>
         <origin xyz="0 -${wheel_separation/2} 0" rpy="1.57 0 0"/>
         <axis xyz="0 0 1"/>
     </joint>
 
     <joint name="right_wheel_joint" type="continuous">
-        <parent link="base_link"/>
+        <parent link="$(arg robot_name)_base_link"/>
         <child link="right_wheel_link"/>
         <origin xyz="0 ${wheel_separation/2} 0" rpy="1.57 0 0"/>
         <axis xyz="0 0 1"/>
     </joint>
 
     <joint name="dominant_plate_joint" type="fixed">
-        <parent link="base_link"/>
+        <parent link="$(arg robot_name)_base_link"/>
         <child link="dominant_plate_link"/>
         <origin xyz="${-body_size / 4} 0.0 ${body_size + 0.01}" rpy="0.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
     </joint>
 
     <joint name="small_plate_1_joint" type="fixed">
-        <parent link="base_link"/>
+        <parent link="$(arg robot_name)_base_link"/>
         <child link="small_plate_1_link"/>
         <origin xyz="${body_size / 4} ${body_size / 4} ${body_size + 0.01}" rpy="0.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
     </joint>
 
     <joint name="small_plate_2_joint" type="fixed">
-        <parent link="base_link"/>
+        <parent link="$(arg robot_name)_base_link"/>
         <child link="small_plate_2_link"/>
         <origin xyz="${body_size / 4} ${-body_size / 4} ${body_size + 0.01}" rpy="0.0 0.0 0.0"/>
         <axis xyz="0 0 1"/>
@@ -168,7 +170,10 @@
 
     <!-- Gazebo Diff Drive Plugin -->
     <gazebo>
-        <plugin name="diff_drive_controller" filename="libgazebo_ros_diff_drive.so">
+        <plugin name="$(arg robot_name)_diff_drive_controller" filename="libgazebo_ros_diff_drive.so">
+        <ros>
+            <namespace>/$(arg robot_name)</namespace>
+        </ros>
             <left_joint>left_wheel_joint</left_joint>
             <right_joint>right_wheel_joint</right_joint>
             <wheel_separation>0.3</wheel_separation>
@@ -177,12 +182,12 @@
             <publish_odom>true</publish_odom>
             <odom_topic>odom</odom_topic>
             <cmd_vel_topic>cmd_vel</cmd_vel_topic>
-            <robot_base_frame>base_link</robot_base_frame>
+            <robot_base_frame>$(arg robot_name)_base_link</robot_base_frame>
         </plugin>
     </gazebo>
 
     <!-- Gazebo Material -->
-    <gazebo reference="base_link">
+    <gazebo reference="$(arg robot_name)_base_link">
         <material>Gazebo/Black</material>
     </gazebo>
     <gazebo reference="left_wheel_link">

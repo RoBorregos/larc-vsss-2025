@@ -15,6 +15,9 @@
   <depend>gazebo_ros</depend>
   <depend>gazebo_ros2_control</depend>
   <depend>gazebo_ros_pkgs</depend>
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+  <depend>nav_msgs</depend>
 
   <export>
     <build_type>ament_cmake</build_type>
