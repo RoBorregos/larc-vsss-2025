@@ -33,8 +33,22 @@
 
     </link>
 
+
     <gazebo reference="sphere_link">
         <material>Gazebo/Orange</material>
+    </gazebo>
+    <gazebo>
+    <plugin name="libgazebo_ros_p3d" filename="libgazebo_ros_p3d.so">
+        <ros>
+            <namespace>ball</namespace>
+            <remapping>odom:=odom</remapping>
+            </ros>
+            <frame_name>world</frame_name>
+            <body_name>sphere_link</body_name>
+            <update_rate>200.0</update_rate>
+            <gaussian_noise>0.01</gaussian_noise>
+            
+        </plugin>
     </gazebo>
 
 </robot>

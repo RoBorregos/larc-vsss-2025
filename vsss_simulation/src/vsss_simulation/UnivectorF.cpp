@@ -1,7 +1,7 @@
 #include "vsss_simulation/UnivectorF.hpp"
 
-float de = 0.6;
-float kr = 0.5;
+float de = 0.8;
+float kr = 0.2;
 
 float phiH(float rho,  float theta, bool cw)    //Hyperbolic angle
 {
@@ -68,7 +68,7 @@ float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory) { // Move to 
     }else if( distance_from_trayectory < -de){
         phi_tuf = phiH(ro_r, theta, false);
     }else{
-        phi_tuf = phiH(ro_l, theta, false);
+        phi_tuf = phiH(ro_l, theta, true);
     }
 
     return wrapToPI(phi_tuf);

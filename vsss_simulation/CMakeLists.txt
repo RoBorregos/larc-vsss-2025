@@ -6,6 +6,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(urdf_launch REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 ament_python_install_package(${PROJECT_NAME})
 
@@ -33,6 +34,7 @@ find_package(Bullet REQUIRED)
 
 add_executable(simulation_spawn scripts/simulation_spawn.cpp)
 add_executable(RobotController scripts/RobotController.cpp)
+add_executable(VectorGrapher scripts/VectorGrapher.cpp)
 
 add_library(Kinematic src/vsss_simulation/Kinematic.cpp)
 add_library(MathU src/vsss_simulation/MathU.cpp)
@@ -66,14 +68,19 @@ target_include_directories(MathU PUBLIC
 
 ament_target_dependencies(RobotController rclcpp std_msgs nav_msgs tf2 tf2_geometry_msgs tf2_eigen Bullet) 
 target_link_libraries(RobotController Kinematic Line MathU UnivectorF)
+
+ament_target_dependencies(VectorGrapher rclcpp visualization_msgs std_msgs nav_msgs tf2 tf2_geometry_msgs)
+target_link_libraries(VectorGrapher UnivectorF Line)
+
 ament_target_dependencies(Kinematic tf2)
 ament_target_dependencies(Line tf2)
 ament_target_dependencies(UnivectorF tf2)
+target_link_libraries(UnivectorF MathU)
 ament_target_dependencies(MathU tf2)
 
 target_compile_features(simulation_spawn PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
-install(TARGETS simulation_spawn RobotController
+install(TARGETS simulation_spawn RobotController VectorGrapher
   DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
