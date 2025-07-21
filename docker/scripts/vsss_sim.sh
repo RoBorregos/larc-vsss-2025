@@ -6,10 +6,10 @@ COMPOSE_FILE_PATH="$PROJECT_ROOT/compose/docker-compose.yml"
 
 DEFAULT_BASE_TAG="cpu_base"
 CUDA_BASE_TAG="cuda_base"
-GPU_TAG="nav2_gpu"
-CUDA_TAG="nav2_cuda"
+GPU_TAG="vsss_sim_gpu"
+CUDA_TAG="vsss_sim_cuda"
 BASE_REPO="roborregos/vsss_sim"
-NAV2_REPO="roborregos/nav2"
+NAV2_REPO="roborregos/vsss_sim_dev"
 
 # Util
 function parse_gpu_flag() {
@@ -47,15 +47,15 @@ function get_base_tag() {
     fi
 }
 
-function get_nav2_service() {
+function get_vsss_sim_service() {
     local gpu_flag
     gpu_flag=$(parse_gpu_flag "$@")
     if [[ "$gpu_flag" == "true" ]]; then
-        echo "nav2_gpu"
+        echo "vsss_sim_gpu"
     elif [[ "$(has_cuda_support "$@")" == "true" ]]; then
-        echo "nav2_cuda"
+        echo "vsss_sim_cuda"
     else
-        echo "nav2_cpu"
+        echo "vsss_sim_cpu"
     fi
 }
 
@@ -67,15 +67,15 @@ function build_base_image() {
     docker compose -f "$COMPOSE_FILE_PATH"  build "$base_tag"
 }
 
-function build_nav2_image() {
+function build_vsss_sim_image() {
     local base_tag
     base_tag=$(get_base_tag "$@")
     local service
-    service=$(get_nav2_service "$@")
+    service=$(get_vsss_sim_service "$@")
 
-    echo "🔧 Building Nav2 image: $service (based on $base_tag)"
-    NAV2_BASE_IMAGE="$BASE_REPO:$base_tag" \
-    NAV2_BASE_IMAGE_TAG="$base_tag" \
+    echo "🔧 Building vsss_sim image: $service (based on $base_tag)"
+    export vsss_sim_BASE_IMAGE="$BASE_REPO:$base_tag"
+    export vsss_sim_BASE_IMAGE_TAG="$base_tag"
     docker compose -f "$COMPOSE_FILE_PATH"  build "$service"
 }
 
@@ -84,18 +84,27 @@ function run_container() {
     base_tag=$(get_base_tag "$@")
     local base_image="$BASE_REPO:$base_tag"
     local service
-    service=$(get_nav2_service "$@")
+    service=$(get_vsss_sim_service "$@")
 
     echo "🚀 Starting container: $service"
     xhost +local:docker
-    NAV2_BASE_IMAGE="$base_image" \
-    NAV2_BASE_IMAGE_TAG="$base_tag" \
+    vsss_sim_BASE_IMAGE="$base_image" \
+    vsss_sim_BASE_IMAGE_TAG="$base_tag" \
     docker compose -f "$COMPOSE_FILE_PATH"  up -d "$service"
+    # docker exec -it vsss_sim_gpu bash 
+    until docker exec -it "$service" bash -c "ls /tmp/build_done" &>/dev/null; do
+    echo "⏳ Waiting for build to complete..."
+    sleep 2
+    done
+    echo "✅ Done"
+    # attach_shell
+
 }
+
 
 function attach_shell() {
     local service
-    service=$(get_nav2_service "$@")
+    service=$(get_vsss_sim_service "$@")
 
     echo "🧑‍💻 Attaching to $service shell..."
     docker exec -it "$service" bash
@@ -110,7 +119,7 @@ function deploy() {
     fi
 
     build_base_image "$@"
-    build_nav2_image "$@"
+    build_vsss_sim_image "$@"
     run_container "$@"
     attach_shell "$@"
 }
@@ -139,7 +148,7 @@ function stop_container() {
 
     # Otherwise stop the specific one
     local service
-    service=$(get_nav2_service "$@")
+    service=$(get_vsss_sim_service "$@")
 
     echo "🛑 Stopping container: $service"
     docker compose -f "$COMPOSE_FILE_PATH"  stop "$service"
@@ -163,7 +172,7 @@ function remove_container() {
 
     # Otherwise remove the specific service
     local service
-    service=$(get_nav2_service "$@")
+    service=$(get_vsss_sim_service "$@")
 
     echo "🛑 Removing container: $service"
     docker compose -f "$COMPOSE_FILE_PATH" down "$service"
@@ -199,8 +208,8 @@ case "$1" in
     -build-base)
         build_base_image "$@"
         ;;
-    -build-nav2)
-        build_nav2_image "$@"
+    -build-vsss_sim)
+        build_vsss_sim_image "$@"
         ;;
     -run)
         run_container "$@"

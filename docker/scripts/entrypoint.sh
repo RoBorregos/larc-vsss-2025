@@ -16,6 +16,7 @@ fi
 # Build
 cd /ros/vsss_ws
 colcon build --symlink-install
+touch /tmp/build_done
 
 # Keep container alive interactively if no other command was passed
 if [ "$#" -eq 0 ]; then

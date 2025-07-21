@@ -15,14 +15,14 @@ services:
         BASE_IMAGE: nvidia/cuda:11.8.0-runtime-ubuntu22.04
     image: roborregos/vsss_sim:cuda_base
 
-  nav2_cuda:
+  vsss_sim_cuda:
     build:
       context: ../
       dockerfile: dockerfiles/vsss_sim.dockerfile
       args:
-        BASE_IMAGE: ${NAV2_BASE_IMAGE}
-    image: roborregos/vsss_sim:${NAV2_BASE_IMAGE_TAG}
-    container_name: nav2_cuda
+        BASE_IMAGE: ${vsss_sim_BASE_IMAGE}
+    image: roborregos/vsss_sim:${vsss_sim_BASE_IMAGE_TAG}
+    container_name: vsss_sim_cuda
     runtime: nvidia
     environment:
       - DISPLAY=${DISPLAY}
@@ -47,14 +47,14 @@ services:
               count: 1
               capabilities: [gpu]
 
-  nav2_gpu:
+  vsss_sim_gpu:
     build:
       context: ../
       dockerfile: dockerfiles/vsss.dockerfile
       args:
-        BASE_IMAGE: ${NAV2_BASE_IMAGE}
-    image: roborregos/nav2_gpu:${NAV2_BASE_IMAGE_TAG}
-    container_name: nav2_gpu
+        BASE_IMAGE: ${vsss_sim_BASE_IMAGE}
+    image: roborregos/vsss_sim_gpu:${vsss_sim_BASE_IMAGE_TAG}
+    container_name: vsss_sim_gpu
     runtime: nvidia
     environment:
       - DISPLAY=${DISPLAY}
@@ -73,14 +73,14 @@ services:
     command: []
     
   
-  nav2_cpu:
+  vsss_sim_cpu:
     build:
       context: ../
       dockerfile: dockerfiles/vsss.dockerfile
       args:
-        BASE_IMAGE: ${NAV2_BASE_IMAGE}
-    image: roborregos/nav2_cpu:${NAV2_BASE_IMAGE_TAG}
-    container_name: nav2_cpu
+        BASE_IMAGE: ${vsss_sim_BASE_IMAGE}
+    image: roborregos/vsss_sim_cpu:${vsss_sim_BASE_IMAGE_TAG}
+    container_name: vsss_sim_cpu
     network_mode: host
     environment:
       - DISPLAY=${DISPLAY}
