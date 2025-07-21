@@ -103,7 +103,6 @@ class Robot_Controller : public rclcpp::Node
         Vector3 robot_2_ball = self_transform.getOrigin() - ball_transform.getOrigin(); 
         //obtain the angle from the functions
         float robot_t_ball = atan2(robot_2_ball[1], robot_2_ball[0]);
-        cout<<robot_t_ball<<endl;
         float theta_res = phiTuf(robot_t_ball, self_transform.getOrigin(),ball_transform.getOrigin(),  optimalPath); 
         //transform the angle to a vector
         Vector3 result =  Theta2Vector(theta_res);
