@@ -38,9 +38,7 @@ WORKDIR /ros/vsss_ws
 RUN rosdep update && \
     rosdep install --from-paths src --ignore-src -r -y
 
-
-
-ENTRYPOINT ["/entrypoint.sh"]
+# ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
 
 # Source ROS 2 setup on login
