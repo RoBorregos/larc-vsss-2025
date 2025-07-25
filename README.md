@@ -3,6 +3,11 @@
 A simple ROS 2 simulation built for the IEEE VSSS competition.
 
 ---
+## Docker support for development environment
+
+If you wish to set up a Docker container to develop or automate commands in isolated environments, please refer to [docker](/docker/README.md)
+
+---
 ## 📦 Dependencies
 
 First, make sure your system is up to date:
