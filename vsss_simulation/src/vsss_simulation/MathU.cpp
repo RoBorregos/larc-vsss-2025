@@ -15,3 +15,8 @@ float wrapToPI(float a){
 Vector3 Theta2Vector(float a){
     return Vector3(cos(a), sin(a), 0);
 }
+
+
+float gaussian(float r, float constant){
+    return exp(-(r*r/(2*constant*constant)));
+}

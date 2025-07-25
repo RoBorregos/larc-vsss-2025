@@ -22,8 +22,7 @@ def generate_launch_description():
     pkg_name = "vsss_simulation"
     pkg_share = FindPackageShare(pkg_name).find(pkg_name)
     robot_xacro_file = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
-    robot_description = Command(["xacro ", robot_xacro_file, " robot_name:=", LaunchConfiguration("robot_name"), " "])
-
+    robot_description = Command(["xacro ", robot_xacro_file, " robot_name:=", LaunchConfiguration("robot_name")])
 
     return LaunchDescription(
         [
@@ -57,15 +56,8 @@ def generate_launch_description():
                                 "-z", "0.2"
                             ],
                             output="screen"
-                        ),
-                        
-                        Node(
-                            package=pkg_name,
-                            executable="RobotController",
-                            name="RobotController",
-                            output="screen",
-                            parameters=[{"number": LaunchConfiguration("robot_number")}]
                         )
+                        
                     ]
                 ),
                      # Load joint_state_broadcaster

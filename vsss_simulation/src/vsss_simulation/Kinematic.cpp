@@ -2,9 +2,26 @@
 using namespace tf2;
 
 Kinematic::Kinematic(){}
-void Kinematic::setTrans(Transform n){
-    transform = n;
+void Kinematic::setTrans(geometry_msgs::msg::TransformStamped t){
+    if(firstUpdate){
+        TransformFromMSG(t.transform, transform);
+        prevTime = rclcpp::Time(t.header.stamp);
+        firstUpdate = false;
+        return;
+    }
+    t.transform.translation.z = 0;
+    prevTransform = transform;
+    TransformFromMSG(t.transform, transform);
+    rclcpp::Time newTime = rclcpp::Time(t.header.stamp);
+    cout<<"GetTime"<<endl;
+    velocity = (transform.getOrigin() - prevTransform.getOrigin())/(newTime-prevTime).seconds();
+    cout<<"Yupie"<<endl;
+    prevTime = newTime;
 }
+
+
+
+
 geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective){
 
     Vector3 front = quatRotate(transform.getRotation(), Vector3(-1,0,0));

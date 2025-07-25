@@ -1,6 +1,13 @@
 cmake_minimum_required(VERSION 3.8)
 project(vsss_simulation)
 
+# find dependencies
+find_package(std_msgs REQUIRED)
+find_package(nav_msgs REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(Bullet REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -18,24 +25,22 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+install(DIRECTORY 
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+
+
 install(DIRECTORY urdf scripts worlds launch config include
   DESTINATION share/${PROJECT_NAME})
 
-# find dependencies
-find_package(std_msgs REQUIRED)
-find_package(nav_msgs REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
-find_package(tf2_eigen REQUIRED)
-find_package(Bullet REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+
 
 add_executable(simulation_spawn scripts/simulation_spawn.cpp)
 add_executable(RobotController scripts/RobotController.cpp)
 add_executable(VectorGrapher scripts/VectorGrapher.cpp)
 
+add_library(MsgConvert src/vsss_simulation/MsgConvert.cpp)
 add_library(Kinematic src/vsss_simulation/Kinematic.cpp)
 add_library(MathU src/vsss_simulation/MathU.cpp)
 add_library(Line src/vsss_simulation/Line.cpp)
@@ -61,27 +66,40 @@ target_include_directories(MathU PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
-
   target_include_directories(UnivectorF PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
+   target_include_directories(MsgConvert PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+  
+
 ament_target_dependencies(RobotController rclcpp std_msgs nav_msgs tf2 tf2_geometry_msgs tf2_eigen Bullet) 
-target_link_libraries(RobotController Kinematic Line MathU UnivectorF)
+target_link_libraries(RobotController Kinematic Line UnivectorF MsgConvert)
 
 ament_target_dependencies(VectorGrapher rclcpp visualization_msgs std_msgs nav_msgs tf2 tf2_geometry_msgs)
-target_link_libraries(VectorGrapher UnivectorF Line)
+target_link_libraries(VectorGrapher UnivectorF MsgConvert Line   ${tf2_geometry_msgs_LIBRARIES} )
 
-ament_target_dependencies(Kinematic tf2)
+
+ament_target_dependencies(MsgConvert tf2 tf2_geometry_msgs nav_msgs)
+ament_target_dependencies(Kinematic tf2 tf2_geometry_msgs)
+target_link_libraries(Kinematic MathU MsgConvert )
 ament_target_dependencies(Line tf2)
 ament_target_dependencies(UnivectorF tf2)
-target_link_libraries(UnivectorF MathU)
+target_link_libraries(UnivectorF MathU Kinematic)
 ament_target_dependencies(MathU tf2)
 
 target_compile_features(simulation_spawn PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
 install(TARGETS simulation_spawn RobotController VectorGrapher
   DESTINATION lib/${PROJECT_NAME})
+
+# Install Python executables
+install(PROGRAMS
+  scripts/DefaultController.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

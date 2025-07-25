@@ -2,7 +2,9 @@
 
 float de = 0.8;
 float kr = 0.2;
-
+float ko = 0.1;
+float d_min = 0.2;
+float delta__ = 0.43;
 float phiH(float rho,  float theta, bool cw)    //Hyperbolic angle
 {
     float angle = 0;
@@ -74,5 +76,37 @@ float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory) { // Move to 
     return wrapToPI(phi_tuf);
 
 
+
+}
+
+
+Vector3 getImagePos(Kinematic main, Kinematic obst){
+    Vector3 imag = ko*(obst.velocity - main.velocity);
+    imag[2] = 0;
+    float distImag = imag.length();
+    float distReal = (main.transform.getOrigin()-obst.transform.getOrigin()).length();
+    Vector3 imagPos;
+    if(distReal >= distImag){
+        imagPos = obst.transform.getOrigin() + imag;   
+    }else{
+        imagPos = obst.transform.getOrigin() + (distReal/distImag) * imag ;
+    }
+    return imagPos;
+}
+
+float phiAuf(Kinematic main, Kinematic obst){
+    Vector3 Imag = getImagePos(main, obst);
+    return wrapToPI(atan2(Imag[1], Imag[0]));
+}
+
+
+
+float phiCompose(float ball_c, float enemy_c, float distance_){
+    if(distance_ <= d_min){
+        return enemy_c;
+    }
+    float guass = gaussian(distance_ - d_min, delta__);
+    float diff = wrapToPI(enemy_c - ball_c);
+    return wrapToPI(guass * diff + ball_c);
 
 }

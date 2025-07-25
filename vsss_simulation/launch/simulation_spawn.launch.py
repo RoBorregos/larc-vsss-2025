@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from launch import LaunchDescription
-from launch_ros.actions import Node
+from launch_ros.actions import Node, PushRosNamespace
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.substitutions import FindPackageShare
@@ -17,11 +17,32 @@ def generate_launch_description():
     config_file_path = os.path.join(pkg_share, 'config', 'ball_odom2_tf.yaml')
 
 
-    robot_count = 1  # Number of robots
+    robot_count = 2  # Number of robots
     robot_spawns = []
     for i in range(robot_count):
         robotName = f"robot{i+1}"
         position =  i *1.0
+        if(i == 0):
+            controlNode = Node(
+                package=pkg_name,
+                namespace= robotName,
+                executable="RobotController",
+                arguments=[
+                    "number",str(i+1)
+                ],
+                output="screen"
+            )
+        else:
+            controlNode = Node(
+                package=pkg_name,
+                namespace=robotName,
+                executable="DefaultController.py",
+                arguments=[
+                    "robot_namespace", robotName
+                ]
+            )
+
+
         robotNodes = TimerAction(
             period=4.0* i + 6.0,
             actions=[
@@ -35,9 +56,11 @@ def generate_launch_description():
                 launch_arguments= {
                     'robot_name' : robotName,
                     'robot_starting_pos' : str(position),
-                    'robot_number' : str(i+1)
+                    'robot_number' : str(i+1),
                 }.items()
-            )
+            ),
+            controlNode
+            
         ])
         robot_spawns.append(
             robotNodes
@@ -57,9 +80,6 @@ def generate_launch_description():
                 )
             ])
         ),
-
-        #Robots Nodes
-        *robot_spawns,
 
         # Spawn wall model (from file)
         Node(
@@ -139,7 +159,10 @@ def generate_launch_description():
                         "goal_pos"
                     ]
                 )]
-            )
+            ),
+
+        #Robots Nodes
+        *robot_spawns
         
 
     ])
