@@ -13,9 +13,7 @@ void Kinematic::setTrans(geometry_msgs::msg::TransformStamped t){
     prevTransform = transform;
     TransformFromMSG(t.transform, transform);
     rclcpp::Time newTime = rclcpp::Time(t.header.stamp);
-    cout<<"GetTime"<<endl;
     velocity = (transform.getOrigin() - prevTransform.getOrigin())/(newTime-prevTime).seconds();
-    cout<<"Yupie"<<endl;
     prevTime = newTime;
 }
 

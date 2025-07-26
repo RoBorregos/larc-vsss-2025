@@ -27,9 +27,7 @@ def generate_launch_description():
                 package=pkg_name,
                 namespace= robotName,
                 executable="RobotController",
-                arguments=[
-                    "number",str(i+1)
-                ],
+                parameters=[{"number":(i+1)}],
                 output="screen"
             )
         else:
@@ -37,9 +35,7 @@ def generate_launch_description():
                 package=pkg_name,
                 namespace=robotName,
                 executable="DefaultController.py",
-                arguments=[
-                    "robot_namespace", robotName
-                ]
+                parameters=[ {"robot_namespace": robotName}]
             )
 
 

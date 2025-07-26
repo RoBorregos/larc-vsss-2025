@@ -21,10 +21,6 @@ class VectorGrapher : public rclcpp::Node {
 public:
     VectorGrapher() : Node("VectorGrapher") {
         
-      this->declare_parameter<int>("robot",  0);
-      
-      namespace = this->get_parameter("robot").as_string();
-
 
         marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
             "arrow_grid", 10);
@@ -33,8 +29,7 @@ public:
             std::chrono::milliseconds(30),
             std::bind(&VectorGrapher::publish_arrows, this));
         
-        ball_sub = this->create_subscription<nav_msgs::msg::Odometry>("ball/odom", 10, std::bind(&VectorGrapher::refresh_ball_odom, this, _1));
-        imaginary_sub = this->create_subscription<geometry_msgs::msg::Vector3>("imaginary_position",50, bind(&VectorGrapher::refresh_imag_pos,this,_1));
+        imaginary_sub = this->create_subscription<geometry_msgs::msg::Vector3>("robot1/imaginary_position",50, bind(&VectorGrapher::refresh_imag_pos,this,_1));
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
 
@@ -43,20 +38,19 @@ public:
 private:
     void publish_arrows() {
         //PreDraw
-        geometry_msgs::msg::TransformStamped goal_;
+        geometry_msgs::msg::TransformStamped goal_, ball_;
         try {
-          goal_ = tf_buffer_->lookupTransform(
-            "world", "goal_pos",
-            TimePointZero);
+          goal_ = tf_buffer_->lookupTransform("world", "goal_pos",TimePointZero);
+          ball_ = tf_buffer_->lookupTransform("world", "sphere_link", TimePointZero);
+          fromMsg(goal_.transform.translation, goal);
+          fromMsg(ball_.transform, ball_transform );
+
         } catch (const TransformException & ex) {
           RCLCPP_INFO(
             this->get_logger(), "Could not transform %s to %s: %s",
             "world", "goal_pos", ex.what());
           return;
         }
-        //Set the optimal trayectory
-        Vector3 goal; 
-        VectorFromMSG(goal_.transform.translation, goal);
         Line optimalPath (ball_transform.getOrigin(), goal);
 
         //FIll Array
@@ -83,11 +77,14 @@ private:
                 Vector3 pos (marker.pose.position.x, marker.pose.position.y, marker.pose.position.z);
                 Vector3 pos_2_ball = pos - ball_transform.getOrigin();
                 double pos_t_ball = atan2(pos_2_ball[1], pos_2_ball[0]);
-                double theta_res = phiTuf(pos_t_ball, pos, ball_transform.getOrigin(), optimalPath);
-
+                double theta_ball = phiTuf(pos_t_ball, pos, ball_transform.getOrigin(), optimalPath);
+                Vector3 distan_to_I = pos - imag_pos;
+                float theta_enemy = atan2(distan_to_I[1], distan_to_I[0]);
+                // Join the angles
+                float joined = phiCompose(theta_ball,theta_enemy, distan_to_I.length());
                 // Orientation (pointing in +X direction)
                 Quaternion orientation;
-                orientation.setRPY (0.0,0.0,theta_res);
+                orientation.setRPY (0.0,0.0,joined);
                 marker.pose.orientation.x = orientation.x();
                 marker.pose.orientation.y = orientation.y();
                 marker.pose.orientation.z = orientation.z();
@@ -112,6 +109,7 @@ private:
 
         if(!is_enemy){
           marker_pub_->publish(marker_array);
+          return;
         }
 
         // 2. Add horizontal marker at imag_pos (NEW CODE)
@@ -126,26 +124,26 @@ private:
         // Position (using imag_pos)
         horizontal_marker.pose.position.x = imag_pos[0];
         horizontal_marker.pose.position.y = imag_pos[1];
-        horizontal_marker.pose.position.z = 0.7;  // On the ground
+        horizontal_marker.pose.position.z = 0.8;  // little up
 
         // Orientation (horizontal)
         Quaternion horiz_orientation;
-        horiz_orientation.setRPY(0.0, M_PI/2, 0.0);
+        horiz_orientation.setRPY(0,0, M_PI/2);
         horizontal_marker.pose.orientation.x = horiz_orientation.x();
         horizontal_marker.pose.orientation.y = horiz_orientation.y();
         horizontal_marker.pose.orientation.z = horiz_orientation.z();
         horizontal_marker.pose.orientation.w = horiz_orientation.w();
 
         // Scale (flat cylinder)
-        horizontal_marker.scale.x = 0.1;  // Diameter
-        horizontal_marker.scale.y = 0.1;  // Diameter
-        horizontal_marker.scale.z = 0.01; // Very thin (height)
+        horizontal_marker.scale.x = 0.05;  // Diameter
+        horizontal_marker.scale.y = 0.05;  // Diameter
+        horizontal_marker.scale.z = 0.1; // Very thin (height)
 
         // Color (yellow)
         horizontal_marker.color.r = 1.0f;
         horizontal_marker.color.g = 1.0f;
         horizontal_marker.color.b = 0.0f;
-        horizontal_marker.color.a = 0.7f;  // Slightly transparent
+        horizontal_marker.color.a = 1.0f;  // Slightly transparent
 
         horizontal_marker.lifetime = rclcpp::Duration::from_seconds(0.2);
         marker_array.markers.push_back(horizontal_marker);
@@ -153,23 +151,16 @@ private:
         marker_pub_->publish(marker_array);
     }
 
-    void refresh_ball_odom(const nav_msgs::msg::Odometry::SharedPtr msg) 
-    {
-      //printOdom(msg, this->get_logger());
-      SetTransformFromOdom(msg, ball_transform);
-
-    }
     void refresh_imag_pos(const geometry_msgs::msg::Vector3::SharedPtr msg){
       fromMsg(*msg, imag_pos);
       is_enemy = true;
     }
 
     Transform ball_transform;
-    string namespace;
     Vector3 imag_pos;
+    Vector3 goal; 
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
     rclcpp::TimerBase::SharedPtr timer_;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr ball_sub;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr imaginary_sub;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;

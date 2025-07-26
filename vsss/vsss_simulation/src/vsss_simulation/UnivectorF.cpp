@@ -2,7 +2,7 @@
 
 float de = 0.8;
 float kr = 0.2;
-float ko = 0.1;
+float ko = 0.5;
 float d_min = 0.2;
 float delta__ = 0.43;
 float phiH(float rho,  float theta, bool cw)    //Hyperbolic angle
@@ -96,7 +96,8 @@ Vector3 getImagePos(Kinematic main, Kinematic obst){
 
 float phiAuf(Kinematic main, Kinematic obst){
     Vector3 Imag = getImagePos(main, obst);
-    return wrapToPI(atan2(Imag[1], Imag[0]));
+    Vector3 result = main.transform.getOrigin() - Imag;
+    return wrapToPI(atan2(result[1], result[0]));
 }
 
 

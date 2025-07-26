@@ -37,9 +37,8 @@ class Robot_Controller : public rclcpp::Node
       this->declare_parameter<int>("number",  0);
       
       id = this->get_parameter("number").as_int();
-      std::string robot_topic = "robot"+ std::to_string(id);
       
-      ball_sub = this->create_subscription<nav_msgs::msg::Odometry>("/ball/odom", 10, std::bind(&Robot_Controller::refresh_ball_odom, this, _1));
+
       self_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel",50 );
       imag_pub = this->create_publisher<geometry_msgs::msg::Vector3>("imaginary_position",50);
 
@@ -63,15 +62,20 @@ class Robot_Controller : public rclcpp::Node
           geometry_msgs::msg::TransformStamped temp;
 
           try{
-            temp = tf_buffer_->lookupTransform(
-              "world",rName.c_str(), TimePointZero
-            );
+            temp = tf_buffer_->lookupTransform( "world",rName.c_str(), TimePointZero );
             robots[i].setTrans(temp);
           }catch(const TransformException & ex){
-            RCLCPP_INFO(
-            this->get_logger(), "Could not transform %s to %s: %s",
-            "world", rName.c_str(), ex.what());
+            //RCLCPP_INFO(this->get_logger(), "Could not transform %s to %s: %s","world", rName.c_str(), ex.what());
           }
+        }
+
+        //look for the ball
+        geometry_msgs::msg::TransformStamped ball_;
+        try{
+          ball_ = tf_buffer_->lookupTransform("world","sphere_link",TimePointZero);
+          fromMsg(ball_.transform, ball_transform);
+        }catch(const TransformException &ex){
+          RCLCPP_INFO(this->get_logger(), "No transform sphere_link t world: %s", ex.what() );
         }
         
 
@@ -79,16 +83,16 @@ class Robot_Controller : public rclcpp::Node
 
         geometry_msgs::msg::TransformStamped goal_;
         try {
-          goal_ = tf_buffer_->lookupTransform(
-            "world", "goal_pos",
-            TimePointZero);
+          goal_ = tf_buffer_->lookupTransform("world", "goal_pos", TimePointZero);
         } catch (const TransformException & ex) {
           RCLCPP_INFO(
-            this->get_logger(), "Could not transform %s to %s: %s",
-            "world", "goal_pos", ex.what());
+            this->get_logger(), "Could not transform %s to %s: %s", "world", "goal_pos", ex.what());
           return;
         }
-
+        if(robots.size() == 0){
+          cout<<"No robots"<<endl;
+          return;
+        }
         Transform self_transform = robots[id].transform;
         //Set the optimal trayectory
         Vector3 goal; 
@@ -102,8 +106,8 @@ class Robot_Controller : public rclcpp::Node
         //transform the angle to a vector
         Vector3 vector2ball =  Theta2Vector(theta_ball);
 
-
-        if(robots.size() == 1){
+        
+        if(robots.size() <= 1){
           //Publish if no enemy to search
           self_vel_pub->publish(robots[id].result_to_msg(vector2ball));
           return;
@@ -144,19 +148,11 @@ class Robot_Controller : public rclcpp::Node
         //Needs Function to get union of theta_ball and theta_enemy
       // Avoid Each Obst
     }
-    void refresh_ball_odom(const nav_msgs::msg::Odometry::SharedPtr msg) 
-    {
-      //printOdom(msg, this->get_logger());
-      SetTransformFromOdom(msg, ball_transform);
-
-    }
 
 
     unordered_map<int, Kinematic> robots;
     int id;
     Transform ball_transform;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr ball_sub;
-    rclcpp::Subscription<nav_msgs::msg::Odometry>::SharedPtr self_sub;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr self_vel_pub;
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr imag_pub;
     rclcpp::TimerBase::SharedPtr main_timer;
