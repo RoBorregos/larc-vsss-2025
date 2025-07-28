@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!-- This URDF was automatically created by SolidWorks to URDF Exporter! Originally created by Stephen Brawner (brawner@gmail.com) 
+     Commit Version: 1.6.0-4-g7f85cfe  Build Version: 1.6.7995.38578
+     For more information, please see http://wiki.ros.org/sw_urdf_exporter -->
+<robot name="Field">
+  <link name="base_field">
+    <inertial>
+      <mass value="0.001"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.001" ixy="0.00" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh 
+        filename= "package://urdf/PistaVSSS_URDF.urdf"/>
+      </geometry>
+      <material
+        name="blue">
+        <color
+          rgba="0.14902 0.14902 0.14902 1" />
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <mesh 
+        filename= "package://urdf/PistaVSSS_URDF.urdf"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!--Gazebo static reference-->
+
+  <gazebo reference="base_field">
+    <static>true</static>  <!-- Critical for static objects -->
+  </gazebo>
+</robot>

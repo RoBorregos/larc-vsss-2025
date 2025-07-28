@@ -11,7 +11,7 @@ import os
 def generate_launch_description():
     pkg_name = "vsss_simulation"
     pkg_share = FindPackageShare(pkg_name).find(pkg_name)
-    gazebo_model_path = os.path.join(pkg_share, "worlds", "vsss_world")
+    gazebo_model_path = os.path.join(pkg_share, "urdf", "PistaVSSS_URDF.urdf")
     ball_file = os.path.join(pkg_share, 'urdf', 'ball.urdf')
     camera_file = os.path.join(pkg_share, 'urdf', 'camera.urdf')
     config_file_path = os.path.join(pkg_share, 'config', 'ball_odom2_tf.yaml')
@@ -77,16 +77,23 @@ def generate_launch_description():
             ])
         ),
 
-        # Spawn wall model (from file)
+        # Spawn field model (from file)
         Node(
             package="gazebo_ros",
             executable="spawn_entity.py",
             arguments=[
-                "-file", os.path.join(gazebo_model_path, "model.sdf"),
-                "-entity", "wall_model"
-            ],
+                "-file", gazebo_model_path,
+                "-entity", "Field",
+                        "-x", "0.0",  # X position
+                        "-y", "0.0",  # Y position
+                        "-z", "60.0",  # Z position
+                        "-R", "0",    # Roll
+                        "-P", "0",    # Pitch
+                        "-Y", "0"     # Yaw
+    ],
             output="screen"
         ),
+       
         
         # Spawn ball in Gazebo (with delay to avoid race condition)
         TimerAction(
@@ -100,13 +107,13 @@ def generate_launch_description():
                         "-entity", "ball",
                         "-x", "-2.0",  # X position
                         "-y", "0.0",  # Y position
-                        "-z", "0.5",  # Z position
+                        "-z", "1.0",  # Z position
                         "-R", "0",    # Roll
                         "-P", "0",    # Pitch
                         "-Y", "0"     # Yaw
                     ],
                     output="screen"
-                ),
+                )
             ]
         ),
 
@@ -156,6 +163,7 @@ def generate_launch_description():
                     ]
                 )]
             ),
+        
 
         #Robots Nodes
         *robot_spawns

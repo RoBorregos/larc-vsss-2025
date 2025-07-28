@@ -53,7 +53,7 @@ def generate_launch_description():
                                 "-entity", LaunchConfiguration("robot_name") ,
                                 "-x", LaunchConfiguration("robot_starting_pos"),
                                 "-y", "0.0",
-                                "-z", "0.2"
+                                "-z", "1"
                             ],
                             output="screen"
                         )
