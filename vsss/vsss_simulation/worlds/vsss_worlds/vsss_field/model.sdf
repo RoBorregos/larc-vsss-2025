@@ -1,0 +1,147 @@
+<?xml version='1.0'?>
+<sdf version='1.7'>
+    <model name="vsss_field">
+        <static>true</static>
+        <link name="link">
+            <!-- Visual del campo -->
+            <visual name="visual">
+                <geometry>
+                    <mesh>
+                        <uri>model://vsss_field/meshes/field.dae</uri>
+                        <scale>5 5 5</scale>
+                    </mesh>
+                </geometry>
+            </visual>
+
+            <!-- Suelo campo principal -->
+            <collision name="field_floor">
+                <geometry>
+                    <box>
+                        <size>8.5 6.5 0.5</size>
+                    </box>
+                </geometry>
+                <pose>0 0 0 0 0 0</pose>
+            </collision>
+
+            <!-- Paredes campo principal -->
+            <!-- Pared Norte Izquierda -->
+            <collision name="wall_north_left">
+                <geometry>
+                    <box>
+                        <size>0.5 0.1 2.0</size>
+                    </box>
+                </geometry>
+                <pose>-4.0 1.8 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Pared Norte Derecha -->
+            <collision name="wall_north_right">
+                <geometry>
+                    <box>
+                        <size>0.5 0.1 2.0</size>
+                    </box>
+                </geometry>
+                <pose>4.0 1.8 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Pared Sur Izquierda -->
+            <collision name="wall_south_left">
+                <geometry>
+                    <box>
+                        <size>0.5 0.1 2.0</size>
+                    </box>
+                </geometry>
+                <pose>-4.0 -1.8 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Pared Sur Derecha -->
+            <collision name="wall_south_right">
+                <geometry>
+                    <box>
+                        <size>0.5 0.1 2.0</size>
+                    </box>
+                </geometry>
+                <pose>4.0 -1.8 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Paredes laterales Este -->
+            <collision name="wall_east_main">
+                <geometry>
+                    <box>
+                        <size>0.1 4.0 2.0</size>
+                    </box>
+                </geometry>
+                <pose>4.3 0 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Paredes laterales Oeste -->
+            <collision name="wall_west_main">
+                <geometry>
+                    <box>
+                        <size>0.1 4.0 2.0</size>
+                    </box>
+                </geometry>
+                <pose>-4.3 0 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Paredes laterales área gol Norte -->
+            <collision name="goal_north_left_wall">
+                <geometry>
+                    <box>
+                        <size>0.1 1.5 2.0</size>
+                    </box>
+                </geometry>
+                <pose>-3.8 2.5 1.0 0 0 0</pose>
+            </collision>
+
+            <collision name="goal_north_right_wall">
+                <geometry>
+                    <box>
+                        <size>0.1 1.5 2.0</size>
+                    </box>
+                </geometry>
+                <pose>3.8 2.5 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Fondo área gol Norte (DONE)-->
+            <collision name="goal_north_back">
+                <geometry>
+                    <box>
+                        <size>7.5 0.1 2.0</size>
+                    </box>
+                </geometry>
+                <pose>0 3.3 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Paredes laterales área gol Sur -->
+            <collision name="goal_south_left_wall">
+                <geometry>
+                    <box>
+                        <size>0.1 1.5 2.0</size>
+                    </box>
+                </geometry>
+                <pose>-3.8 -2.5 1.0 0 0 0</pose>
+            </collision>
+
+            <collision name="goal_south_right_wall">
+                <geometry>
+                    <box>
+                        <size>0.1 1.5 2.0</size>
+                    </box>
+                </geometry>
+                <pose>3.8 -2.5 1.0 0 0 0</pose>
+            </collision>
+
+            <!-- Fondo área gol Sur (DONE)-->
+            <collision name="goal_south_back">
+                <geometry>
+                    <box>
+                        <size>7.5 0.1 2.0</size>
+                    </box>
+                </geometry>
+                <pose>0 -3.3 1.0 0 0 0</pose>
+            </collision>
+
+        </link>
+    </model>
+</sdf>
