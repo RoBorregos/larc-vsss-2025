@@ -19,16 +19,34 @@ def generate_launch_description():
     robot_number = DeclareLaunchArgument(
         "robot_number", default_value="1", description="Robot Number"
     )
+    dominant_plate_color = DeclareLaunchArgument(
+        "dominant_plate_color", default_value="BlueLaser", description="Main plate color"
+    )
+    small_plate_1 = DeclareLaunchArgument(
+        "small_plate_1", default_value="Green", description="Small plate color"
+    )
+    small_plate_2 = DeclareLaunchArgument(
+        "small_plate_2", default_value="Turquoise", description="Small plate color 2"
+    )
     pkg_name = "vsss_simulation"
     pkg_share = FindPackageShare(pkg_name).find(pkg_name)
     robot_xacro_file = os.path.join(pkg_share, 'urdf', 'robot.urdf.xacro')
-    robot_description = Command(["xacro ", robot_xacro_file, " robot_name:=", LaunchConfiguration("robot_name")])
+    robot_description = Command([
+        "xacro ", robot_xacro_file, 
+        " robot_name:=", LaunchConfiguration("robot_name"),
+        " dominant_plate_color:=", LaunchConfiguration("dominant_plate_color"),
+        " small_plate_1:=", LaunchConfiguration("small_plate_1"),
+        " small_plate_2:=", LaunchConfiguration("small_plate_2")
+    ])
 
     return LaunchDescription(
         [
             robot_name,   
             robot_number,
             robot_StartPosition,
+            dominant_plate_color,
+            small_plate_1,
+            small_plate_2,
             GroupAction([
                 PushRosNamespace(LaunchConfiguration("robot_name")),
                 Node(
@@ -60,14 +78,14 @@ def generate_launch_description():
                         
                     ]
                 ),
-                     # Load joint_state_broadcaster
+                # Load joint_state_broadcaster
                 Node(
                     package='controller_manager',
                     executable='spawner',
                     arguments=['joint_state_broadcaster', '--controller-manager',  'controller_manager'],
                     output='screen'
                 ),
-                        # Load diff_drive_controller
+                # Load diff_drive_controller
                 Node(
                     package='controller_manager',
                     executable='spawner',

@@ -2,41 +2,70 @@
 
 from launch import LaunchDescription
 from launch_ros.actions import Node, PushRosNamespace
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction
+from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, TimerAction, SetEnvironmentVariable
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.substitutions import FindPackageShare
 import os
-
+from launch_ros.parameter_descriptions import ParameterValue
+from launch.substitutions import Command
+import random
 
 def generate_launch_description():
     pkg_name = "vsss_simulation"
     pkg_share = FindPackageShare(pkg_name).find(pkg_name)
-    gazebo_model_path = os.path.join(pkg_share, "urdf", "PistaVSSS_URDF.urdf")
+    world_file = os.path.join(pkg_share, "worlds", "vsss_complete.world")
     ball_file = os.path.join(pkg_share, 'urdf', 'ball.urdf')
     camera_file = os.path.join(pkg_share, 'urdf', 'camera.urdf')
     config_file_path = os.path.join(pkg_share, 'config', 'ball_odom2_tf.yaml')
 
 
-    robot_count = 2  # Number of robots
+    robot_count = 5  # Number of robots
     robot_spawns = []
+    team_colors = ['Blue', 'Yellow']  # Colors for the teams
+    robot_colors = [ 'Green', 'Turquoise', 'Purple']  # Colors for the robots
+    random.seed()
+    
     for i in range(robot_count):
         robotName = f"robot{i+1}"
-        position =  i *1.0
-        if(i == 0):
-            controlNode = Node(
-                package=pkg_name,
-                namespace= robotName,
-                executable="RobotController",
-                parameters=[{"number":(i+1)}],
-                output="screen"
-            )
-        else:
-            controlNode = Node(
-                package=pkg_name,
-                namespace=robotName,
-                executable="DefaultController.py",
-                parameters=[ {"robot_namespace": robotName}]
-            )
+        position = i * 0.5
+        #alternating between the available team identifier colors
+        dominant_color = team_colors[i % len(team_colors)]
+
+        #--------------------------Assign color to small plate's system--------------------
+        # #assign small plates colors 
+        # color_index_1 = i % len(robot_colors)
+        # color_index_2 = (i + 1) % len(robot_colors)
+
+        # #ensure different colors in small plates
+        # if color_index_1 == color_index_2:
+        #     color_index_2 = (color_index_2 + 1) % len(robot_colors)
+
+        # small_plate1_color = robot_colors[color_index_1]
+        # small_plate2_color = robot_colors[color_index_2]
+
+        # if(i == 0):
+        #     controlNode = Node(
+        #         package=pkg_name,
+        #         namespace= robotName,
+        #         executable="RobotController",
+        #         parameters=[{"number":(i+1)}],
+        #         output="screen"
+        #     )
+        # else:
+        controlNode = Node(
+            package=pkg_name,
+            namespace=robotName,
+            executable="DefaultController.py",
+            parameters=[ {"robot_namespace": robotName}]
+        )
+
+        small_plate1_color = random.choice(robot_colors)
+        small_plate2_color = random.choice(robot_colors)
+
+        while (small_plate1_color == small_plate2_color):
+            small_plate2_color = random.choice(robot_colors)
+
+
 
 
         robotNodes = TimerAction(
@@ -53,6 +82,9 @@ def generate_launch_description():
                     'robot_name' : robotName,
                     'robot_starting_pos' : str(position),
                     'robot_number' : str(i+1),
+                    'dominant_plate_color' : dominant_color,
+                    'small_plate_1' : small_plate1_color,
+                    'small_plate_2' : small_plate2_color,
                 }.items()
             ),
             controlNode
@@ -66,7 +98,12 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('use_sim_time', default_value='true'),
 
-        # Launch Gazebo with world
+        # Set GAZEBO_MODEL_PATH to include desired models
+        SetEnvironmentVariable('GAZEBO_MODEL_PATH', 
+                              os.path.join(pkg_share, "worlds", "vsss_worlds") + ":" + 
+                              os.environ.get('GAZEBO_MODEL_PATH', '')),
+
+        # Launch Gazebo with custom world
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource([
                 os.path.join(
@@ -74,25 +111,14 @@ def generate_launch_description():
                     'launch',
                     'gazebo.launch.py'
                 )
-            ])
+            ]),
+            launch_arguments={
+                'world': world_file,
+                'extra_gazebo_args': '--verbose'
+            }.items()
         ),
 
-        # Spawn field model (from file)
-        Node(
-            package="gazebo_ros",
-            executable="spawn_entity.py",
-            arguments=[
-                "-file", gazebo_model_path,
-                "-entity", "Field",
-                        "-x", "0.0",  # X position
-                        "-y", "0.0",  # Y position
-                        "-z", "60.0",  # Z position
-                        "-R", "0",    # Roll
-                        "-P", "0",    # Pitch
-                        "-Y", "0"     # Yaw
-    ],
-            output="screen"
-        ),
+        # No need for spawn entity because it is already in wordl.
        
         
         # Spawn ball in Gazebo (with delay to avoid race condition)
@@ -117,22 +143,21 @@ def generate_launch_description():
             ]
         ),
 
-        # Spawn camera model (from file)
-        TimerAction(
-            period=2.0,
-            actions=[
-                Node(
-                    package="gazebo_ros",
-                    executable="spawn_entity.py",
-                    arguments=[
-                        "-file", camera_file,
-                        "-entity", "camera_model",
-                    ],
-                    output="screen"
-                ),
-            ]
-        ),
-
+        # # Spawn camera model (from file)
+        # TimerAction(
+        #     period=2.0,
+        #     actions=[
+        #         Node(
+        #             package="gazebo_ros",
+        #             executable="spawn_entity.py",
+        #             arguments=[
+        #                 "-file", camera_file,
+        #                 "-entity", "camera_model",
+        #             ],
+        #             output="screen"
+        #         ),
+        #     ]
+        # ),
 
         #Spawn Node to see the ball
         Node(
