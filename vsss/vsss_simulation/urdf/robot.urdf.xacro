@@ -3,6 +3,9 @@
     <!-- Parameters -->
 
     <xacro:arg name='robot_name' default="robot"/>
+    <xacro:arg name='dominant_plate_color' default="BlueLaser"/>
+    <xacro:arg name='small_plate_1' default="Green"/>
+    <xacro:arg name='small_plate_2' default="Turquoise"/>
     <xacro:property name="wheel_radius" value="0.05"/>
     <xacro:property name="wheel_width" value="0.02"/>
     <xacro:property name="wheel_separation" value="0.25"/>
@@ -198,15 +201,15 @@
     </gazebo>
 
     <gazebo reference="dominant_plate_link">
-        <material>Gazebo/Yellow</material>
+        <material>Gazebo/$(arg dominant_plate_color)</material>
     </gazebo>
 
     <gazebo reference="small_plate_1_link">
-        <material>Gazebo/Green</material>
+        <material>Gazebo/$(arg small_plate_1)</material>
     </gazebo>
 
     <gazebo reference="small_plate_2_link">
-        <material>Gazebo/Pink</material>
+        <material>Gazebo/$(arg small_plate_2)</material>
     </gazebo>
 
 

@@ -64,11 +64,16 @@
                 </image>
                 <clip>
                     <near>0.1</near>                    <!-- Adjusted near clipping plane -->
-                    <far>25.0</far>                    <!-- Adjusted far clipping plane -->
+                    <far>50.0</far>                    <!-- Adjusted far clipping plane -->
                 </clip>
             </camera>
             <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
                 <frame_name>camera_link_optical</frame_name>
+                <distortion_k1>0.0</distortion_k1>
+                <distortion_k2>0.0</distortion_k2>
+                <distortion_k3>0.0</distortion_k3>
+                <distortion_t1>0.0</distortion_t1>
+                <distortion_t2>0.0</distortion_t2>
             </plugin>
         </sensor>
     </gazebo>
