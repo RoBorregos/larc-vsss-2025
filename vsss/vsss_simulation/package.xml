@@ -8,9 +8,16 @@
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
+  <build_depend>rosidl_default_generators</build_depend>
+
+<exec_depend>rosidl_default_runtime</exec_depend>
+
+<member_of_group>rosidl_interface_packages</member_of_group>
+  <depend>geometry_msgs</depend>
   <depend>urdf_launch</depend>
   <depend>gazebo_ros</depend>
   <depend>gazebo_ros2_control</depend>
@@ -19,6 +26,7 @@
   <depend>std_msgs</depend>
   <depend>nav_msgs</depend>
   <exec_depend>rclpy</exec_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

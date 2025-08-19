@@ -17,7 +17,8 @@ class Kinematic{
     public:
         Kinematic();
         void setTrans(geometry_msgs::msg::TransformStamped t);
-        geometry_msgs::msg::Twist result_to_msg(Vector3);
+        geometry_msgs::msg::Twist result_to_msg(Vector3, int);
+        geometry_msgs::msg::Twist orient_to_msg(Vector3);
         Vector3 velocity;
         Transform transform;
 };

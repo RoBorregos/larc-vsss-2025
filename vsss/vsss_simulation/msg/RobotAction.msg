@@ -1,0 +1,3 @@
+geometry_msgs/Pose2D objective
+std_msgs/Int64 type
+std_msgs/Bool spin_direction

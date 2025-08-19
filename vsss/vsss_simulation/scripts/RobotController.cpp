@@ -3,7 +3,6 @@
 #include "std_msgs/msg/string.hpp"
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/LinearMath/Quaternion.h>
-#include "geometry_msgs/msg/twist.hpp"
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include "tf2_ros/transform_listener.h"
 #include <tf2_ros/buffer.h>
@@ -11,6 +10,7 @@
 #include "vsss_simulation/Line.hpp"
 #include "vsss_simulation/UnivectorF.hpp"
 #include "vsss_simulation/MsgConvert.hpp"
+#include "vsss_simulation/msg/robot_action.hpp"
 #include <iostream>  
 #include <string> 
 using std::placeholders::_1;
@@ -41,6 +41,8 @@ class Robot_Controller : public rclcpp::Node
 
       self_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel",50 );
       imag_pub = this->create_publisher<geometry_msgs::msg::Vector3>("imaginary_position",50);
+      robot_action_sub = this->create_subscription<vsss_simulation::msg::RobotAction>(
+        "action", 50, bind(&Robot_Controller::refresh_action,this,_1));
 
       main_timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&Robot_Controller::Main, this));
 
@@ -54,6 +56,13 @@ class Robot_Controller : public rclcpp::Node
   private:
     void Main(){
 
+        //Spin if needed
+        if(type == 3){
+          geometry_msgs::msg::Twist gira_gira;
+          gira_gira.angular.set__z(12 *( direction? -1 : 1));
+          self_vel_pub->publish(gira_gira);
+          return;
+        }
         //Update classes
         for(int i  = 1; i <= 3; i++){
           string rName = "robot";
@@ -68,50 +77,35 @@ class Robot_Controller : public rclcpp::Node
             //RCLCPP_INFO(this->get_logger(), "Could not transform %s to %s: %s","world", rName.c_str(), ex.what());
           }
         }
-
-        //look for the ball
-        geometry_msgs::msg::TransformStamped ball_;
-        try{
-          ball_ = tf_buffer_->lookupTransform("world","sphere_link",TimePointZero);
-          fromMsg(ball_.transform, ball_transform);
-        }catch(const TransformException &ex){
-          RCLCPP_INFO(this->get_logger(), "No transform sphere_link t world: %s", ex.what() );
-        }
-        
-
-        //Look for the goal
-
-        geometry_msgs::msg::TransformStamped goal_;
-        try {
-          goal_ = tf_buffer_->lookupTransform("world", "goal_pos", TimePointZero);
-        } catch (const TransformException & ex) {
-          RCLCPP_INFO(
-            this->get_logger(), "Could not transform %s to %s: %s", "world", "goal_pos", ex.what());
-          return;
-        }
-        if(robots.size() == 0){
-          cout<<"No robots"<<endl;
-          return;
-        }
         Transform self_transform = robots[id].transform;
-        //Set the optimal trayectory
-        Vector3 goal; 
-        VectorFromMSG(goal_.transform.translation, goal);
-        Line optimalPath (ball_transform.getOrigin(), goal);
-        //Get angle considering the ball as the objective;
-        Vector3 robot_2_ball = self_transform.getOrigin() - ball_transform.getOrigin(); 
-        //obtain the angle from the functions
-        float robot_t_ball = atan2(robot_2_ball[1], robot_2_ball[0]);
-        float theta_ball = phiTuf(robot_t_ball, self_transform.getOrigin(),ball_transform.getOrigin(),  optimalPath); 
-        //transform the angle to a vector
-        Vector3 vector2ball =  Theta2Vector(theta_ball);
-
-        
-        if(robots.size() <= 1){
-          //Publish if no enemy to search
-          self_vel_pub->publish(robots[id].result_to_msg(vector2ball));
+        //if the objective is nea, just achieve its rotation
+        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.08){
+          Vector3 tieso(0,1,0);
+          self_vel_pub->publish(robots[id].orient_to_msg(tieso));
           return;
         }
+        Vector3 vector2ball;
+        float theta_obj ;
+        if(type== 1){
+          Line optimalPath (objective_position, theta);
+          //Get angle considering the ball as the objective;
+          Vector3 robot_2_obj = self_transform.getOrigin() - objective_position; 
+          //obtain the angle from the functions
+          float robot_t_obj = atan2(robot_2_obj[1], robot_2_obj[0]);
+          theta_obj = phiTuf(robot_t_obj, self_transform.getOrigin(),objective_position,  optimalPath); 
+          //transform the angle to a vector
+          vector2ball =  Theta2Vector(theta_obj);
+        
+          if(robots.size() <= 1){
+            //Publish if no enemy to search
+            self_vel_pub->publish(robots[id].result_to_msg(vector2ball, type));
+            return;
+          }
+        }else{
+          vector2ball = (objective_position - self_transform.getOrigin()).normalize();
+          theta_obj = atan2(vector2ball[1], vector2ball[0]);
+        }
+        
 
         //Look up for nearest enemy
         int nearObstID = 0;
@@ -139,25 +133,39 @@ class Robot_Controller : public rclcpp::Node
         //Get the angle coefficient of avoidance
         float theta_enemy = phiAuf(robots[id],robots[nearObstID]);
         // Join the angles
-        float joined = phiCompose(theta_ball,theta_enemy, dist_2_imag);
+        float joined = phiCompose(theta_obj,theta_enemy, dist_2_imag);
         //Publish final 
         Vector3 result = Theta2Vector(joined);
-        self_vel_pub->publish(robots[id].result_to_msg(result));
+        self_vel_pub->publish(robots[id].result_to_msg(result, type));
 
         
-        //Needs Function to get union of theta_ball and theta_enemy
+        //Needs Function to get union of theta_obj and theta_enemy
       // Avoid Each Obst
     }
-
+    
+    void refresh_action(const vsss_simulation::msg::RobotAction m){
+      type = m.type.data;
+      direction = m.spin_direction.data;
+      objective_position.setX( m.objective.x);
+      objective_position.setY( m.objective.y);
+      theta = m.objective.theta;
+      
+    }
 
     unordered_map<int, Kinematic> robots;
     int id;
-    Transform ball_transform;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr self_vel_pub;
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr imag_pub;
+    rclcpp::Subscription<vsss_simulation::msg::RobotAction>::SharedPtr robot_action_sub;
     rclcpp::TimerBase::SharedPtr main_timer;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
+
+    //action varaibles
+    int type;
+    bool direction;
+    Vector3 objective_position;
+    float theta;
 };
 
 int main(int argc, char * argv[])

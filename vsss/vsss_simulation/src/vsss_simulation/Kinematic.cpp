@@ -19,17 +19,43 @@ void Kinematic::setTrans(geometry_msgs::msg::TransformStamped t){
 
 
 
-
-geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective){
-
-    Vector3 front = quatRotate(transform.getRotation(), Vector3(-1,0,0));
+float dif_vector(Vector3 obj, Transform robot){
+    Vector3 front = quatRotate(robot.getRotation(), Vector3(-1,0,0));
     front[2] = 0;
-    objective[2] = 0;
-    float dif  = atan2(front.x(), front.y()) - atan2(objective.x(), objective.y());
+    obj[2] = 0;
+    float dif  = atan2(front.x(), front.y()) - atan2(obj.x(), obj.y());
     dif = wrapToPI(dif);
+    return dif;
+}
+
+geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
+
+    float dif = dif_vector(objective, transform);
     geometry_msgs::msg::Twist response;
+
+    if(type == 2 && abs(dif) > M_PI/2){
+        dif += M_PI;
+        dif = wrapToPI(dif);
+        response.angular.z = dif*2;
+        response.linear.x = -0.8;
+
+    }else{
+        response.angular.z = dif*2;
+        response.linear.x = 0.8;
+    }
+    response.angular.z = type ==2 ? response.angular.z*4: response.angular.z;
+
+    return response;
+}
+
+geometry_msgs::msg::Twist Kinematic::orient_to_msg(Vector3 objective){
+    float dif = dif_vector(objective, transform);
+    geometry_msgs::msg::Twist response;
+     if(abs(dif) > M_PI/2){
+        dif += M_PI;
+        dif = wrapToPI(dif);
+     }
     response.angular.z = dif*2;
-    response.linear.x = 0.8;
     return response;
 }
 

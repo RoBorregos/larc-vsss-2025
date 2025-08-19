@@ -52,7 +52,6 @@ private:
           return;
         }
         Line optimalPath (ball_transform.getOrigin(), goal);
-
         //FIll Array
         visualization_msgs::msg::MarkerArray marker_array;
 
@@ -101,7 +100,7 @@ private:
                 marker.color.b = 1.0f;
                 marker.color.a = 1.0f;
 
-                marker.lifetime = rclcpp::Duration::from_seconds(0.2); 
+                marker.lifetime = rclcpp::Duration::from_seconds(0); 
 
                 marker_array.markers.push_back(marker);
             }

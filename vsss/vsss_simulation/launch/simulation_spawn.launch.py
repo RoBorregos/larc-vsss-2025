@@ -19,7 +19,7 @@ def generate_launch_description():
     config_file_path = os.path.join(pkg_share, 'config', 'ball_odom2_tf.yaml')
 
 
-    robot_count = 5  # Number of robots
+    robot_count = 2  # Number of robots
     robot_spawns = []
     team_colors = ['Blue', 'Yellow']  # Colors for the teams
     robot_colors = [ 'Green', 'Turquoise', 'Purple']  # Colors for the robots
@@ -43,20 +43,20 @@ def generate_launch_description():
         # small_plate1_color = robot_colors[color_index_1]
         # small_plate2_color = robot_colors[color_index_2]
 
-        # if(i == 0):
-        #     controlNode = Node(
-        #         package=pkg_name,
-        #         namespace= robotName,
-        #         executable="RobotController",
-        #         parameters=[{"number":(i+1)}],
-        #         output="screen"
-        #     )
-        # else:
-        controlNode = Node(
-            package=pkg_name,
-            namespace=robotName,
-            executable="DefaultController.py",
-            parameters=[ {"robot_namespace": robotName}]
+        if(i < 2):
+            controlNode = Node(
+                package=pkg_name,
+                namespace= robotName,
+                executable="RobotController",
+                parameters=[{"number":(i+1)}],
+                output="screen"
+            )
+        else:
+            controlNode = Node(
+                package=pkg_name,
+                namespace=robotName,
+                executable="DefaultController.py",
+                parameters=[ {"robot_namespace": robotName}]
         )
 
         small_plate1_color = random.choice(robot_colors)
@@ -64,9 +64,6 @@ def generate_launch_description():
 
         while (small_plate1_color == small_plate2_color):
             small_plate2_color = random.choice(robot_colors)
-
-
-
 
         robotNodes = TimerAction(
             period=4.0* i + 6.0,
@@ -117,7 +114,15 @@ def generate_launch_description():
                 'extra_gazebo_args': '--verbose'
             }.items()
         ),
-
+        ##Launch static transforms
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    'FieldPositions.launch.py'
+                )
+            )
+        ),
         # No need for spawn entity because it is already in wordl.
        
         
@@ -143,21 +148,21 @@ def generate_launch_description():
             ]
         ),
 
-        # # Spawn camera model (from file)
-        # TimerAction(
-        #     period=2.0,
-        #     actions=[
-        #         Node(
-        #             package="gazebo_ros",
-        #             executable="spawn_entity.py",
-        #             arguments=[
-        #                 "-file", camera_file,
-        #                 "-entity", "camera_model",
-        #             ],
-        #             output="screen"
-        #         ),
-        #     ]
-        # ),
+        # Spawn camera model (from file)
+        TimerAction(
+            period=2.0,
+            actions=[
+                Node(
+                    package="gazebo_ros",
+                    executable="spawn_entity.py",
+                    arguments=[
+                        "-file", camera_file,
+                        "-entity", "camera_model",
+                    ],
+                    output="screen"
+                ),
+            ]
+        ),
 
         #Spawn Node to see the ball
         Node(
@@ -168,26 +173,15 @@ def generate_launch_description():
                 parameters=[config_file_path],
                 remappings=[],
             ),
-        #Spawn the goal transform
-        TimerAction(
-            period=2.0,
-            actions=[Node(
-                    package='tf2_ros',
-                    executable='static_transform_publisher',
-                    output = "screen",
-                    name='goal_tf',
-                    arguments=[
-                        "-3.0",
-                        "0.0",
-                        "0.0",     
-                        "0",
-                        "0",
-                        "0",
-                        "world",
-                        "goal_pos"
-                    ]
-                )]
-            ),
+
+        #Spawn Node of Strategist
+        Node(
+            package=pkg_name,
+            executable = "Strategist",
+            name = "strategist",
+            output = "screen",
+            parameters=[{"Robot_count":(i+1)}],
+        ),
         
 
         #Robots Nodes
