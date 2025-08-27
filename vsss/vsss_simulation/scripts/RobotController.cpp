@@ -59,7 +59,7 @@ class Robot_Controller : public rclcpp::Node
         //Spin if needed
         if(type == 3){
           geometry_msgs::msg::Twist gira_gira;
-          gira_gira.angular.set__z(12 *( direction? -1 : 1));
+          gira_gira.angular.set__z(60 *( direction? -1 : 1));
           self_vel_pub->publish(gira_gira);
           return;
         }

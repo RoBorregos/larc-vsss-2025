@@ -43,7 +43,7 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
         response.angular.z = dif*2;
         response.linear.x = 0.8;
     }
-    response.angular.z = type ==2 ? response.angular.z*4: response.angular.z;
+    response.angular.z = type ==2 ? response.angular.z*1.28: response.angular.z;
 
     return response;
 }
