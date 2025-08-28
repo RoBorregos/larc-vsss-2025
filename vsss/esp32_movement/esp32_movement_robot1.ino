@@ -14,7 +14,7 @@
   const char* password = "vsss1234";
 
   // TCP Server
-  WiFiServer server(8081);
+  WiFiServer server(8080);
   WiFiClient client;
 
   //MotorPins
