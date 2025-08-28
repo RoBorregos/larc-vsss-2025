@@ -6,18 +6,22 @@ import os
 def generate_launch_description():
     pkg_name = "communication"
     pkg_share = FindPackageShare(pkg_name).find(pkg_name)
-    param_dir = os.path.join(pkg_share, 'config')
+    robots_params = os.path.join(pkg_share,'config' ,'robots_params.yaml')
 
-    robot1_params = os.path.join(param_dir, 'robot1_params.yaml')
-    robot2_params = os.path.join(param_dir, 'robot2_params.yaml')
-    print(param_dir)
     return LaunchDescription([
         Node(
-            package='communication',
+            package= pkg_name,
             executable='robot_tcp_client_node.py',
             name='robot1_tcp_client',
             output='screen',
-            parameters=[robot1_params]
+            parameters=[robots_params]
+        ),
+        Node(
+            package= pkg_name,
+            executable='robot_tcp_client_node.py',
+            name='robot2_tcp_client',
+            output='screen',
+            parameters=[robots_params]
         ),
         ##ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap /cmd_vel:=/robot1/cmd_vel
     ])

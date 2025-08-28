@@ -64,9 +64,9 @@ class SingleRobotTCPNode(Node):
         self.declare_parameter('robot_ip', '192.168.10.219')
         self.declare_parameter('robot_port', 8080)    
 
-        name = self.get_parameter('robot_name').value
-        ip = self.get_parameter('robot_ip').value
-        port = self.get_parameter('robot_port').value
+        name = self.get_parameter('robot_name').get_parameter_value().string_value
+        ip = self.get_parameter('robot_ip').get_parameter_value().string_value
+        port = self.get_parameter('robot_port').get_parameter_value().integer_value
 
         
         self.get_logger().info(f"Node Started with values name {name}, connection->({ip}:{port})")

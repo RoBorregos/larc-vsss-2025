@@ -9,7 +9,7 @@ import os
 from launch_ros.parameter_descriptions import ParameterValue
 from launch.substitutions import Command
 import random
-
+ 
 def generate_launch_description():
     pkg_name = "vsss_simulation"
     pkg_share = FindPackageShare(pkg_name).find(pkg_name)

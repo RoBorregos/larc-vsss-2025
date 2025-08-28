@@ -1,5 +1,0 @@
-single_robot_tcp_node:
-  ros__parameters:
-    robot_name: "robot1"
-    robot_ip: "192.168.10.219"
-    robot_port: 8081
