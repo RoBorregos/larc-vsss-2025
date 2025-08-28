@@ -117,7 +117,7 @@ private:
         
         //Go to Intersection or spin to get the ball out of the place
         vsss_simulation::msg::RobotAction defense_action;
-        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.5 ){
+        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.25 ){
             defense_action.type.data = 3;
             defense_action.spin_direction.data = (ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() < 0;
         }else{

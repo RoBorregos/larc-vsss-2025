@@ -23,7 +23,7 @@ def generate_launch_description():
                 output = "screen",
                 name='goal_tf',
                 arguments=[
-                    "-3.5",
+                    "0.75",
                     "0.0",
                     "0.0",     
                     "0",
@@ -39,8 +39,8 @@ def generate_launch_description():
                 output="screen",
                 name='own_lower_end_goal',
                 arguments=[
-                    "3.5",
-                    "-1.25",
+                    "-0.75",
+                    "0.35",
                     "0.0",
                     "0",
                     "0",
@@ -55,8 +55,8 @@ def generate_launch_description():
                 output="screen",
                 name='own_upper_end_goal',
                 arguments=[
-                    "3.5",
-                    "1.25",
+                    "-0.75",
+                    "-0.35",
                     "0.0",
                     "0",
                     "0",
@@ -65,11 +65,28 @@ def generate_launch_description():
                     "own_upper_end_goal"
                 ]
             )
+    world = Node(
+        package='tf2_ros',
+                executable='static_transform_publisher',
+                output="screen",
+                name='world',
+                arguments=[
+                    "0.75",
+                    "-0.65",
+                    "0.0",
+                    "0",
+                    "0",
+                    "0",
+                    "upper_left_corner",
+                    "world"
+                ]
+    )
 
     actions = [
         goal,
         lower_end,
         upper_end,
+        world
     ]
 
 

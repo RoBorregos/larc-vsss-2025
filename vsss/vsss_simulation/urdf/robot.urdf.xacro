@@ -6,10 +6,10 @@
     <xacro:arg name='dominant_plate_color' default="BlueLaser"/>
     <xacro:arg name='small_plate_1' default="Green"/>
     <xacro:arg name='small_plate_2' default="Turquoise"/>
-    <xacro:property name="wheel_radius" value="0.05"/>
-    <xacro:property name="wheel_width" value="0.02"/>
-    <xacro:property name="wheel_separation" value="0.25"/>
-    <xacro:property name="body_size" value="0.3"/>
+    <xacro:property name="wheel_radius" value="0.035"/>
+    <xacro:property name="wheel_width" value="0.005"/>
+    <xacro:property name="wheel_separation" value="0.075"/>
+    <xacro:property name="body_size" value="0.075"/>
 
     <!-- Base Link -->
     <link name="$(arg robot_name)_base_link">
@@ -23,8 +23,9 @@
             </material>
         </visual>
         <collision>
+            <origin xyz="0 0 ${body_size *0.1}" rpy="0 0 0"/>
             <geometry>
-                <box size="${body_size} ${body_size} 0.1"/>
+                <box size="${body_size} ${body_size} ${body_size*0.4}"/>
             </geometry>
         </collision>
         <inertial>
@@ -122,14 +123,14 @@
     <joint name="left_wheel_joint" type="continuous">
         <parent link="$(arg robot_name)_base_link"/>
         <child link="left_wheel_link"/>
-        <origin xyz="0 -${wheel_separation/2} 0" rpy="1.57 0 0"/>
+        <origin xyz="0 -${wheel_separation/2} ${body_size*0.35}" rpy="1.57 0 0"/>
         <axis xyz="0 0 1"/>
     </joint>
 
     <joint name="right_wheel_joint" type="continuous">
         <parent link="$(arg robot_name)_base_link"/>
         <child link="right_wheel_link"/>
-        <origin xyz="0 ${wheel_separation/2} 0" rpy="1.57 0 0"/>
+        <origin xyz="0 ${wheel_separation/2} ${body_size*0.35}" rpy="1.57 0 0"/>
         <axis xyz="0 0 1"/>
     </joint>
 

@@ -49,7 +49,7 @@
   pair<float,float> objective_vel; //Left is first and right is second item in the pair
   pair<float,float> actual_vel;
   pair<int, int> actual_pwm;
-  pair<PID,PID> velocity_PID;
+  pair<PID,PID> velocity_PID = {PID(), PID()};;
 
 
   void drive(int speedL, int speedR) {

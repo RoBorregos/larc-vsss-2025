@@ -1,10 +1,10 @@
 #include "vsss_simulation/UnivectorF.hpp"
 
-float de = 0.8;
-float kr = 0.2;
-float ko = 0.5;
-float d_min = 0.2;
-float delta__ = 0.43;
+float de = 0.8/3;
+float kr = 0.2/3;
+float ko = 0.5/3;
+float d_min = 0.2/3;
+float delta__ = 0.43/3;
 float phiH(float rho,  float theta, bool cw)    //Hyperbolic angle
 {
     float angle = 0;
