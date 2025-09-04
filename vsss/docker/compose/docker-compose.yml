@@ -21,6 +21,7 @@ services:
       dockerfile: ${VSSS_DOCKERFILE}
       args:
         BASE_IMAGE: ${BUILT_CUDA_BASE_IMAGE}
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL}
     image: ${DOCKER_REGISTRY}/${PROJECT_NAME}_cuda
     container_name: ${PROJECT_NAME}_cuda
     runtime: ${NVIDIA_RUNTIME}
@@ -53,6 +54,7 @@ services:
       dockerfile: ${VSSS_DOCKERFILE}
       args:
         BASE_IMAGE: ${DOCKER_REGISTRY}/${PROJECT_NAME}:cpu_base
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL}
     image: ${DOCKER_REGISTRY}/${PROJECT_NAME}_gpu
     container_name: ${PROJECT_NAME}_gpu
     runtime: ${NVIDIA_RUNTIME}
@@ -78,6 +80,7 @@ services:
       dockerfile: ${VSSS_DOCKERFILE}
       args:
         BASE_IMAGE: ${BUILT_CPU_BASE_IMAGE}
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL}
     image: ${DOCKER_REGISTRY}/${PROJECT_NAME}_cpu
     container_name: ${PROJECT_NAME}_cpu
     network_mode: ${NETWORK_MODE}

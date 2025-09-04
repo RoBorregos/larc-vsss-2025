@@ -53,6 +53,15 @@ function has_cuda_support() {
     echo "$use_CUDA"
 }
 
+function get_torch_index_url() {
+    local gpu_flag
+    gpu_flag=$(parse_gpu_flag "$@")
+    cuda_flag=$(has_cuda_support "$@")
+    
+    # Por ahora usar CPU para todos los casos hasta resolver las librerías CUDA
+    echo "https://download.pytorch.org/whl/cpu"
+}
+
 function get_base_tag() {
     local gpu_flag
     gpu_flag=$(parse_gpu_flag "$@")
@@ -103,10 +112,13 @@ function build_vsss_image() {
     base_tag=$(get_base_tag "$@")
     local service
     service=$(get_vsss_service "$@")
+    local torch_url
+    torch_url=$(get_torch_index_url "$@")
 
     echo "🔧 Building vsss image: $service (based on $base_tag)"
-    export vsss_BASE_IMAGE="$DOCKER_REGISTRY/$PROJECT_NAME:$base_tag"
-    export vsss_BASE_IMAGE_TAG="$base_tag"
+    vsss_BASE_IMAGE="$DOCKER_REGISTRY/$PROJECT_NAME:$base_tag" \
+    vsss_BASE_IMAGE_TAG="$base_tag" \
+    TORCH_INDEX_URL="$torch_url" \
     docker compose -f "$COMPOSE_FILE_PATH" build "$service"
 }
 
@@ -118,11 +130,14 @@ function run_container() {
     service=$(get_vsss_service "$@")
     local container_name
     container_name=$(get_vsss_container_name "$@")
+    local torch_url
+    torch_url=$(get_torch_index_url "$@")
 
     echo "🚀 Starting container: $service"
     xhost +local:docker
     vsss_BASE_IMAGE="$base_image" \
     vsss_BASE_IMAGE_TAG="$base_tag" \
+    TORCH_INDEX_URL="$torch_url" \
     docker compose -f "$COMPOSE_FILE_PATH" up -d "$service"
     # until docker exec -it "$container_name" bash -c "ls /tmp/build_done" &>/dev/null; do
     #     echo "⏳ Waiting for build to complete..."

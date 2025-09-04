@@ -1,6 +1,9 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
+ARG TORCH_INDEX_URL
+
+ENV TORCH_INDEX_URL=${TORCH_INDEX_URL}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ROS_DISTRO=humble
 ENV LANG=en_US.UTF-8
@@ -14,8 +17,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Optional dev tools
-RUN apt-get update && apt-get install -y \
-    terminator nano net-tools iputils-ping
+RUN apt-get update && apt-get install -y python3-pip nano net-tools iputils-ping
+RUN pip install --upgrade pip
+RUN pip install typing_extensions numpy pillow transforms3d scipy opencv-contrib-python
+RUN pip install --no-deps torch torchvision torchaudio --index-url $TORCH_INDEX_URL
+RUN pip install --no-deps ultralytics
 
 # Setup ROS workspace directory and permissions
 RUN mkdir -p /ros/vsss_ws/src && \
