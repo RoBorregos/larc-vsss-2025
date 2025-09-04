@@ -1,4 +1,6 @@
 from setuptools import find_packages, setup
+import os
+from glob import glob
 
 package_name = 'vision'
 
@@ -10,7 +12,9 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/vision_launch.launch.py']),
+        ('share/' + package_name + '/utils/LUTs', glob('utils/LUTs/*.npy')),
+        ('share/' + package_name + '/utils', glob('utils/*.npy')),
+        ('share/' + package_name + '/utils/models/yolov8m(v1)', ['utils/models/yolov8m(v1)/best.pt']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -23,7 +27,7 @@ setup(
         'console_scripts': [
             'camera_input = vision.camera_input:main',
             'image_warp = vision.imageWarp:main',
-            'model_use = vision.vision_general:main',
+            'vision_general = vision.vision_general:main',
             'ball_detect = vision.camera_ball:main'
         ],
     },

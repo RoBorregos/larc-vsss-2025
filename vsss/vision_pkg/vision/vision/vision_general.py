@@ -19,25 +19,42 @@ import transforms3d.euler as euler
 import math
 import numpy as np
 import torch
+import os
 
 """
     Node to take camera input and detect robots position and orientation 
     as well as ball position in real field coordinates
 """
 
+import ament_index_python.packages as pkg
+from pathlib import Path
+
+# Intentar obtener el directorio de datos del paquete instalado
+package_share_dir = pkg.get_package_share_directory('vision')
+luts_path = os.path.join(package_share_dir, "utils", "LUTs")
+utis_path = os.path.join(package_share_dir, "utils")
+
+# Construir ruta completa del modelo YOLO
+yolo_model_path = os.path.join(package_share_dir, YOLO_LOCATION)
+
+if not os.path.exists(yolo_model_path):
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    yolo_model_path = os.path.join(base_path, "..", YOLO_LOCATION)
+
+
 device = 'cuda' if torch.cuda.is_available() else  'cpu'
 
 colors = {
-    "green": np.load("/home/dany/ros2_vision_ws/src/vision/utils/LUTs/lut_green.npy"),
-    "blue": np.load("/home/dany/ros2_vision_ws/src/vision/utils/LUTs/lut_blue.npy"),
-    "pink": np.load("/home/dany/ros2_vision_ws/src/vision/utils/LUTs/lut_pink.npy"),
-    "red": np.load("/home/dany/ros2_vision_ws/src/vision/utils/LUTs/lut_red.npy")
+    "green": np.load(os.path.join(luts_path,"lut_green.npy" )),
+    "blue": np.load(os.path.join(luts_path, "lut_blue.npy")),
+    "pink": np.load(os.path.join(luts_path, "lut_pink.npy")),
+    "red": np.load(os.path.join(luts_path, "lut_red.npy"))
 }
 
 kernel_size = 10
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
 
-orange = np.load("/home/dany/ros2_vision_ws/src/vision/utils/LUTs/lut_orange.npy")
+orange = np.load(os.path.join(luts_path, "lut_orange.npy"))
 
 width = 640
 height = 480
@@ -116,15 +133,15 @@ class CameraDetections(Node):
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.yolo_model = YOLO(YOLO_LOCATION)  # Uncomment when YOLO/model is ready
+        self.yolo_model = YOLO(yolo_model_path)  # Usar ruta construida dinámicamente
         self.yolo_model.to(device)
         self.model_view = self.create_publisher(
             Image, MODEL_VIEW_TOPIC, 10
         )
         self.image = None
         self.tf_broadcaster = TransformBroadcaster(self)
-        self.homography = np.load("homography.npy")
-        self.perspectiveMatrix = np.load("persMatrix.npy")
+        self.homography = np.load(os.path.join(utis_path, "homography.npy"))
+        self.perspectiveMatrix = np.load(os.path.join(utis_path, "persMatrix.npy"))
         self.get_logger().info("Starting model node/general vision node")
         self.last_center = None
         self.run()
