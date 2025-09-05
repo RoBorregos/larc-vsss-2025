@@ -35,6 +35,9 @@ services:
       - ${WORKSPACE_PATH}:/ros/vsss_ws/src/
     devices:
       - /dev/dri:/dev/dri
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
     network_mode: ${NETWORK_MODE}
     privileged: ${PRIVILEGED}
     stdin_open: ${STDIN_OPEN}
@@ -68,6 +71,9 @@ services:
       - ${WORKSPACE_PATH}:/ros/vsss_ws/src/
     devices:
       - /dev/dri:/dev/dri
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
     network_mode: ${NETWORK_MODE}
     privileged: ${PRIVILEGED}
     stdin_open: ${STDIN_OPEN}
