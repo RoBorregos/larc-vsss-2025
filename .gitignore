@@ -28,7 +28,7 @@ images/
 # Ignore generated docs
 *.dox
 *.wikidoc
-*.pt
+
 
 # eclipse stuff
 .project
