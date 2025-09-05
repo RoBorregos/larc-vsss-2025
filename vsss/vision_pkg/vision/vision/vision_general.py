@@ -225,7 +225,7 @@ class CameraDetections(Node):
 
         qx, qy, qz, qw = euler.euler2quat(yaw, pitch, roll, axes='sxyz') #roll, pitch, yaw = radians
         t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = "upper_left_corner"
+        t.header.frame_id = "lower_left_corner"
         t.child_frame_id = id
         t.transform.translation.x = float(x) 
         t.transform.translation.y = float(y)

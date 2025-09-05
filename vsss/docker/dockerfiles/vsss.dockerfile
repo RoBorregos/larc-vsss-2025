@@ -21,7 +21,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Optional dev tools
 RUN apt-get update && apt-get install -y python3-pip nano net-tools iputils-ping
 RUN pip install --upgrade pip
-RUN pip install typing_extensions numpy pillow transforms3d scipy opencv-contrib-python
+RUN pip install typing_extensions numpy pillow transforms3d scipy 
 RUN pip install --no-deps torch torchvision torchaudio --index-url $TORCH_INDEX_URL
 RUN pip install --no-deps ultralytics
 
@@ -40,6 +40,7 @@ COPY ../scripts/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
 # Switch to non-root user
+RUN usermod -aG video ros
 USER ros
 WORKDIR /ros/vsss_ws
 
