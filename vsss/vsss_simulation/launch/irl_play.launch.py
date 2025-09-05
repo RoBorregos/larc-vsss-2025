@@ -13,7 +13,7 @@ from launch.substitutions import Command, TextSubstitution, PathJoinSubstitution
 
 def generate_launch_description():
     
-    robot_count = 2
+    robot_count = 1
     robot_controllers = []
     pkg_name = "vsss_simulation"
 

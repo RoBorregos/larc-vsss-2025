@@ -56,8 +56,8 @@ private:
         visualization_msgs::msg::MarkerArray marker_array;
 
         int id = 0;
-        int grid_size = 30;
-        float spacing = 0.08;
+        int grid_size = 20;
+        float spacing = 0.06;
 
         for (int i = -grid_size; i <= grid_size; ++i) {
             for (int j = -grid_size; j <= grid_size; ++j) {
@@ -73,10 +73,13 @@ private:
                 marker.pose.position.x = i * spacing;
                 marker.pose.position.y = j * spacing;
                 marker.pose.position.z = 0.5;
+              
                 Vector3 pos (marker.pose.position.x, marker.pose.position.y, marker.pose.position.z);
+                //get vector from pos to ball
                 Vector3 pos_2_ball = pos - ball_transform.getOrigin();
                 double pos_t_ball = atan2(pos_2_ball[1], pos_2_ball[0]);
                 double theta_ball = phiTuf(pos_t_ball, pos, ball_transform.getOrigin(), optimalPath);
+                //Distance from pos to enemy
                 Vector3 distan_to_I = pos - imag_pos;
                 float theta_enemy = atan2(distan_to_I[1], distan_to_I[0]);
                 // Join the angles
@@ -90,9 +93,9 @@ private:
                 marker.pose.orientation.w = orientation.w();
 
                 // Scale
-                marker.scale.x = 0.05; // shaft length
-                marker.scale.y = 0.015; // shaft diameter
-                marker.scale.z = 0.03; // head diameter
+                marker.scale.x = 0.02; // shaft length
+                marker.scale.y = 0.007; // shaft diameter
+                marker.scale.z = 0.015; // head diameter
 
                 // Color
                 marker.color.r = 1.0f;
@@ -134,9 +137,9 @@ private:
         horizontal_marker.pose.orientation.w = horiz_orientation.w();
 
         // Scale (flat cylinder)
-        horizontal_marker.scale.x = 0.05;  // Diameter
-        horizontal_marker.scale.y = 0.05;  // Diameter
-        horizontal_marker.scale.z = 0.1; // Very thin (height)
+        horizontal_marker.scale.x = 0.02;  // Diameter
+        horizontal_marker.scale.y = 0.02;  // Diameter
+        horizontal_marker.scale.z = 0.05; // Very thin (height)
 
         // Color (yellow)
         horizontal_marker.color.r = 1.0f;

@@ -72,12 +72,12 @@ def generate_launch_description():
                 name='world',
                 arguments=[
                     "0.75",
-                    "-0.65",
+                    "0.65",
                     "0.0",
                     "0",
                     "0",
                     "0",
-                    "upper_left_corner",
+                    "lower_left_corner",
                     "world"
                 ]
     )

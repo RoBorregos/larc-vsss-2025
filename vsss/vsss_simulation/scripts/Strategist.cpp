@@ -89,7 +89,7 @@ private:
         attacker_msg.objective.set__theta(trayectory.getTheta());
 
         pubs_actions[attacker_ID]->publish(attacker_msg);
-
+        if(robot_count < 2) return;
 //----------------------------------------------------------------------------------------------------\\
 
         //Defender
@@ -117,7 +117,7 @@ private:
         
         //Go to Intersection or spin to get the ball out of the place
         vsss_simulation::msg::RobotAction defense_action;
-        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.25 ){
+        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.3 ){
             defense_action.type.data = 3;
             defense_action.spin_direction.data = (ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() < 0;
         }else{
