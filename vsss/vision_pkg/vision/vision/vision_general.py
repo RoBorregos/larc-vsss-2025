@@ -10,7 +10,7 @@ from .vision_constants import (
 
 import rclpy 
 from rclpy.node import Node
-from cv_bridge import CvBridge
+# from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from ultralytics import YOLO
 from tf2_ros import TransformBroadcaster
@@ -127,13 +127,13 @@ def getHomography(img, realCoor):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.bridge = CvBridge()
-        self.video_id = self.declare_parameter("Video_ID", 2)
+        # self.bridge = CvBridge()
+        self.video_id = self.declare_parameter("Video_ID", 0)
         self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-        self.yolo_model = YOLO(yolo_model_path)  # Usar ruta construida dinámicamente
+        self.yolo_model = YOLO(yolo_model_path)  
         self.yolo_model.to(device)
         self.model_view = self.create_publisher(
             Image, MODEL_VIEW_TOPIC, 10
@@ -145,7 +145,6 @@ class CameraDetections(Node):
         self.get_logger().info("Starting model node/general vision node")
         self.last_center = None
         self.run()
-        #self.timer = self.create_timer(0.1, self.timer_callback)
 
     def run(self):
         """
@@ -299,8 +298,8 @@ class CameraDetections(Node):
                     y_cm = y_field / 100
 
                     self.tf_helper(f"robot1_base_link", x_cm, y_cm, roll, pitch, yaw)
-        msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-        self.model_view.publish(msg)
+        # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+        # self.model_view.publish(msg)
 
     def ball_detection(self, img):
         frame = img.copy()
