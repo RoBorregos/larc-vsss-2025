@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # TODO ----Install ros2 dependencies ----
     python3-colcon-common-extensions \
     ros-humble-odom-to-tf-ros2 \
+    ros-humble-urdf-launch \
+    ros-humble-gazebo-ros-pkgs \
     && rm -rf /var/lib/apt/lists/*
 
 # Optional dev tools

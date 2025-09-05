@@ -32,17 +32,16 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
 
     float dif = dif_vector(objective, transform);
     geometry_msgs::msg::Twist response;
-
+    bool invert = false;
     if(type == 2 && abs(dif) > M_PI/2){
         dif += M_PI;
         dif = wrapToPI(dif);
-        response.angular.z = dif*0.75;
-        response.linear.x = -0.4;
-
-    }else{
-        response.angular.z = dif*0.5;
-        response.linear.x = 0.4;
+        invert = true;
     }
+
+    response.angular.z = dif*ANGULAR_CONSTANT;
+    response.linear.x = LINEAR_CONSTANT;
+    response.linear.x *= invert ? -1 : 1;
     response.angular.z = type ==2 ? response.angular.z*2: response.angular.z;
 
     return response;
@@ -55,7 +54,7 @@ geometry_msgs::msg::Twist Kinematic::orient_to_msg(Vector3 objective){
         dif += M_PI;
         dif = wrapToPI(dif);
      }
-    response.angular.z = dif*0.75;
+    response.angular.z = dif * ANGULAR_CONSTANT/3;
     return response;
 }
 
