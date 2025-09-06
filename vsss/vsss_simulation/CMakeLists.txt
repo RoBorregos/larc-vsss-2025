@@ -56,6 +56,7 @@ add_library(Kinematic src/vsss_simulation/Kinematic.cpp)
 add_library(MathU src/vsss_simulation/MathU.cpp)
 add_library(Line src/vsss_simulation/Line.cpp)
 add_library(UnivectorF src/vsss_simulation/UnivectorF.cpp)
+add_library(Polygon src/vsss_simulation/Polygon.cpp)
 # Expose package include dir on libraries so consumers inherit it.
 target_include_directories(Kinematic PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -77,6 +78,10 @@ target_include_directories(MsgConvert PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
 
+target_include_directories(Polygon PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+
 
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
@@ -87,7 +92,7 @@ ament_target_dependencies(VectorGrapher rclcpp visualization_msgs std_msgs nav_m
 target_link_libraries(VectorGrapher UnivectorF MsgConvert Line   ${tf2_geometry_msgs_LIBRARIES} )
 
 ament_target_dependencies(Strategist rclcpp std_msgs tf2 tf2_ros tf2_geometry_msgs)
-target_link_libraries(Strategist Kinematic Line ${cpp_typesupport_target})
+target_link_libraries(Strategist Polygon Kinematic Line ${cpp_typesupport_target})
 
 ament_target_dependencies(RobotActionVisualizer rclcpp visualization_msgs std_msgs nav_msgs tf2)
 target_link_libraries(RobotActionVisualizer ${cpp_typesupport_target} )
@@ -102,6 +107,9 @@ ament_target_dependencies(UnivectorF tf2)
 target_link_libraries(UnivectorF MathU Kinematic)
 
 ament_target_dependencies(MathU tf2)
+
+
+ament_target_dependencies(Polygon tf2)
 
 target_compile_features(simulation_spawn PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 

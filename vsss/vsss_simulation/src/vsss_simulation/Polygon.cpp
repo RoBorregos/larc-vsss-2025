@@ -19,12 +19,14 @@ bool Polygon::isInside(Vector3 p){
     if(p.x() < minX || p.x() > maxX || p.y() < minY || p.y() > maxY ){
         return false;
     }
-    int i =0, j = poly.size() - 1;
-    for(; i < poly.size(); j == i++ ){
-        if((poly[i].y() > p.y()) != (poly[j].y() > p.y()) // between two points check if line intersect with the point
-                && p.x() < (poly[j].x()- poly[i].x() )* (p.y() - poly[i].y()) / (poly[j].y() - poly[i].y()) + poly[i].x()){
+    int j = poly.size() - 1;
+    for(int i =0; i < poly.size();  i++ ){
+        if((poly[i].y() > p.y()) != (poly[j].y() > p.y()) // create a line of the polygon and check if it the point is in its y range
+                && p.x() < (poly[j].x()- poly[i].x() )* (p.y() - poly[i].y()) / (poly[j].y() - poly[i].y()) + poly[i].x()){ //Valid inside flip
                     inside = !inside;
         }
+        j = i;
     }
+    return inside;
 
 }
