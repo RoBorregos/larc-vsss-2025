@@ -78,7 +78,7 @@ class Robot_Controller : public rclcpp::Node
           }
         }
         Transform self_transform = robots[id].transform;
-        //if the objective is nea, just achieve its rotation
+        //if the objective is near, just achieve its rotation
         if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.08){
           Vector3 tieso(0,1,0);
           self_vel_pub->publish(robots[id].orient_to_msg(tieso));
@@ -86,6 +86,8 @@ class Robot_Controller : public rclcpp::Node
         }
         Vector3 vector2ball;
         float theta_obj ;
+
+        //attack with angle or just achieve a position (attack or defend)
         if(type== 1){
           Line optimalPath (objective_position, theta);
           //Get angle considering the ball as the objective;

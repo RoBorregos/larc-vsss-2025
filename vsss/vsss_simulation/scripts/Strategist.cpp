@@ -104,7 +104,7 @@ private:
             RCLCPP_INFO(this->get_logger(), "Could not transform own goal ends: %s", ex.what());
             return;
         }
-        Vector3 vertical_dif =  Vector3(0, 0.35 ,0); //Diference from the start of the center of the goal towards its vertical limits
+        Vector3 vertical_dif =  Vector3(0, 0.40 ,0); //Diference from the start of the center of the goal towards its vertical limits
         Vector3 horizontal_dif = Vector3(0.075, 0, 0); //Diference from the start of the center of the goal towards its horizontal limits
         Vector3 upper_end = own_goal.getOrigin() + vertical_dif;
         Vector3 lower_end = own_goal.getOrigin() - vertical_dif;
@@ -132,9 +132,9 @@ private:
         
         //Go to Intersection or spin to get the ball out of the place
         vsss_simulation::msg::RobotAction defense_action;
-        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.3 ){
+        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.13 ){
             defense_action.type.data = 3;
-            defense_action.spin_direction.data = (ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() < 0;
+            defense_action.spin_direction.data = (ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() > 0;
         }else{
             defense_action.type.data = 2;
             defense_action.objective.set__x(defend_point.x());

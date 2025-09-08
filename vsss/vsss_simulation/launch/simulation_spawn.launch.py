@@ -27,7 +27,7 @@ def generate_launch_description():
     
     for i in range(robot_count):
         robotName = f"robot{i+1}"
-        position = i * 0.5
+        position = i * 0.2
         #alternating between the available team identifier colors
         dominant_color = team_colors[i % len(team_colors)]
 
@@ -136,7 +136,7 @@ def generate_launch_description():
                     arguments=[
                         "-file", ball_file,
                         "-entity", "ball",
-                        "-x", "-2.0",  # X position
+                        "-x", "-0.2",  # X position
                         "-y", "0.0",  # Y position
                         "-z", "1.0",  # Z position
                         "-R", "0",    # Roll
