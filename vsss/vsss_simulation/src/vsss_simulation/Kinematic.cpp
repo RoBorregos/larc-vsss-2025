@@ -20,7 +20,7 @@ void Kinematic::setTrans(geometry_msgs::msg::TransformStamped t){
 
 
 float dif_vector(Vector3 obj, Transform robot){
-    Vector3 front = quatRotate(robot.getRotation(), Vector3(-1,0,0));
+    Vector3 front = quatRotate(robot.getRotation(), Vector3(1,0,0));
     front[2] = 0;
     obj[2] = 0;
     float dif  = atan2(front.x(), front.y()) - atan2(obj.x(), obj.y());
@@ -40,7 +40,7 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
     }
 
     response.angular.z = dif*ANGULAR_CONSTANT;
-    response.linear.x = LINEAR_CONSTANT;
+    response.linear.x = -LINEAR_CONSTANT;
     response.linear.x *= invert ? -1 : 1;
     response.angular.z = type ==2 ? response.angular.z*4: response.angular.z;
 

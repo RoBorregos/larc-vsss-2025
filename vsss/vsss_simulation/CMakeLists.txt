@@ -86,7 +86,7 @@ target_include_directories(Polygon PUBLIC
 rosidl_get_typesupport_target(cpp_typesupport_target ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 ament_target_dependencies(RobotController rclcpp std_msgs nav_msgs tf2 tf2_geometry_msgs tf2_eigen Bullet) 
-target_link_libraries(RobotController Kinematic Line UnivectorF MsgConvert ${cpp_typesupport_target})
+target_link_libraries(RobotController Kinematic Line UnivectorF Polygon MathU MsgConvert ${cpp_typesupport_target})
 
 ament_target_dependencies(VectorGrapher rclcpp visualization_msgs std_msgs nav_msgs tf2 tf2_geometry_msgs)
 target_link_libraries(VectorGrapher UnivectorF MsgConvert Line   ${tf2_geometry_msgs_LIBRARIES} )

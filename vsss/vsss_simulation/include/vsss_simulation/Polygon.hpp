@@ -10,7 +10,12 @@ using namespace std;
 class Polygon{
     public:
         Polygon();
-        Polygon(vector<Vector3> );
+        Polygon(vector<Vector3>);
         bool isInside(Vector3);
+        bool fullInside(Polygon& another);
+        void translade();
         vector<Vector3> poly;
+        vector<Vector3> figure;
+        Vector3 origin;
+        float rotation;
 };

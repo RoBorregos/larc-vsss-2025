@@ -19,7 +19,7 @@ def generate_launch_description():
     config_file_path = os.path.join(pkg_share, 'config', 'ball_odom2_tf.yaml')
 
 
-    robot_count = 2  # Number of robots
+    robot_count = 1  # Number of robots
     robot_spawns = []
     team_colors = ['Blue', 'Yellow']  # Colors for the teams
     robot_colors = [ 'Green', 'Turquoise', 'Purple']  # Colors for the robots

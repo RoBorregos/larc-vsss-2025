@@ -3,8 +3,12 @@
 Polygon::Polygon(){}
 
 Polygon::Polygon(vector<Vector3> n){
-    poly = n;
+    figure = n;
+    poly = figure;
+    origin = Vector3(0,0,0);
+    rotation = 0;
 }
+
 
 bool Polygon::isInside(Vector3 p){
     bool inside = false;
@@ -30,3 +34,39 @@ bool Polygon::isInside(Vector3 p){
     return inside;
 
 }
+
+float newX (Vector3 point, float angle){
+    return point.x() * cos(angle) - point.y() * sin(angle);
+}
+
+float newY (Vector3 point, float angle){
+    return point.x() * sin(angle) + point.y() * cos(angle);
+}
+
+void Polygon::translade(){
+    poly = figure;
+
+    // cout<<"Robot in: "<<origin.x()<<" "<<origin.y()<<endl;
+    for(int i = 0; i < poly.size(); i ++){
+        float X = newX(poly[i], rotation);
+        float Y = newY(poly[i], rotation);
+        poly[i] = Vector3(X,Y, 0) + origin;
+        // cout<<"vertex: "<<i<<" -> "<<poly[i].x()<<" "<<poly[i].y()<<endl;
+    }
+
+
+}
+
+bool Polygon::fullInside(Polygon& another){
+    another.translade();
+    for(auto point : another.poly){
+        if(!this->isInside(point)){
+            // cout<<"Robot not in field"<<endl;
+            // cout<<point.x()<<" "<<point.y()<<endl;
+            return false;
+        }
+    }
+    // cout<<"Robot in field"<<endl;
+    return true;
+}
+
