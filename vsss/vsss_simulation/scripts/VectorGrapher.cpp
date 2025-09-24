@@ -56,8 +56,8 @@ private:
         visualization_msgs::msg::MarkerArray marker_array;
 
         int id = 0;
-        int grid_size = 20;
-        float spacing = 0.06;
+        int grid_size = 25;
+        float spacing = 0.03;
 
         for (int i = -grid_size; i <= grid_size; ++i) {
             for (int j = -grid_size; j <= grid_size; ++j) {

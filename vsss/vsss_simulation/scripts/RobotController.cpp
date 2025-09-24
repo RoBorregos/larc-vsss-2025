@@ -11,11 +11,20 @@
 #include "vsss_simulation/UnivectorF.hpp"
 #include "vsss_simulation/MsgConvert.hpp"
 #include "vsss_simulation/msg/robot_action.hpp"
+#include "vsss_simulation/Polygon.hpp"
+#include "vsss_simulation/MathU.hpp"
 #include <iostream>  
 #include <string> 
 using std::placeholders::_1;
 using namespace tf2;
 using namespace std;
+
+//Square on the front of the robot
+vector<Vector3> square = Rectangle(Vector3(0.035,0,0), 0.035, 0.035);
+//Thinks about the use of static transforms. but they seem over engennier for the same hardcoded values
+
+vector<Vector3> field = Rectangle(Vector3(0,0,0), 1.5, 1.3);
+                          
 
 
 void printOdom(const nav_msgs::msg::Odometry::SharedPtr  & msg, const rclcpp::Logger & logger)
@@ -46,23 +55,25 @@ class Robot_Controller : public rclcpp::Node
 
       main_timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&Robot_Controller::Main, this));
 
+      stuck_timer = this->create_wall_timer(std::chrono::milliseconds(400), std::bind(&Robot_Controller::end_stuck, this));
+
       tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
       tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
       RCLCPP_INFO(get_logger(), "Robot Node With ID: '%i' .", id);
+      boxCollider = Polygon(square);
+      field_box_Collider = Polygon(field);
 
       
     }
 
   private:
-    void Main(){
 
-        //Spin if needed
-        if(type == 3){
-          geometry_msgs::msg::Twist gira_gira;
-          gira_gira.angular.set__z(12 *( direction? -1 : 1));
-          self_vel_pub->publish(gira_gira);
-          return;
-        }
+    void end_stuck(){
+      stuck  = false;
+      stuck_timer->cancel();
+    }  
+
+    void Main(){
         //Update classes
         for(int i  = 1; i <= 3; i++){
           string rName = "robot";
@@ -77,8 +88,36 @@ class Robot_Controller : public rclcpp::Node
             //RCLCPP_INFO(this->get_logger(), "Could not transform %s to %s: %s","world", rName.c_str(), ex.what());
           }
         }
+
+        //GoBack if Needed
+        boxCollider.origin = robots[id].transform.getOrigin();
+        Vector3 vectorR  =  quatRotate(robots[id].transform.getRotation(), Vector3(1,0,0));
+        boxCollider.rotation = atan2(vectorR.y(), vectorR.x());
+        boxCollider.translade();
+        if(!field_box_Collider.fullInside(boxCollider)){
+          geometry_msgs::msg::Twist backwards;
+          geometry_msgs::msg::Vector3 linear;
+          linear.x = 1.0;
+          backwards.set__linear(linear);
+          self_vel_pub->publish(backwards);
+          stuck = true;
+          stuck_timer->reset();
+          return;
+        }
+
+
+        //Spin if needed
+        if(type == 3){
+          geometry_msgs::msg::Twist gira_gira;
+          gira_gira.angular.set__z(12 *( direction? -1 : 1));
+          self_vel_pub->publish(gira_gira);
+          return;
+        }
+        if(stuck){
+          return;
+        }
         Transform self_transform = robots[id].transform;
-        //if the objective is nea, just achieve its rotation
+        //if the objective is near, just achieve its rotation
         if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.08){
           Vector3 tieso(0,1,0);
           self_vel_pub->publish(robots[id].orient_to_msg(tieso));
@@ -86,6 +125,8 @@ class Robot_Controller : public rclcpp::Node
         }
         Vector3 vector2ball;
         float theta_obj ;
+
+        //attack with angle or just achieve a position (attack or defend)
         if(type== 1){
           Line optimalPath (objective_position, theta);
           //Get angle considering the ball as the objective;
@@ -166,6 +207,14 @@ class Robot_Controller : public rclcpp::Node
     bool direction;
     Vector3 objective_position;
     float theta;
+
+    //BoxCollider
+    Polygon boxCollider;
+    Polygon field_box_Collider;
+    bool stuck;
+    rclcpp::TimerBase::SharedPtr stuck_timer;
+
+    
 };
 
 int main(int argc, char * argv[])

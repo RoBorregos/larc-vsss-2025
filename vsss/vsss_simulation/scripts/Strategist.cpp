@@ -8,6 +8,7 @@
 #include "vsss_simulation/Line.hpp"
 #include "vsss_simulation/Kinematic.hpp"
 #include "vsss_simulation/MsgConvert.hpp"
+#include "vsss_simulation/Polygon.hpp"
 #include <vector>
 #include <string>
 using namespace std;
@@ -79,8 +80,8 @@ private:
             }
 
         ball.setTrans(ball_tf);
-        fromMsg(goal_tf.transform, goal);
-        Line trayectory(ball.transform.getOrigin(), goal.getOrigin());
+        fromMsg(goal_tf.transform, attacker_goal);
+        Line trayectory(ball.transform.getOrigin(), attacker_goal.getOrigin());
         int attacker_ID = 1;
         vsss_simulation::msg::RobotAction attacker_msg;
         attacker_msg.type.data = 1;
@@ -94,32 +95,46 @@ private:
 
         //Defender
         int defender_ID = 2;
-        //Get limits for defense
+        //Get point for defense
+        //$ Could be in the init function to avoid doing this every time;
         try {
-            auto ole = tf_buffer_->lookupTransform("world", "own_lower_end_goal", TimePointZero);
-            fromMsg(ole.transform, own_lower_end);
-            auto oue = tf_buffer_->lookupTransform("world", "own_upper_end_goal", TimePointZero);
-            fromMsg(oue.transform, own_upper_end);
+            auto ole = tf_buffer_->lookupTransform("world", "own_goal", TimePointZero);
+            fromMsg(ole.transform, own_goal);
         } catch (const TransformException & ex) {
             RCLCPP_INFO(this->get_logger(), "Could not transform own goal ends: %s", ex.what());
             return;
         }
+        Vector3 vertical_dif =  Vector3(0, 0.40 ,0); //Diference from the start of the center of the goal towards its vertical limits
+        Vector3 horizontal_dif = Vector3(0.075, 0, 0); //Diference from the start of the center of the goal towards its horizontal limits
+        Vector3 upper_end = own_goal.getOrigin() + vertical_dif;
+        Vector3 lower_end = own_goal.getOrigin() - vertical_dif;
 
-        Line defensive_range(own_lower_end.getOrigin(), own_upper_end.getOrigin());
+        Line defensive_range(lower_end , upper_end);
+
+        Vector3 ul = own_goal.getOrigin() - horizontal_dif + vertical_dif;
+        Vector3 ur = own_goal.getOrigin() + horizontal_dif + vertical_dif;
+        Vector3 lr = own_goal.getOrigin() + horizontal_dif - vertical_dif;
+        Vector3 ll = own_goal.getOrigin() - horizontal_dif - vertical_dif;
+        vector<Vector3> p {ul, ur, lr, ll};
+        Polygon defenderZone (p);
+
+        //$$$
 
         
         //See if intersection in these lines  between the trayectory of the ball;
         Line ball_trayectory = Line(ball.transform.getOrigin(), ball.transform.getOrigin() + ball.velocity);
         pair<int, Vector3> intersect_result = defensive_range.Intersect(ball_trayectory);
-        if(intersect_result.first == 1){
+        if(defenderZone.isInside(ball.transform.getOrigin())){
+            defend_point = ball.transform.getOrigin();
+        }else if(intersect_result.first == 1){
             defend_point = intersect_result.second;
         }
         
         //Go to Intersection or spin to get the ball out of the place
         vsss_simulation::msg::RobotAction defense_action;
-        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.3 ){
+        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.13 ){
             defense_action.type.data = 3;
-            defense_action.spin_direction.data = (ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() < 0;
+            defense_action.spin_direction.data = (ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() > 0;
         }else{
             defense_action.type.data = 2;
             defense_action.objective.set__x(defend_point.x());
@@ -150,11 +165,10 @@ private:
 
     //Atacker
     Kinematic ball;
-    Transform goal;
+    Transform attacker_goal;
     
     //Defender
-    Transform own_lower_end;
-    Transform own_upper_end;
+    Transform own_goal;
     Vector3 defend_point;
 
 };
