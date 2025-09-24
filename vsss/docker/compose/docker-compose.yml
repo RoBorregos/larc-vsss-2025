@@ -1,102 +1,44 @@
 services:
-  cpu_base:
+  vsss_gpu:
     build:
-      context: ${BUILD_CONTEXT}
-      dockerfile: ${ROS_DOCKERFILE}
+      context: ../
+      dockerfile: dockerfiles/vsss.dockerfile
       args:
-        BASE_IMAGE: ${CPU_BASE_IMAGE}
-    image: ${DOCKER_REGISTRY}/${PROJECT_NAME}:cpu_base
+        BASE_IMAGE: ros2_cuda_base
+    image: vsss_gpu_image
+    container_name: vsss_gpu
+    gpus: all
+    environment:
+      - DISPLAY=${DISPLAY}
+      - TERM=xterm-256color
+      - QT_X11_NO_MITSHM=1
+      - QT_DEBUG_PLUGINS=1
+    volumes:
+      - ../../:/workspace
+      - /dev:/dev
+      - /dev/video0:/dev/video0
+      - /tmp:/tmp
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./build:/workspace/build
+      - ./install:/workspace/install
+      - ./log:/workspace/log
+    devices:
+      - /dev/dri:/dev/dri
+      - /dev/video0:/dev/video0
+      - /dev/video1:/dev/video1
+      - /dev/video2:/dev/video2
+    network_mode: host
+    privileged: true
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    command: >
+      bash -c "/bin/bash "
 
   cuda_base:
     build:
-      context: ${BUILD_CONTEXT}
-      dockerfile: ${ROS_DOCKERFILE}
+      context: ../
+      dockerfile: dockerfiles/ros.dockerfile
       args:
-        BASE_IMAGE: ${CUDA_BASE_IMAGE}
-    image: ${DOCKER_REGISTRY}/${PROJECT_NAME}:cuda_base
-
-  application_cuda:
-    build:
-      context: ${BUILD_CONTEXT}
-      dockerfile: ${VSSS_DOCKERFILE}
-      args:
-        BASE_IMAGE: ${BUILT_CUDA_BASE_IMAGE}
-        TORCH_INDEX_URL: ${TORCH_INDEX_URL}
-    image: ${DOCKER_REGISTRY}/${PROJECT_NAME}_cuda
-    container_name: ${PROJECT_NAME}_cuda
-    runtime: ${NVIDIA_RUNTIME}
-    environment:
-      - DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1
-      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}
-      - LIBGL_ALWAYS_INDIRECT=${LIBGL_ALWAYS_INDIRECT}
-    volumes:
-      - ${X11_SOCKET_PATH}:${X11_SOCKET_PATH}
-      - ${WORKSPACE_PATH}:/ros/vsss_ws/src/
-    devices:
-      - /dev/dri:/dev/dri
-      - /dev/video0:/dev/video0
-      - /dev/video1:/dev/video1
-      - /dev/video2:/dev/video2
-    network_mode: ${NETWORK_MODE}
-    privileged: ${PRIVILEGED}
-    stdin_open: ${STDIN_OPEN}
-    tty: ${TTY}
-    command: []
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: ${GPU_COUNT}
-              capabilities: [gpu]
-
-  application_gpu:
-    build:
-      context: ${BUILD_CONTEXT}
-      dockerfile: ${VSSS_DOCKERFILE}
-      args:
-        BASE_IMAGE: ${DOCKER_REGISTRY}/${PROJECT_NAME}:cpu_base
-        TORCH_INDEX_URL: ${TORCH_INDEX_URL}
-    image: ${DOCKER_REGISTRY}/${PROJECT_NAME}_gpu
-    container_name: ${PROJECT_NAME}_gpu
-    runtime: ${NVIDIA_RUNTIME}
-    environment:
-      - DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1
-      - NVIDIA_VISIBLE_DEVICES=${NVIDIA_VISIBLE_DEVICES}
-      - LIBGL_ALWAYS_INDIRECT=${LIBGL_ALWAYS_INDIRECT}
-    volumes:
-      - ${X11_SOCKET_PATH}:${X11_SOCKET_PATH}
-      - ${WORKSPACE_PATH}:/ros/vsss_ws/src/
-    devices:
-      - /dev/dri:/dev/dri
-      - /dev/video0:/dev/video0
-      - /dev/video1:/dev/video1
-      - /dev/video2:/dev/video2
-    network_mode: ${NETWORK_MODE}
-    privileged: ${PRIVILEGED}
-    stdin_open: ${STDIN_OPEN}
-    tty: ${TTY}
-    command: []
-
-  application_cpu:
-    build:
-      context: ${BUILD_CONTEXT}
-      dockerfile: ${VSSS_DOCKERFILE}
-      args:
-        BASE_IMAGE: ${BUILT_CPU_BASE_IMAGE}
-        TORCH_INDEX_URL: ${TORCH_INDEX_URL}
-    image: ${DOCKER_REGISTRY}/${PROJECT_NAME}_cpu
-    container_name: ${PROJECT_NAME}_cpu
-    network_mode: ${NETWORK_MODE}
-    environment:
-      - DISPLAY=${DISPLAY}
-      - QT_X11_NO_MITSHM=1
-    volumes:
-      - ${X11_SOCKET_PATH}:${X11_SOCKET_PATH}
-      - ${WORKSPACE_PATH}:/ros/vsss_ws/src/
-    stdin_open: ${STDIN_OPEN}
-    tty: ${TTY}
-    privileged: ${PRIVILEGED}
-    command: []
+        BASE_IMAGE: nvidia/cuda:12.2.2-devel-ubuntu22.04
+    image: ros2_cuda_base

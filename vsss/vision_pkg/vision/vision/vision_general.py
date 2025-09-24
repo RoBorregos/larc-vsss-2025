@@ -42,7 +42,7 @@ if not os.path.exists(yolo_model_path):
     yolo_model_path = os.path.join(base_path, "..", YOLO_LOCATION)
 
 
-device = 'cuda' if torch.cuda.is_available() else  'cpu'
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 colors = {
     "green": np.load(os.path.join(luts_path,"lut_green.npy" )),
@@ -128,13 +128,14 @@ class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
         self.bridge = CvBridge()
-        self.video_id = self.declare_parameter("Video_ID", 2)
+        self.video_id = self.declare_parameter("Video_ID", 0)
         self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.yolo_model = YOLO(yolo_model_path)  # Usar ruta construida dinámicamente
         self.yolo_model.to(device)
+        self._logger.info("DEVICE: " + str(device))
         self.model_view = self.create_publisher(
             Image, MODEL_VIEW_TOPIC, 10
         )
@@ -144,10 +145,9 @@ class CameraDetections(Node):
         self.perspectiveMatrix = np.load(os.path.join(utis_path, "persMatrix.npy"))
         self.get_logger().info("Starting model node/general vision node")
         self.last_center = None
-        self.run()
-        #self.timer = self.create_timer(0.1, self.timer_callback)
+        self.timer = self.create_timer(0.03, self.timer_callback)
 
-    def run(self):
+    def timer_callback(self):
         """
         Captura frames, los warpea y procesa detecciones sobre la imagen warpeada.
         """
@@ -289,10 +289,10 @@ class CameraDetections(Node):
                     #GET ORIENTATION --------------------------------------------------------
                     angle_degrees = self.orientation(roi)
                     if angle_degrees is not None:
-                        yaw = math.radians(-angle_degrees)
+                        yaw = math.radians(angle_degrees) 
                     else:
                         yaw = 0.0
-                    pitch, roll = 0.0, 0.0
+                    pitch, roll = 0.0, math.pi
                     #------------------------------------------------------------------------
                     #Send robot transforms
                     x_cm = x_field / 100
@@ -326,7 +326,7 @@ class CameraDetections(Node):
         mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
         # suavizado pequeño para bordes más lisos
         mask = cv2.medianBlur(mask, 5)
-        cv2.imshow("Mask", mask)
+        # cv2.imshow("Mask", mask)
         cv2.waitKey(1)
         
         # encontrar la pelota
