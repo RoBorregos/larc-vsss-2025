@@ -1,11 +1,11 @@
-robot1_tcp_client:
-  ros__parameters:
-    robot_name: "robot1"
-    robot_ip: "192.168.0.158"
-    robot_port: 8080
-
 robot2_tcp_client:
   ros__parameters:
     robot_name: "robot2"
+    robot_ip: "192.168.0.158"
+    robot_port: 8080
+
+robot1_tcp_client:
+  ros__parameters:
+    robot_name: "robot1"
     robot_ip: "192.168.0.188"
     robot_port: 8081
