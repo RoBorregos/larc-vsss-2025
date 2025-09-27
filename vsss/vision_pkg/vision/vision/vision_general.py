@@ -48,7 +48,32 @@ colors = {
     "green": np.load(os.path.join(luts_path,"lut_green.npy" )),
     "blue": np.load(os.path.join(luts_path, "lut_blue.npy")),
     "pink": np.load(os.path.join(luts_path, "lut_pink.npy")),
-    "red": np.load(os.path.join(luts_path, "lut_red.npy"))
+    "red": np.load(os.path.join(luts_path, "lut_red.npy")),
+    "yellow": np.load(os.path.join(luts_path, "lut_yellow.npy")),
+    "darkblue": np.load(os.path.join(luts_path, "lut_darkblue.npy"))
+}
+
+patterns = {
+    ("darkblue", "green", "red"): 1,
+    ("darkblue", "blue", "red"): 2,
+    ("darkblue", "red", "green"): 3,
+    ("darkblue", "blue", "green"): 4,
+    ("darkblue", "pink", "green"): 5,
+    ("darkblue", "red", "blue"): 6,
+    ("darkblue", "green", "blue"): 7,
+    ("darkblue", "pink", "blue"): 8,
+    ("darkblue", "green", "pink"): 9,
+    ("darkblue", "blue", "pink"): 10,
+    ("yellow", "green", "red"): 11,
+    ("yellow", "blue", "red"): 12,
+    ("yellow", "red", "green"): 13,
+    ("yellow", "blue", "green"): 14,
+    ("yellow", "pink", "green"): 15,
+    ("yellow", "red", "blue"): 16,
+    ("yellow", "green", "blue"): 17,
+    ("yellow", "pink", "blue"): 18,
+    ("yellow", "green", "pink"): 19,
+    ("yellow", "blue", "pink"): 20,
 }
 
 kernel_size = 10
@@ -198,12 +223,19 @@ class CameraDetections(Node):
                         cy = int(M["m01"] / M["m00"])
                         centers.append((cx, cy, color_name, area))
                     
-        filtered_centers = sorted(centers, key=lambda x: x[3], reverse=True)[:2]
+        darkblue_yellow = []
+        for (x, y, c, area) in centers:
+            if c in ["darkblue", "yellow"]:
+                darkblue_yellow.append((c, area))
+        team = sorted(darkblue_yellow, key= lambda x: x[1], reverse=True)[0][0]
+        print("team: ", team)
+
+        filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
+        id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
 
         angle = None
-        # print(len(filtered_centers))
-        if len(filtered_centers) >= 2:
-            (x1, y1, c1, area), (x2, y2, c2, area) = filtered_centers
+        if len(id_colors) >= 2:
+            (x1, y1, c1, a1), (x2, y2, c2, a2) = id_colors
 
             mid_x = (x1 + x2) // 2
             mid_y = (y1 + y2) // 2
@@ -217,8 +249,26 @@ class CameraDetections(Node):
             self.get_logger().info(f"Angle: {angle}")
             cv2.imshow("Orientacion", img)
             cv2.waitKey(1)
+            
+            if angle is not None:
+                vx = math.cos(math.radians(angle))
+                vy = math.sin(math.radians(angle))
 
-            return angle
+                left_marker, right_marker = None, None
+                for (x, y, c, _) in [(x1, y1, c1, a1), (x2, y2, c2, a2)]:
+                    rel_x = x - mid_x
+                    rel_y = -(y - mid_y)
+                    cross = vx * rel_y - vy * rel_x
+                    if cross > 0:
+                        left_marker = c
+                    else:
+                        right_marker = c
+
+                robot_id = patterns.get((team, left_marker, right_marker), None)
+
+                if robot_id is not None:
+                    print("Robot id: ", robot_id)
+                    return angle, robot_id 
 
     def tf_helper(self, id, x, y, roll, pitch, yaw):
         t = TransformStamped()
@@ -286,7 +336,7 @@ class CameraDetections(Node):
                     text = f"({x_field:.1f}, {y_field:.1f})"
                     cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                     #GET ORIENTATION --------------------------------------------------------
-                    angle_degrees = self.orientation(roi)
+                    angle_degrees, robot_id = self.orientation(roi)
                     if angle_degrees is not None:
                         yaw = math.radians(-angle_degrees)
                     else:
@@ -297,7 +347,7 @@ class CameraDetections(Node):
                     x_cm = x_field / 100
                     y_cm = y_field / 100
 
-                    self.tf_helper(f"robot1_base_link", x_cm, y_cm, roll, pitch, yaw)
+                    self.tf_helper(f"robot1_base_link", robot_id, x_cm, y_cm, roll, pitch, yaw)
         # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
         # self.model_view.publish(msg)
 
