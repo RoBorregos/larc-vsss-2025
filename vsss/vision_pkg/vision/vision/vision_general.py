@@ -42,7 +42,7 @@ if not os.path.exists(yolo_model_path):
     yolo_model_path = os.path.join(base_path, "..", YOLO_LOCATION)
 
 
-device = 'cuda' if torch.cuda.is_available() else  'cpu'
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 
 colors = {
     "green": np.load(os.path.join(luts_path,"lut_green.npy" )),
@@ -170,7 +170,8 @@ class CameraDetections(Node):
         self.perspectiveMatrix = np.load(os.path.join(utis_path, "persMatrix.npy"))
         self.get_logger().info("Starting model node/general vision node")
         self.last_center = None
-        self.timer = self.create_timer(0.03, self.timer_callback)
+        #self.run()
+        self.timer = self.create_timer(0.1, self.timer_callback)
 
     def timer_callback(self):
         """
