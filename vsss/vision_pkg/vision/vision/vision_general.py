@@ -80,9 +80,9 @@ patterns = {
     ("yellow", "pink", "green"): 14,
     ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 13,
-    ("yellow", "pink", "blue"): 15,
+    ("yellow", "pink", "blue"): 1,
     ("yellow", "green", "pink"): 14,
-    ("yellow", "blue", "pink"): 15,
+    ("yellow", "blue", "pink"): 1,
 }
 
 kernel_size = 10
@@ -304,7 +304,7 @@ class CameraDetections(Node):
         qx, qy, qz, qw = euler.euler2quat(yaw, pitch, roll, axes='sxyz') #roll, pitch, yaw = radians
         t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = "lower_left_corner"
-        t.child_frame_id = str(id)
+        t.child_frame_id = id
         t.transform.translation.x = float(x) 
         t.transform.translation.y = float(y)
         t.transform.translation.z = 0.0
@@ -376,7 +376,7 @@ class CameraDetections(Node):
                         x_cm = x_field / 100
                         y_cm = y_field / 100
 
-                        self.tf_helper(robot_id, x_cm, y_cm, roll, pitch, yaw)
+                        self.tf_helper("robot" + str(id) + "_base_link", x_cm, y_cm, roll, pitch, yaw)
             # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
             # self.model_view.publish(msg)
 
