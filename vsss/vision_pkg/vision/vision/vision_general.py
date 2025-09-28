@@ -10,7 +10,7 @@ from .vision_constants import (
 
 import rclpy 
 from rclpy.node import Node
-# from cv_bridge import CvBridge
+# # from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from ultralytics import YOLO
 from tf2_ros import TransformBroadcaster
@@ -167,6 +167,7 @@ class CameraDetections(Node):
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+        self.yolo_model = YOLO(yolo_model_path)  
         self.yolo_model = YOLO(yolo_model_path)  
         self.yolo_model.to(device)
         self._logger.info("DEVICE: " + str(device))
@@ -377,8 +378,8 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         self.tf_helper("robot" + str(id) + "_base_link", x_cm, y_cm, roll, pitch, yaw)
-            # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-            # self.model_view.publish(msg)
+            # # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+            # # self.model_view.publish(msg)
 
     def ball_detection(self, img):
         frame = img.copy()

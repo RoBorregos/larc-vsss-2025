@@ -18,6 +18,8 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "vsss_simulation/msg/robot_action.hpp"
 
+//ros2 run vsss_simulation RobotActionVisualizer <robot_name>
+
 using std::placeholders::_1;
 
 class RobotActionVisualizer : public rclcpp::Node

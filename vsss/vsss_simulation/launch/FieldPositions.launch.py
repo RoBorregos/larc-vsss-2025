@@ -17,7 +17,7 @@ from launch.conditions import IfCondition
 
 def generate_launch_description():
         #Spawn the goal transform
-    goal = Node(
+    attack_goal = Node(
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 output = "screen",
@@ -33,36 +33,20 @@ def generate_launch_description():
                     "goal_pos"
                 ]
             )
-    lower_end = Node(
+    own_goal = Node(
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 output="screen",
-                name='own_lower_end_goal',
+                name='own_goal',
                 arguments=[
-                    "-0.75",
-                    "0.35",
+                    "-0.70",
+                    "0.0",
                     "0.0",
                     "0",
                     "0",
                     "0",
                     "world",
-                    "own_lower_end_goal"
-                ]
-            )
-    upper_end = Node(
-                package='tf2_ros',
-                executable='static_transform_publisher',
-                output="screen",
-                name='own_upper_end_goal',
-                arguments=[
-                    "-0.75",
-                    "-0.35",
-                    "0.0",
-                    "0",
-                    "0",
-                    "0",
-                    "world",
-                    "own_upper_end_goal"
+                    "own_goal"
                 ]
             )
     world = Node(
@@ -72,21 +56,20 @@ def generate_launch_description():
                 name='world',
                 arguments=[
                     "0.75",
-                    "-0.65",
+                    "0.65",
                     "0.0",
                     "0",
                     "0",
                     "0",
-                    "upper_left_corner",
+                    "lower_left_corner",
                     "world"
                 ]
     )
 
     actions = [
-        goal,
-        lower_end,
-        upper_end,
-        world
+        attack_goal,
+        world,
+        own_goal
     ]
 
 
