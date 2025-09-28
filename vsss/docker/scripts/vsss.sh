@@ -53,15 +53,6 @@ function has_cuda_support() {
     echo "$use_CUDA"
 }
 
-function get_torch_index_url() {
-    local gpu_flag
-    gpu_flag=$(parse_gpu_flag "$@")
-    cuda_flag=$(has_cuda_support "$@")
-    
-    # Por ahora usar CPU para todos los casos hasta resolver las librerías CUDA
-    echo "https://download.pytorch.org/whl/cpu"
-}
-
 function get_base_tag() {
     local gpu_flag
     gpu_flag=$(parse_gpu_flag "$@")

@@ -53,27 +53,36 @@ colors = {
     "darkblue": np.load(os.path.join(luts_path, "lut_darkblue.npy"))
 }
 
+draw_colors = {
+    "green": (0, 255, 0),
+    "yellow": (0, 255, 255),
+    "blue": (255, 255, 0),
+    "darkblue": (255, 0, 0),
+    "pink": (255, 0, 255),
+    "red": (0, 0, 255)
+}
+
 patterns = {
     ("darkblue", "green", "red"): 1,
     ("darkblue", "blue", "red"): 2,
-    ("darkblue", "red", "green"): 3,
-    ("darkblue", "blue", "green"): 4,
-    ("darkblue", "pink", "green"): 5,
-    ("darkblue", "red", "blue"): 6,
-    ("darkblue", "green", "blue"): 7,
-    ("darkblue", "pink", "blue"): 8,
-    ("darkblue", "green", "pink"): 9,
-    ("darkblue", "blue", "pink"): 10,
+    ("darkblue", "red", "green"): 1,
+    ("darkblue", "blue", "green"): 3,
+    ("darkblue", "pink", "green"): 4,
+    ("darkblue", "red", "blue"): 2,
+    ("darkblue", "green", "blue"): 3,
+    ("darkblue", "pink", "blue"): 5,
+    ("darkblue", "green", "pink"): 4,
+    ("darkblue", "blue", "pink"): 5,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
-    ("yellow", "red", "green"): 13,
-    ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 15,
-    ("yellow", "red", "blue"): 16,
-    ("yellow", "green", "blue"): 17,
-    ("yellow", "pink", "blue"): 18,
-    ("yellow", "green", "pink"): 19,
-    ("yellow", "blue", "pink"): 20,
+    ("yellow", "red", "green"): 11,
+    ("yellow", "blue", "green"): 13,
+    ("yellow", "pink", "green"): 14,
+    ("yellow", "red", "blue"): 12,
+    ("yellow", "green", "blue"): 13,
+    ("yellow", "pink", "blue"): 15,
+    ("yellow", "green", "pink"): 14,
+    ("yellow", "blue", "pink"): 15,
 }
 
 kernel_size = 10
@@ -153,7 +162,7 @@ class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
         # self.bridge = CvBridge()
-        self.video_id = self.declare_parameter("Video_ID", 0)
+        self.video_id = self.declare_parameter("Video_ID", 2)
         self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -218,19 +227,28 @@ class CameraDetections(Node):
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in contours:
                 area = cv2.contourArea(cnt)
-                if area > 1800:
+                if area > 500:
                     M = cv2.moments(cnt)
                     if M["m00"] != 0:
                         cx = int(M["m10"] / M["m00"])
                         cy = int(M["m01"] / M["m00"])
                         centers.append((cx, cy, color_name, area))
-                    
+
+                        cv2.drawContours(img, [cnt], -1, draw_colors[color_name], 2)
+                        cv2.circle(img, (cx, cy), 5, draw_colors[color_name], -1)
+
+
+        self.get_logger().info(str(len(centers)))
         darkblue_yellow = []
         for (x, y, c, area) in centers:
             if c in ["darkblue", "yellow"]:
-                darkblue_yellow.append((c, area))
-        team = sorted(darkblue_yellow, key= lambda x: x[1], reverse=True)[0][0]
-        print("team: ", team)
+                 darkblue_yellow.append((c, area))
+                 
+        if len(darkblue_yellow) != 0:
+            team = sorted(darkblue_yellow, key= lambda x: x[1], reverse=True)[0][0]
+            print("team: ", team)
+        else: 
+            team = None
 
         filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
         id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
@@ -251,26 +269,34 @@ class CameraDetections(Node):
             self.get_logger().info(f"Angle: {angle}")
             cv2.imshow("Orientacion", img)
             cv2.waitKey(1)
+
+            robot_id = patterns.get((team, c1, c2), None)
+            print("Robot id: ", robot_id)
+            return angle, robot_id
             
-            if angle is not None:
-                vx = math.cos(math.radians(angle))
-                vy = math.sin(math.radians(angle))
+            # if angle is not None:
+            #     vx = math.cos(math.radians(angle))
+            #     vy = math.sin(math.radians(angle))
 
-                left_marker, right_marker = None, None
-                for (x, y, c, _) in [(x1, y1, c1, a1), (x2, y2, c2, a2)]:
-                    rel_x = x - mid_x
-                    rel_y = -(y - mid_y)
-                    cross = vx * rel_y - vy * rel_x
-                    if cross > 0:
-                        left_marker = c
-                    else:
-                        right_marker = c
+            #     left_marker, right_marker = None, None
+            #     for (x, y, c, _) in [(x1, y1, c1, a1), (x2, y2, c2, a2)]:
+            #         rel_x = x - mid_x
+            #         rel_y = -(y - mid_y)
+            #         cross = vx * rel_y - vy * rel_x
+            #         if cross > 0:
+            #             left_marker = c
+            #         else:
+            #             right_marker = c
 
-                robot_id = patterns.get((team, left_marker, right_marker), None)
+            #     robot_id = patterns.get((team, left_marker, right_marker), None)
 
-                if robot_id is not None:
-                    print("Robot id: ", robot_id)
-                    return angle, robot_id 
+            #     if robot_id is not None:
+            #         print("Robot id: ", robot_id)
+            #         return angle, robot_id 
+            #     else: 
+            #         return angle, None
+        else:
+            return 0,0
 
     def tf_helper(self, id, x, y, roll, pitch, yaw):
         t = TransformStamped()
@@ -278,7 +304,7 @@ class CameraDetections(Node):
         qx, qy, qz, qw = euler.euler2quat(yaw, pitch, roll, axes='sxyz') #roll, pitch, yaw = radians
         t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = "lower_left_corner"
-        t.child_frame_id = id
+        t.child_frame_id = str(id)
         t.transform.translation.x = float(x) 
         t.transform.translation.y = float(y)
         t.transform.translation.z = 0.0
@@ -307,51 +333,52 @@ class CameraDetections(Node):
             return None
         frame = self.image.copy()
         results = self.yolo_model(frame, verbose=False, classes=0)
-        id_track = 0
-        for result in results:
-            for box in result.boxes:
-                x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
-                confidence = box.conf.item()
-                
-                if confidence > CONF_THRESH:
-                    id = id_track + 1
-                    #Robot position ---------------------------------------------------------
-                    x1 = int(x - w / 2)
-                    y1 = int(y - h / 2)
-                    x2 = int(x + w / 2)
-                    y2 = int(y + h / 2)
-                    roi = frame[y1:y2, x1:x2]
+        if results is not None:
+            id_track = 0
+            for result in results:
+                for box in result.boxes:
+                    x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
+                    confidence = box.conf.item()
                     
-                    x_center = (x1 + x2) / 2 
-                    y_center = (y1 + y2) / 2
+                    if confidence > CONF_THRESH:
+                        id = id_track + 1
+                        #Robot position ---------------------------------------------------------
+                        x1 = int(x - w / 2)
+                        y1 = int(y - h / 2)
+                        x2 = int(x + w / 2)
+                        y2 = int(y + h / 2)
+                        roi = frame[y1:y2, x1:x2]
+                        
+                        x_center = (x1 + x2) / 2 
+                        y_center = (y1 + y2) / 2
 
-                    # Dibuja el bounding box
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    # Opcional: muestra la confianza
-                    conf_text = f"{confidence:.2f}"
-                    cv2.putText(frame, conf_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                    cv2.circle(frame, (int(x_center), int(y_center)), 4, (0, 0, 255), -1)
-                    
-                    #Convert to field coordinates - this may be the problem !!
-                    x_field, y_field = self.image_to_field(x_center, y_center, self.homography)
-                    
-                    text = f"({x_field:.1f}, {y_field:.1f})"
-                    cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-                    #GET ORIENTATION --------------------------------------------------------
-                    angle_degrees, robot_id = self.orientation(roi)
-                    if angle_degrees is not None:
-                        yaw = math.radians(angle_degrees) 
-                    else:
-                        yaw = 0.0
-                    pitch, roll = 0.0, math.pi
-                    #------------------------------------------------------------------------
-                    #Send robot transforms
-                    x_cm = x_field / 100
-                    y_cm = y_field / 100
+                        # Dibuja el bounding box
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        # Opcional: muestra la confianza
+                        conf_text = f"{confidence:.2f}"
+                        cv2.putText(frame, conf_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        cv2.circle(frame, (int(x_center), int(y_center)), 4, (0, 0, 255), -1)
+                        
+                        #Convert to field coordinates - this may be the problem !!
+                        x_field, y_field = self.image_to_field(x_center, y_center, self.homography)
+                        
+                        text = f"({x_field:.1f}, {y_field:.1f})"
+                        cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                        #GET ORIENTATION --------------------------------------------------------
+                        angle_degrees, robot_id = self.orientation(roi)
+                        if angle_degrees is not None:
+                            yaw = math.radians(angle_degrees) 
+                        else:
+                            yaw = 0.0
+                        pitch, roll = 0.0, math.pi
+                        #------------------------------------------------------------------------
+                        #Send robot transforms
+                        x_cm = x_field / 100
+                        y_cm = y_field / 100
 
-                    self.tf_helper(f"robot1_base_link", robot_id, x_cm, y_cm, roll, pitch, yaw)
-        # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-        # self.model_view.publish(msg)
+                        self.tf_helper(robot_id, x_cm, y_cm, roll, pitch, yaw)
+            # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
+            # self.model_view.publish(msg)
 
     def ball_detection(self, img):
         frame = img.copy()
