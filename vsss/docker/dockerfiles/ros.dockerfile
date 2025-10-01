@@ -34,8 +34,6 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
     && dpkg-reconfigure --frontend noninteractive tzdata \
     && rm -rf /var/lib/apt/lists/*
 
-
-
 # Create a non-root user
 RUN groupadd --gid $USER_GID $USERNAME \
     && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
@@ -67,9 +65,6 @@ RUN apt-get update && apt-get install -y git-core bash-completion \
     && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc \
     && echo "if [ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash ]; then source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash; fi" >> /home/$USERNAME/.bashrc \
     && rm -rf /var/lib/apt/lists/* 
-
-# Source ROS workspace
-# RUN echo "source /workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
 # Install general utilities
 RUN apt-get update -qq && apt-get install -y  build-essential \

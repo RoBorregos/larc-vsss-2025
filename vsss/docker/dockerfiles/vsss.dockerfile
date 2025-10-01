@@ -1,9 +1,8 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-# ARG TORCH_INDEX_URL
+ARG SHOULD_USE_CUDA
 
-# ENV TORCH_INDEX_URL=${TORCH_INDEX_URL}
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ROS_DISTRO=humble
 ENV LANG=en_US.UTF-8
@@ -21,8 +20,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Optional dev tools
 RUN apt-get update && apt-get install -y python3-pip nano net-tools iputils-ping
 RUN pip install --upgrade pip
+RUN pip install torch torchvision ${SHOULD_USE_CUDA}
 RUN pip install typing_extensions numpy pillow transforms3d scipy 
-RUN pip3 install torch torchvision --index-url https://download.pytorch.org/whl/cu121
 RUN pip install --no-deps ultralytics
 
 # Setup ROS workspace directory and permissions
@@ -34,10 +33,6 @@ RUN rm -rf /etc/ros/rosdep/sources.list.d/* /var/lib/rosdep/* && \
     rosdep init && \
     rosdep fix-permissions && \
     rosdep update
-    
-# Install additional ROS packages if needed
-COPY ../scripts/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
 
 # Switch to non-root user
 RUN usermod -aG video ros
@@ -48,7 +43,6 @@ WORKDIR /ros/vsss_ws
 RUN rosdep update && \
     rosdep install --from-paths src --ignore-src -r -y
 
-# ENTRYPOINT ["/entrypoint.sh"]
 CMD ["bash"]
 
 # Source ROS 2 setup on login
