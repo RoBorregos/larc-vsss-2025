@@ -80,9 +80,9 @@ patterns = {
     ("yellow", "pink", "green"): 14,
     ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 13,
-    ("yellow", "pink", "blue"): 1,
+    ("yellow", "pink", "blue"): 15,
     ("yellow", "green", "pink"): 14,
-    ("yellow", "blue", "pink"): 1,
+    ("yellow", "blue", "pink"): 15,
 }
 
 kernel_size = 10
@@ -168,20 +168,25 @@ class CameraDetections(Node):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.yolo_model = YOLO(yolo_model_path)  
-        self.yolo_model = YOLO(yolo_model_path)  
         self.yolo_model.to(device)
         self._logger.info("DEVICE: " + str(device))
-        self.model_view = self.create_publisher(
-            Image, MODEL_VIEW_TOPIC, 10
-        )
+        try:
+            self.homography = np.load(os.path.join(utis_path, "homography.npy"))
+            self.perspectiveMatrix = np.load(os.path.join(utis_path, "persMatrix.npy"))
+        except FileNotFoundError or FileExistsError:
+            self.get_logger().info("Homography || presmatrix not found, calibrate it")
+            self.homography = None
+            self.perspectiveMatrix = None
+            
+        # self.model_view = self.create_publisher(
+        #     Image, MODEL_VIEW_TOPIC, 10
+        # )
         self.image = None
         self.tf_broadcaster = TransformBroadcaster(self)
-        self.homography = np.load(os.path.join(utis_path, "homography.npy"))
-        self.perspectiveMatrix = np.load(os.path.join(utis_path, "persMatrix.npy"))
-        self.get_logger().info("Starting model node/general vision node")
         self.last_center = None
         #self.run()
-        self.timer = self.create_timer(0.1, self.timer_callback)
+        self.timer = self.create_timer(0.03, self.timer_callback)
+        self.get_logger().info("Starting model node/general vision node")
 
     def timer_callback(self):
         """
@@ -193,6 +198,15 @@ class CameraDetections(Node):
                 self.get_logger().info("No frame captured.")
                 continue
 
+            if self.homography is None or self.perspectiveMatrix is None:
+                self.get_logger().info("Starting calibration process...")
+                try:
+                    self.homography, self.perspectiveMatrix = getHomography(frame, real_field_coors)
+                    self.get_logger().info("Calibration completed")
+                except Exception as e:
+                    self.get_logger().error(f"Failed calibration: {e}")
+                    return
+                
             # Warpea la imagen antes de procesar
             warped_img = cv2.warpPerspective(frame, self.perspectiveMatrix, (width, height))
             self.image = warped_img
@@ -228,7 +242,7 @@ class CameraDetections(Node):
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in contours:
                 area = cv2.contourArea(cnt)
-                if area > 500:
+                if area > 600:
                     M = cv2.moments(cnt)
                     if M["m00"] != 0:
                         cx = int(M["m10"] / M["m00"])
@@ -377,7 +391,7 @@ class CameraDetections(Node):
                         x_cm = x_field / 100
                         y_cm = y_field / 100
 
-                        self.tf_helper("robot" + str(id) + "_base_link", x_cm, y_cm, roll, pitch, yaw)
+                        self.tf_helper("robot" + str(robot_id) + "_base_link", x_cm, y_cm, roll, pitch, yaw)
             # # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
             # # self.model_view.publish(msg)
 

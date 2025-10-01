@@ -6,6 +6,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 import socket
 import struct
+import math
 
 
 class RobotTCPClient:
@@ -46,7 +47,7 @@ class RobotTCPClient:
 
 def twist_to_rpm(twist, wheel_radius=0.03, wheel_base=0.076):
     # Example conversion: linear.x and angular.z to left/right wheel RPM
-    v = twist.linear.x
+    v = -twist.linear.x
     w = twist.angular.z
     v_left = v - w * wheel_base / 2.0
     v_right = v + w * wheel_base / 2.0
@@ -79,16 +80,24 @@ class SingleRobotTCPNode(Node):
 
     def destroy_node(self):
         # Ensure the TCP client is closed when the node is destroyed
+
+        self.client.send_floats(0, 0)
         if self.client:
+            self.client.send_floats(0, 0)
             self.client.close()
+
         super().destroy_node()
 
 
     def cmd_vel_callback(self, msg):
         rpm_left, rpm_right = twist_to_rpm(msg)
+        if(math.isnan(rpm_right) or math.isnan(rpm_left)):
+            return
         sent = self.client.send_floats(rpm_left, rpm_right)
+
+        self.get_logger().info(f"L={rpm_left:.2f} R={rpm_right:.2f}")
         if sent:
-            self.get_logger().info(f"Sent: L={rpm_left:.2f} R={rpm_right:.2f}")
+            self.get_logger().info(f"Sent")
         else:
             self.get_logger().error(f"Failed to send RPMs")
 
