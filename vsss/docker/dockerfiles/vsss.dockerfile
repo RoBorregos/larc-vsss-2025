@@ -1,7 +1,7 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
-ARG SHOULD_USE_CUDA
+ARG TORCH_INDEX
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV ROS_DISTRO=humble
@@ -18,9 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Optional dev tools
-RUN apt-get update && apt-get install -y python3-pip nano net-tools iputils-ping
 RUN pip install --upgrade pip
-RUN pip install torch torchvision ${SHOULD_USE_CUDA}
+RUN apt-get remove -y python3-sympy
+RUN pip install torch torchvision ${TORCH_INDEX}
 RUN pip install typing_extensions numpy pillow transforms3d scipy 
 RUN pip install --no-deps ultralytics
 

@@ -71,4 +71,4 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
     ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
     terminator nano git wget iputils-ping \
     libcanberra-gtk-module libcanberra-gtk3-module \
-    python3-pip
+    python3-pip net-tools

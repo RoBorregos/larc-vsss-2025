@@ -5,7 +5,7 @@ services:
       dockerfile: dockerfiles/vsss.dockerfile
       args:
         BASE_IMAGE: roborregos/vsss:ros2_cuda_base
-        SHOULD_USE_CUDA: --index-url https://download.pytorch.org/whl/cu121
+        TORCH_INDEX: --index-url https://download.pytorch.org/whl/cu121
     image: roborregos/vsss:vsss_gpu
     container_name: vsss_gpu
     gpus: all

@@ -5,6 +5,7 @@ services:
       dockerfile: dockerfiles/vsss.dockerfile
       args:
         BASE_IMAGE: roborregos/vsss:ros2_cpu_base
+        TORCH_INDEX: --index-url https://download.pytorch.org/whl/cpu
     image: roborregos/vsss:vsss_cpu
     container_name: vsss_cpu
     environment:
