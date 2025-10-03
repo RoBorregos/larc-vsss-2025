@@ -18,6 +18,7 @@ find_package(ament_cmake_python REQUIRED)
 
 install(PROGRAMS
   src/robot_tcp_client_node.py
+  src/robot_udp_client_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
