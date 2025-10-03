@@ -1,13 +1,13 @@
 services:
-  vsss_gpu:
+  vsss_cuda:
     build:
       context: ../
       dockerfile: dockerfiles/vsss.dockerfile
       args:
         BASE_IMAGE: roborregos/vsss:ros2_cuda_base
         TORCH_INDEX: --index-url https://download.pytorch.org/whl/cu121
-    image: roborregos/vsss:vsss_gpu
-    container_name: vsss_gpu
+    image: roborregos/vsss:vsss_cuda
+    container_name: vsss_cuda
     gpus: all
     environment:
       - DISPLAY=${DISPLAY}

@@ -11,6 +11,7 @@ echo "Detected environment: $ENV_TYPE"
 
 function run_container() {
     echo "Running vsss container"
+    mkdir ../compose/log ../compose/install ../compose/build
     docker compose -f ../compose/docker-compose-$ENV_TYPE-base.yml build
     docker compose -f ../compose/docker-compose-$ENV_TYPE.yml up -d
 }
