@@ -238,18 +238,15 @@ class CameraDetections(Node):
                         cv2.drawContours(img, [cnt], -1, draw_colors[color_name], 2)
                         cv2.circle(img, (cx, cy), 5, draw_colors[color_name], -1)
 
-
-        self.get_logger().info(str(len(centers)))
         darkblue_yellow = []
         for (x, y, c, area) in centers:
             if c in ["darkblue", "yellow"]:
                  darkblue_yellow.append((c, area))
                  
-        if len(darkblue_yellow) != 0:
+        try:
             team = sorted(darkblue_yellow, key= lambda x: x[1], reverse=True)[0][0]
-            print("team: ", team)
-        else: 
-            team = None
+        except:
+            team = "yellow"
 
         filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
         id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
@@ -275,27 +272,27 @@ class CameraDetections(Node):
             print("Robot id: ", robot_id)
             return angle, robot_id
             
-            # if angle is not None:
-            #     vx = math.cos(math.radians(angle))
-            #     vy = math.sin(math.radians(angle))
+            if angle is not None:
+                vx = math.cos(math.radians(angle))
+                vy = math.sin(math.radians(angle))
 
-            #     left_marker, right_marker = None, None
-            #     for (x, y, c, _) in [(x1, y1, c1, a1), (x2, y2, c2, a2)]:
-            #         rel_x = x - mid_x
-            #         rel_y = -(y - mid_y)
-            #         cross = vx * rel_y - vy * rel_x
-            #         if cross > 0:
-            #             left_marker = c
-            #         else:
-            #             right_marker = c
+                left_marker, right_marker = None, None
+                for (x, y, c, _) in [(x1, y1, c1, a1), (x2, y2, c2, a2)]:
+                    rel_x = x - mid_x
+                    rel_y = -(y - mid_y)
+                    cross = vx * rel_y - vy * rel_x
+                    if cross > 0:
+                        left_marker = c
+                    else:
+                        right_marker = c
 
-            #     robot_id = patterns.get((team, left_marker, right_marker), None)
+                robot_id = patterns.get((team, left_marker, right_marker), None)
 
-            #     if robot_id is not None:
-            #         print("Robot id: ", robot_id)
-            #         return angle, robot_id 
-            #     else: 
-            #         return angle, None
+                if robot_id is not None:
+                    print("Robot id: ", robot_id)
+                    return angle, robot_id 
+                else: 
+                    return angle, None
         else:
             return 0,0
 
