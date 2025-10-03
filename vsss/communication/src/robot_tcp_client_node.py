@@ -96,10 +96,7 @@ class SingleRobotTCPNode(Node):
         sent = self.client.send_floats(rpm_left, rpm_right)
 
         self.get_logger().info(f"L={rpm_left:.2f} R={rpm_right:.2f}")
-        if sent:
-            self.get_logger().info(f"Sent")
-        else:
-            self.get_logger().error(f"Failed to send RPMs")
+        
 
 def main(args=None):
     rclpy.init(args=args)

@@ -55,7 +55,7 @@ class Robot_Controller : public rclcpp::Node
 
       main_timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&Robot_Controller::Main, this));
 
-      stuck_timer = this->create_wall_timer(std::chrono::milliseconds(400), std::bind(&Robot_Controller::end_stuck, this));
+      stuck_timer = this->create_wall_timer(std::chrono::milliseconds(300), std::bind(&Robot_Controller::end_stuck, this));
 
       tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
       tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -97,7 +97,7 @@ class Robot_Controller : public rclcpp::Node
         if(!field_box_Collider.fullInside(boxCollider)){
           geometry_msgs::msg::Twist backwards;
           geometry_msgs::msg::Vector3 linear;
-          linear.x = 1.0;
+          linear.x = 0.4f;
           backwards.set__linear(linear);
           self_vel_pub->publish(backwards);
           stuck = true;
