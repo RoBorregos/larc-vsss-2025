@@ -1,5 +1,5 @@
-
   #include <WiFi.h>
+  #include <WiFiUdp.h>
   #include "PID.hpp"
 
   template<typename T1, typename T2>
@@ -13,9 +13,9 @@
   const char* ssid = "vsss_r";
   const char* password = "vsss1234";
 
-  // TCP Server
-  WiFiServer server(8080);
-  WiFiClient client;
+  // UDP Server
+  WiFiUDP udp;
+  const int localPort = 8081;
 
   //MotorPins
   #define MotorA1 17
@@ -146,25 +146,31 @@
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
 
-    // Start server
-    server.begin();
-    Serial.println("Server started. Waiting for client...");
+    // Start UDP server
+    udp.begin(localPort);
+    Serial.print("UDP server started on port ");
+    Serial.println(localPort);
   }
 
-  void tcp_recieve_RPM() {
-    if (client.available() >= 8) { // Wait for 2 floats (8 bytes)
+  void udp_receive_RPM() {
+    int packetSize = udp.parsePacket();
+    if (packetSize == 8) { // Expecting exactly 8 bytes (2 floats)
       byte buffer[8];
-      client.read(buffer, 8);
+      udp.read(buffer, 8);
 
-      
+      // Extract the two floats from the UDP packet
       memcpy(&objective_vel.first, buffer, 4);
       memcpy(&objective_vel.second, buffer + 4, 4);
 
-      Serial.print("Received RPM L: ");
+      Serial.print("Received UDP RPM L: ");
       Serial.print(objective_vel.first);
       Serial.print(", RPM R: ");
       Serial.println(objective_vel.second);
-
+    } else if (packetSize > 0) {
+      // Discard unexpected packet sizes
+      Serial.print("Received unexpected UDP packet size: ");
+      Serial.println(packetSize);
+      udp.flush(); // Clear the packet
     }
   }
 
@@ -205,27 +211,8 @@
       drive(actual_pwm.first,actual_pwm.second);
   }
 
-
-
-
-
   void loop() {
-    if (!client.connected()) {
-      client = server.available();
-      if (client) {
-        Serial.println("Client connected!");
-      }
-      return; // No client, so nothing to do
-    }
-
-    tcp_recieve_RPM();      //Recieve data from tcp
-    encoder_receive_RPM();  //Read and interpret the data from the encoders
-    VelocityTracker();      //Use both prev values and a PID to manage motors
-
-    // Handle client disconnection
-    if (!client.connected()) {
-      Serial.println("Client disconnected.");
-      //Segun yo nunca va a llegar a este punto, sino que simplemente iba a llegar al otro case de desconexion de arriba
-      
-    }
+    udp_receive_RPM();      // Receive data from UDP
+    encoder_receive_RPM();  // Read and interpret the data from the encoders
+    VelocityTracker();      // Use both prev values and a PID to manage motors
   }
