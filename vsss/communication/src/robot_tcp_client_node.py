@@ -46,7 +46,7 @@ class RobotTCPClient:
 
 def twist_to_rpm(twist, wheel_radius=0.03, wheel_base=0.076):
     # Example conversion: linear.x and angular.z to left/right wheel RPM
-    v = twist.linear.x
+    v = (twist.linear.x)
     w = twist.angular.z
     v_left = v - w * wheel_base / 2.0
     v_right = v + w * wheel_base / 2.0
