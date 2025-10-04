@@ -1,0 +1,8 @@
+services:
+  cpu_base:
+    build:
+      context: ../
+      dockerfile: dockerfiles/ros.dockerfile
+      args:
+        BASE_IMAGE: ubuntu:22.04
+    image: roborregos/vsss:ros2_cpu_base
