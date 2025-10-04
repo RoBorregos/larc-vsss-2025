@@ -19,6 +19,7 @@ import math
 import numpy as np
 import torch
 import os
+from typing import List
 
 """
     Node to take camera input and detect robots position and orientation 
@@ -62,17 +63,37 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 3,
+    ("darkblue", "green", "red"): 1,
+    ("darkblue", "blue", "red"): 2,
     ("darkblue", "red", "green"): 3,
-    ("darkblue", "pink", "blue"): 10,
+    ("darkblue", "blue", "green"): 4,
+    ("darkblue", "pink", "green"): 5,
+    ("darkblue", "red", "blue"): 6,
+    ("darkblue", "green", "blue"): 7,
+    ("darkblue", "pink", "blue"): 8,
+    ("darkblue", "green", "pink"): 9,
     ("darkblue", "blue", "pink"): 10,
-    ("yellow", "pink", "green"): 19,
+    ("yellow", "green", "red"): 11,
+    ("yellow", "blue", "red"): 12,
+    ("yellow", "red", "green"): 13,
+    ("yellow", "blue", "green"): 14,
+    ("yellow", "pink", "green"): 1,
+    ("yellow", "red", "blue"): 16,
+    ("yellow", "green", "blue"): 17,
     ("yellow", "pink", "blue"): 18,
-    ("yellow", "green", "pink"): 19,
-    ("yellow", "blue", "pink"): 18,
+    ("yellow", "green", "pink"): 1,
+    ("yellow", "blue", "pink"): 20,
 }
 
-robots = [[3,[0,0], None],[10, [0,0], None],[18, [0,0], None],[19, [0,0], None]]
+class robot:
+    def __init__(self, id : int, location : List[float], angle : float):
+        self.id = id
+        self.location = location
+        self.angle = angle
+
+robots : List[robot]= []
+for key, val in patterns.items():
+    robots.append(robot(val, [0,0], None))
 
 kernel_size = 10
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
@@ -147,7 +168,7 @@ def getHomography(img, realCoor):
 
     return H, matrix
 
-def get_eucladian( pt1, pt2):
+def get_eucladian(pt1, pt2):
     # pt1 is a tuple of two elements
     a = np.array([pt1[0], pt1[0]])
     b = np.array([pt2[0], pt2[1]])
@@ -292,52 +313,55 @@ class CameraDetections(Node):
 
                 if robot_id is not None:
                     print("Robot id: ", robot_id)
-                    for robot in robots:
-                        if robot_id == robot[0]:
-                            if robot[1] ==[0,0]:
-                                robot[1] = position
-                                robot[2] = angle
-                                self.get_logger().info("POSITION -> " + str(position))
-                                self.get_logger().info("ANGLE -> " + str(angle))
-                                self.get_logger().info("ROBOT ID -> " + str(robot_id))
-                                return angle, robot_id 
+                    for robot in robots: #the last readings
+                        if robot.id == robot_id:
+                            if robot.location == [0,0]:
+                                self.get_logger().info("ENTER IF IDDDDDD")
+                                robot.position = position
+                                robot.angle = angle
+                                self.get_logger().info("POSITION -> " + str(robot.position))
+                                self.get_logger().info("ANGLE -> " + str(robot.angle))
+                                self.get_logger().info("ROBOT ID -> " + str(robot.id))
+                                return robot.angle, robot.id 
                             else:
-                                past_x, past_y = robot[1]
+                                self.get_logger().warn("entree else yes")
+                                past_x, past_y = robot.location[0], robot.location[1] #the one I gave her 
                                 # calcular distancia 
                                 distance = get_eucladian((position[0], position[1]), (past_x, past_y))
 
                                 self.get_logger().info("DISTANCIA -> " + str(distance))
                                 if distance < threshold:
-                                    self.get_logger().warn("< threshold")
-                                    robot[1] = position
-                                    robot[2] = angle
-                                    self.get_logger().info("POSITION -> " + str(position))
-                                    self.get_logger().info("ANGLE -> " + str(angle))
-                                    self.get_logger().info("ROBOT ID -> " + str(robot_id))
-                                    return angle, robot_id 
+                                    self.get_logger().warn(distance + " < threshold from last and now pos")
+                                    robot.location[0], robot.location[1] = position[0], position[1]
+                                    robot.angle = angle
+                                    self.get_logger().info("POSITION -> " + str((robot.location[0], robot.location[1])))
+                                    self.get_logger().info("ANGLE -> " + str(robot.angle))
+                                    self.get_logger().info("ROBOT ID -> " + str(robot.id))
+                                    return robot.angle, robot.id 
                                 else:
-                                    return robot[2], robot[1] 
+                                    self.get_logger().info("Entered else from < threshold")
+                                    return robot.angle, robot.id
                 else:
                     distances  = []           
                     for robot in robots:
-                        distance = get_eucladian((position[0], position[1]), (robot[1][0],robot[1][1]))
+                        distance = get_eucladian((position[0], position[1]), (robot.location[0], robot.location[1]))
                         distances.append((robot, distance))
-                    robot_id = sorted(distances)[0][0]
-                    distances.clear()
-                    return angle, robot_id
+                    if distances:
+                        closest_robot = min(distances, key=lambda x: x[1])[0]
+                        robot_id = closest_robot.id
+                        return angle, robot_id
         else:
-            distances  = []
+            distances = []
             for robot in robots:
-                if robot[1] is not None:
-                    distance = get_eucladian((position[0], position[1]), (robot[1][0], robot[1][0]))
+                if robot.location != [0, 0]:
+                    distance = get_eucladian((position[0], position[1]), (robot.location[0], robot.location[1]))
                     distances.append((robot, distance))
-                    robot_id = sorted(distances)[0][0]
-                    if len(distances) > 0:
-                        angle = sorted(distances)[0][0][2]
-                    distances.clear()
-                    return angle, robot_id
-                else:
-                    return None, None
+            if distances:
+                closest_robot = min(distances, key=lambda x: x[1])[0]
+                robot_id = closest_robot.id
+                return angle, robot_id
+            else:
+                return None, None
             
     def tf_helper(self, id, x, y, roll, pitch, yaw):
         t = TransformStamped()
@@ -394,7 +418,7 @@ class CameraDetections(Node):
                         y_center = (y1 + y2) / 2
 
                         # Dibuja el bounding box
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         # # Opcional: muestra la confianza
                         # conf_text = f"{confidence:.2f}"
                         # cv2.putText(frame, conf_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
