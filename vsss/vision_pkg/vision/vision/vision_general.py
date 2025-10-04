@@ -77,23 +77,28 @@ patterns = {
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
     ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 1,
+    ("yellow", "pink", "green"): 15,
     ("yellow", "red", "blue"): 16,
     ("yellow", "green", "blue"): 17,
     ("yellow", "pink", "blue"): 18,
-    ("yellow", "green", "pink"): 1,
+    ("yellow", "green", "pink"): 19,
     ("yellow", "blue", "pink"): 20,
 }
 
 class robot:
-    def __init__(self, id : int, location : List[float], angle : float):
+    def __init__(self, id : int, secondary_color: str, team: str, location : List[float], angle : float):
         self.id = id
         self.location = location
         self.angle = angle
+        self.secondary_color = secondary_color
+        self.team = team
+        self.relative_distance = None
 
-robots : List[robot]= []
-for key, val in patterns.items():
-    robots.append(robot(val, [0,0], None))
+yellow_team = []
+darkblue_team = []
+detected_robots = []
+past_robots_yellow = []
+past_robots_darkblue = []
 
 kernel_size = 10
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
@@ -232,9 +237,7 @@ class CameraDetections(Node):
         else:
             self.homography, self.perspectiveMatrix = getHomography(data, real_field_coors)
 
-    
-
-    def orientation(self, img, position):
+    def get_info_robot(self, img, position):
         scale = 6
         img = cv2.resize(img, None, fx=scale, fy=scale)
 
@@ -276,9 +279,8 @@ class CameraDetections(Node):
         id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
         
         angle = None
-        threshold = 200 # ajustar
         
-        if len(id_colors) >= 2:
+        if len(id_colors) == 2:
             (x1, y1, c1, a1), (x2, y2, c2, a2) = id_colors
 
             mid_x = (x1 + x2) // 2
@@ -312,56 +314,66 @@ class CameraDetections(Node):
                 self.get_logger().info("ID -> " + str(robot_id))
 
                 if robot_id is not None:
-                    print("Robot id: ", robot_id)
-                    for robot in robots: #the last readings
-                        if robot.id == robot_id:
-                            if robot.location == [0,0]:
-                                self.get_logger().info("ENTER IF IDDDDDD")
-                                robot.position = position
-                                robot.angle = angle
-                                self.get_logger().info("POSITION -> " + str(robot.position))
-                                self.get_logger().info("ANGLE -> " + str(robot.angle))
-                                self.get_logger().info("ROBOT ID -> " + str(robot.id))
-                                return robot.angle, robot.id 
-                            else:
-                                self.get_logger().warn("entree else yes")
-                                past_x, past_y = robot.location[0], robot.location[1] #the one I gave her 
-                                # calcular distancia 
-                                distance = get_eucladian((position[0], position[1]), (past_x, past_y))
-
-                                self.get_logger().info("DISTANCIA -> " + str(distance))
-                                if distance < threshold:
-                                    self.get_logger().warn(distance + " < threshold from last and now pos")
-                                    robot.location[0], robot.location[1] = position[0], position[1]
-                                    robot.angle = angle
-                                    self.get_logger().info("POSITION -> " + str((robot.location[0], robot.location[1])))
-                                    self.get_logger().info("ANGLE -> " + str(robot.angle))
-                                    self.get_logger().info("ROBOT ID -> " + str(robot.id))
-                                    return robot.angle, robot.id 
-                                else:
-                                    self.get_logger().info("Entered else from < threshold")
-                                    return robot.angle, robot.id
+                    robot_detected = robot(robot_id, id_colors[0], team, position, angle)
+                    detected_robots.append(robot_detected)
                 else:
-                    distances  = []           
-                    for robot in robots:
-                        distance = get_eucladian((position[0], position[1]), (robot.location[0], robot.location[1]))
-                        distances.append((robot, distance))
-                    if distances:
-                        closest_robot = min(distances, key=lambda x: x[1])[0]
-                        robot_id = closest_robot.id
-                        return angle, robot_id
+                    robot_detected = robot(None, id_colors[0], team, position, angle)
+                    detected_robots.append(robot_detected)
+        elif len(id_colors) == 1:
+            robot_detected = robot(None, id_colors[0], team, position)
+            detected_robots.append(robot_detected)
         else:
-            distances = []
-            for robot in robots:
-                if robot.location != [0, 0]:
-                    distance = get_eucladian((position[0], position[1]), (robot.location[0], robot.location[1]))
-                    distances.append((robot, distance))
-            if distances:
-                closest_robot = min(distances, key=lambda x: x[1])[0]
-                robot_id = closest_robot.id
-                return angle, robot_id
-            else:
-                return None, None
+            robot_detected = robot(None, None, team, position)
+            detected_robots.append(robot_detected)   
+
+    def select_robot(self):
+        for past_robot in past_robots_yellow:
+            possibilities = []
+            same_id = []
+            same_color = []
+            same_team = []
+            not_same = []
+
+            for detected_robot in detected_robots:
+                distance = get_eucladian(past_robot.location, detected_robot.location)
+                detected_robot.relative_distance = distance
+                if detected_robot.id == past_robot.id:
+                    same_id.append(detected_robot)
+                elif detected_robot.secondary_color == past_robot.secondary_color:
+                    same_color.append(detected_robot)
+                elif detected_robot.team == past_robot.team:
+                    same_team.append(detected_robot)
+                else:
+                    not_same.append(detected_robot)
+
+            same_id_ordered = sorted(same_id, key=lambda r:r.relative_distance)
+            same_color_ordered = sorted(same_color, key=lambda r:r.relative_distance)
+            same_team_ordered = sorted(same_team, key=lambda r:r.relative_distance)
+            not_same_ordered = sorted(not_same, key=lambda r:r.relative_distance)
+            possibilities.append(same_id_ordered)
+            possibilities.append(same_color_ordered)
+            possibilities.append(same_team_ordered)
+            possibilities.append(not_same_ordered)
+
+            selected_robot = None
+            for possibility in possibilities:
+                if len(possibility) > 0:
+                    selected_robot = possibility[0]
+                    break
+
+            if selected_robot.id == None:
+                selected_robot.id = past_robot.id
+            if selected_robot.secondary_color == None:
+                selected_robot.secondary_color = past_robot.secondary_color
+            if selected_robot.team == None:
+                selected_robot.team = past_robot.team
+            if selected_robot.angle == None:
+                selected_robot.angle = past_robot.angle
+
+            yaw = math.radians(selected_robot.angle)
+            pitch, roll = 0.0, math.pi
+            self.tf_helper("robot" + str(selected_robot.id) + "_base_link", selected_robot.location[0], selected_robot.location[1], roll, pitch, yaw)
+
             
     def tf_helper(self, id, x, y, roll, pitch, yaw):
         t = TransformStamped()
@@ -417,6 +429,10 @@ class CameraDetections(Node):
                         x_center = (x1 + x2) / 2 
                         y_center = (y1 + y2) / 2
 
+                        x_field, y_field = self.image_to_field(x_center, y_center, self.homography)
+                        x_cm = x_field / 100
+                        y_cm = y_field / 100
+
                         # Dibuja el bounding box
                         # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         # # Opcional: muestra la confianza
@@ -425,23 +441,12 @@ class CameraDetections(Node):
                         # cv2.circle(frame, (int(x_center), int(y_center)), 4, (0, 0, 255), -1)
                         
                         #Convert to field coordinates - this may be the problem !!
-                        x_field, y_field = self.image_to_field(x_center, y_center, self.homography)
                         
                         text = f"({x_field:.1f}, {y_field:.1f})"
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-                        #GET ORIENTATION --------------------------------------------------------
-                        angle_degrees, robot_id = self.orientation(roi, [x_field, y_field])
-                        if angle_degrees is not None:
-                            yaw = math.radians(angle_degrees) 
-                        else:
-                            yaw = 0.0
-                        pitch, roll = 0.0, math.pi
-                        #------------------------------------------------------------------------
-                        #Send robot transforms
-                        x_cm = x_field / 100
-                        y_cm = y_field / 100
+                        #GET informationof the robots --------------------------------------------------------
+                        self.get_info_robot(roi, [x_cm, y_cm])
 
-                        self.tf_helper("robot" + str(robot_id) + "_base_link", x_cm, y_cm, roll, pitch, yaw)
                 cv2.putText(frame, F"COUNT: {count}", (300, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         cv2.imshow("Model", frame)
             # # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
