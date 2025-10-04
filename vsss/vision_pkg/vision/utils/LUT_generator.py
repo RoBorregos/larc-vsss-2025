@@ -20,7 +20,6 @@ def allPoints(pts:list) -> list:
     uu, vv = np.meshgrid(u_range, v_range)
     uv_grid = np.vstack((uu.flatten(), vv.flatten())).T
 
-    # Filtrar los puntos que están dentro del polígono
     mask_inside = polygon_path.contains_points(uv_grid)
     uv_inside = uv_grid[mask_inside]
 
@@ -49,13 +48,11 @@ def pointsSelection(u_points, v_points, color, colors_rgb=None):
     ax.invert_yaxis()
     plt.grid(True)
 
-    # Mostrar los puntos reales en el fondo
     if colors_rgb is not None:
         ax.scatter(u_points, v_points, c=colors_rgb, s=1)
     else:
         ax.scatter(u_points, v_points, c='black', edgecolors='k', s=1, linewidths=0.5)
 
-    # Línea de selección
     line, = ax.plot([], [], 'ro-', lw=2)
 
     def on_click(event):
@@ -76,10 +73,8 @@ def pointsSelection(u_points, v_points, color, colors_rgb=None):
     return points
 
 def create_lut(uv_points):
-    # Creamos una matriz LUT vacía de 256x256
     lut = np.zeros((256, 256), dtype=np.uint8)
 
-    # Por cada punto (u, v), marcamos ese punto en la LUT
     for u, v in uv_points:
         if 0 <= u < 256 and 0 <= v < 256:
             lut[v, u] = 1  
@@ -87,25 +82,40 @@ def create_lut(uv_points):
     return lut
 
 
-# Leer y convertir imagen
-img = cv2.imread("Resources/ball3.png")
-colors = ["orange2"]
-img = cv2.resize(img, (500, 500))
-img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+img_paths = [
+    "Resources/blue/19.png",
+    "Resources/blue/20.png",
+    "Resources/blue/28.png",
+    "Resources/blue/29.png",
+    "Resources/blue/30.png",
+    "Resources/blue/31.png"
+]
+colors = ["blue"]
 
 
-# Extraer puntos UV y colores reales
-u_points = img_yuv[:, :, 1].flatten()
-v_points = img_yuv[:, :, 2].flatten()
-colors_rgb = img.reshape(-1, 3)[:, ::-1] / 255.0  # BGR a RGB
+for color in colors: 
+    u_points = []
+    v_points = []
+    colors_rgb = []
 
-for color in colors:
+    for img in img_paths:
+        img = cv2.imread(img)
+        img = cv2.resize(img, (500, 500))
+        img_yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV)
+
+        u = img_yuv[:, :, 1].flatten()
+        v = img_yuv[:, :, 2].flatten()
+        rgb = img.reshape(-1, 3)[:, ::-1] / 255.0  # BGR a RGB
+
+        u_points.extend(u)
+        v_points.extend(v)
+        colors_rgb.extend(rgb)
+
     points = pointsSelection(u_points, v_points, color, colors_rgb)
-    real_points = realPoints(points, u_points, v_points)
     all_points = allPoints(points)
+    
     lut = create_lut(all_points)
-    # lut_real = create_lut(real_points)
     name = "lut_" + color
-    np.save(name + "_generated", lut)
-    # np.save(name + "_real", lut_real)
+    np.save(name, lut)
+
     print("LUTs for {} color saved".format(color))
