@@ -62,29 +62,17 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 1,
-    ("darkblue", "blue", "red"): 2,
+    ("darkblue", "green", "red"): 3,
     ("darkblue", "red", "green"): 3,
-    ("darkblue", "blue", "green"): 4,
-    ("darkblue", "pink", "green"): 5,
-    ("darkblue", "red", "blue"): 6,
-    ("darkblue", "green", "blue"): 7,
-    ("darkblue", "pink", "blue"): 8,
-    ("darkblue", "green", "pink"): 9,
+    ("darkblue", "pink", "blue"): 10,
     ("darkblue", "blue", "pink"): 10,
-    ("yellow", "green", "red"): 11,
-    ("yellow", "blue", "red"): 12,
-    ("yellow", "red", "green"): 13,
-    ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 15,
-    ("yellow", "red", "blue"): 16,
-    ("yellow", "green", "blue"): 17,
+    ("yellow", "pink", "green"): 19,
     ("yellow", "pink", "blue"): 18,
     ("yellow", "green", "pink"): 19,
-    ("yellow", "blue", "pink"): 20,
+    ("yellow", "blue", "pink"): 18,
 }
 
-robots = [(13,None, None),(10, None, None),(18, None, None),(19, None, None)]
+robots = [[3,[0,0], None],[10, [0,0], None],[18, [0,0], None],[19, [0,0], None]]
 
 kernel_size = 10
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
@@ -159,10 +147,17 @@ def getHomography(img, realCoor):
 
     return H, matrix
 
+def get_eucladian( pt1, pt2):
+    # pt1 is a tuple of two elements
+    a = np.array([pt1[0], pt1[0]])
+    b = np.array([pt2[0], pt2[1]])
+    distance = np.linalg.norm(a - b)
+    return distance
+
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 3)
+        self.video_id = self.declare_parameter("Video_ID", 2)
         self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
@@ -216,6 +211,8 @@ class CameraDetections(Node):
         else:
             self.homography, self.perspectiveMatrix = getHomography(data, real_field_coors)
 
+    
+
     def orientation(self, img, position):
         scale = 6
         img = cv2.resize(img, None, fx=scale, fy=scale)
@@ -256,9 +253,9 @@ class CameraDetections(Node):
 
         filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
         id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
-
+        
         angle = None
-        threshold = 0 # ajustar
+        threshold = 200 # ajustar
         
         if len(id_colors) >= 2:
             (x1, y1, c1, a1), (x2, y2, c2, a2) = id_colors
@@ -291,39 +288,57 @@ class CameraDetections(Node):
                         right_marker = c
 
                 robot_id = patterns.get((team, left_marker, right_marker), None)
+                self.get_logger().info("ID -> " + str(robot_id))
 
                 if robot_id is not None:
                     print("Robot id: ", robot_id)
                     for robot in robots:
-                        if robot_id in robot[0]:
-                            if robot[1] is None:
+                        if robot_id == robot[0]:
+                            if robot[1] ==[0,0]:
                                 robot[1] = position
                                 robot[2] = angle
+                                self.get_logger().info("POSITION -> " + str(position))
+                                self.get_logger().info("ANGLE -> " + str(angle))
+                                self.get_logger().info("ROBOT ID -> " + str(robot_id))
                                 return angle, robot_id 
                             else:
                                 past_x, past_y = robot[1]
-                                # calcular distancia
+                                # calcular distancia 
+                                distance = get_eucladian((position[0], position[1]), (past_x, past_y))
+
+                                self.get_logger().info("DISTANCIA -> " + str(distance))
                                 if distance < threshold:
+                                    self.get_logger().warn("< threshold")
                                     robot[1] = position
                                     robot[2] = angle
+                                    self.get_logger().info("POSITION -> " + str(position))
+                                    self.get_logger().info("ANGLE -> " + str(angle))
+                                    self.get_logger().info("ROBOT ID -> " + str(robot_id))
                                     return angle, robot_id 
                                 else:
                                     return robot[2], robot[1] 
-                else: 
-                    distances  = []
+                else:
+                    distances  = []           
                     for robot in robots:
-                        #calcular distancia
+                        distance = get_eucladian((position[0], position[1]), (robot[1][0],robot[1][1]))
                         distances.append((robot, distance))
                     robot_id = sorted(distances)[0][0]
+                    distances.clear()
                     return angle, robot_id
         else:
             distances  = []
             for robot in robots:
-                #calcular distancia
-                distances.append((robot, distance))
-            robot_id = sorted(distances)[0][0]
-            angle = sorted(distances)[0][2]
-            return angle, robot_id
+                if robot[1] is not None:
+                    distance = get_eucladian((position[0], position[1]), (robot[1][0], robot[1][0]))
+                    distances.append((robot, distance))
+                    robot_id = sorted(distances)[0][0]
+                    if len(distances) > 0:
+                        angle = sorted(distances)[0][0][2]
+                    distances.clear()
+                    return angle, robot_id
+                else:
+                    return None, None
+            
     def tf_helper(self, id, x, y, roll, pitch, yaw):
         t = TransformStamped()
 
@@ -380,18 +395,18 @@ class CameraDetections(Node):
 
                         # Dibuja el bounding box
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        # Opcional: muestra la confianza
-                        conf_text = f"{confidence:.2f}"
-                        cv2.putText(frame, conf_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                        cv2.circle(frame, (int(x_center), int(y_center)), 4, (0, 0, 255), -1)
+                        # # Opcional: muestra la confianza
+                        # conf_text = f"{confidence:.2f}"
+                        # cv2.putText(frame, conf_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+                        # cv2.circle(frame, (int(x_center), int(y_center)), 4, (0, 0, 255), -1)
                         
                         #Convert to field coordinates - this may be the problem !!
                         x_field, y_field = self.image_to_field(x_center, y_center, self.homography)
                         
                         text = f"({x_field:.1f}, {y_field:.1f})"
-                        cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                        # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                         #GET ORIENTATION --------------------------------------------------------
-                        angle_degrees, robot_id = self.orientation(roi, (x_field, y_field))
+                        angle_degrees, robot_id = self.orientation(roi, [x_field, y_field])
                         if angle_degrees is not None:
                             yaw = math.radians(angle_degrees) 
                         else:
