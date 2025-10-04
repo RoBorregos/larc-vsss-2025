@@ -14,7 +14,7 @@ class Kinematic{
         rclcpp::Time prevTime;
         bool firstUpdate = true;
         float ANGULAR_CONSTANT = 1.2f;
-        float LINEAR_CONSTANT = 0.4f;
+        float LINEAR_CONSTANT = 0.25;
         
     public:
         Kinematic();
