@@ -10,7 +10,6 @@ from .vision_constants import (
 
 import rclpy 
 from rclpy.node import Node
-# # from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from ultralytics import YOLO
 from tf2_ros import TransformBroadcaster
@@ -161,30 +160,24 @@ def getHomography(img, realCoor):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        # self.bridge = CvBridge()
-        self.video_id = self.declare_parameter("Video_ID", 2)
+        self.video_id = self.declare_parameter("Video_ID", 3)
         self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
         self.yolo_model = YOLO(yolo_model_path)  
         self.yolo_model.to(device)
-        self._logger.info("DEVICE: " + str(device))
+        self.get_logger().info("DEVICE: " + str(device))
         try:
             self.homography = np.load(os.path.join(utis_path, "homography.npy"))
             self.perspectiveMatrix = np.load(os.path.join(utis_path, "persMatrix.npy"))
-        except FileNotFoundError or FileExistsError:
+        except (FileNotFoundError, FileExistsError):
             self.get_logger().info("Homography || presmatrix not found, calibrate it")
             self.homography = None
             self.perspectiveMatrix = None
-            
-        # self.model_view = self.create_publisher(
-        #     Image, MODEL_VIEW_TOPIC, 10
-        # )
         self.image = None
         self.tf_broadcaster = TransformBroadcaster(self)
         self.last_center = None
-        #self.run()
         self.timer = self.create_timer(0.03, self.timer_callback)
         self.get_logger().info("Starting model node/general vision node")
 
@@ -192,11 +185,11 @@ class CameraDetections(Node):
         """
         Captura frames, los warpea y procesa detecciones sobre la imagen warpeada.
         """
-        while rclpy.ok():
+        if rclpy.ok():
             success, frame = self.cap.read()
             if not success:
                 self.get_logger().info("No frame captured.")
-                continue
+                return
 
             if self.homography is None or self.perspectiveMatrix is None:
                 self.get_logger().info("Starting calibration process...")
@@ -212,9 +205,6 @@ class CameraDetections(Node):
             self.image = warped_img
             self.model_use()
             self.ball_detection(warped_img)
-
-        self.cap.release()
-        cv2.destroyAllWindows()
 
     def warp_image(self, data):
         if self.homography is not None:
@@ -311,7 +301,7 @@ class CameraDetections(Node):
             #     else: 
             #         return angle, None
         else:
-            return 0,0
+            return None, None
 
     def tf_helper(self, id, x, y, roll, pitch, yaw):
         t = TransformStamped()
@@ -344,19 +334,19 @@ class CameraDetections(Node):
 
     def model_use(self):
         if self.image is None:
-            self.get_logger().warn("No image received yet")
+            self.get_logger().warn("No image received yet (model part)")
             return None
         frame = self.image.copy()
         results = self.yolo_model(frame, verbose=False, classes=0)
         if results is not None:
-            id_track = 0
             for result in results:
+                count = len(result.boxes)
+                self.get_logger().warn(f"MODEL IDENTIFIED ROBOTS = {len(result.boxes)}")
                 for box in result.boxes:
                     x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
                     confidence = box.conf.item()
                     
                     if confidence > CONF_THRESH:
-                        id = id_track + 1
                         #Robot position ---------------------------------------------------------
                         x1 = int(x - w / 2)
                         y1 = int(y - h / 2)
@@ -392,6 +382,8 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         self.tf_helper("robot" + str(robot_id) + "_base_link", x_cm, y_cm, roll, pitch, yaw)
+                cv2.putText(frame, F"COUNT: {count}", (300, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.imshow("Model", frame)
             # # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
             # # self.model_view.publish(msg)
 
@@ -463,7 +455,7 @@ class CameraDetections(Node):
         else:
             self.last_center = None
             self.get_logger().info("Ball not detected")
-        cv2.imshow("YES", frame)
+        # cv2.imshow("YES", frame)
         cv2.waitKey(1)
         
 def main(args=None):
