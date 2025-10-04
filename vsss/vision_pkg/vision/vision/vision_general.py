@@ -65,25 +65,27 @@ draw_colors = {
 patterns = {
     ("darkblue", "green", "red"): 1,
     ("darkblue", "blue", "red"): 2,
-    ("darkblue", "red", "green"): 1,
-    ("darkblue", "blue", "green"): 3,
-    ("darkblue", "pink", "green"): 4,
-    ("darkblue", "red", "blue"): 2,
-    ("darkblue", "green", "blue"): 3,
-    ("darkblue", "pink", "blue"): 5,
-    ("darkblue", "green", "pink"): 4,
-    ("darkblue", "blue", "pink"): 5,
+    ("darkblue", "red", "green"): 3,
+    ("darkblue", "blue", "green"): 4,
+    ("darkblue", "pink", "green"): 5,
+    ("darkblue", "red", "blue"): 6,
+    ("darkblue", "green", "blue"): 7,
+    ("darkblue", "pink", "blue"): 8,
+    ("darkblue", "green", "pink"): 9,
+    ("darkblue", "blue", "pink"): 10,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
-    ("yellow", "red", "green"): 11,
-    ("yellow", "blue", "green"): 13,
-    ("yellow", "pink", "green"): 14,
-    ("yellow", "red", "blue"): 12,
-    ("yellow", "green", "blue"): 13,
-    ("yellow", "pink", "blue"): 15,
-    ("yellow", "green", "pink"): 14,
-    ("yellow", "blue", "pink"): 15,
+    ("yellow", "red", "green"): 13,
+    ("yellow", "blue", "green"): 14,
+    ("yellow", "pink", "green"): 15,
+    ("yellow", "red", "blue"): 16,
+    ("yellow", "green", "blue"): 17,
+    ("yellow", "pink", "blue"): 18,
+    ("yellow", "green", "pink"): 19,
+    ("yellow", "blue", "pink"): 20,
 }
+
+robots = [(13,None, None),(10, None, None),(18, None, None),(19, None, None)]
 
 kernel_size = 10
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
@@ -224,7 +226,7 @@ class CameraDetections(Node):
         else:
             self.homography, self.perspectiveMatrix = getHomography(data, real_field_coors)
 
-    def orientation(self, img):
+    def orientation(self, img, position):
         scale = 6
         img = cv2.resize(img, None, fx=scale, fy=scale)
 
@@ -266,6 +268,8 @@ class CameraDetections(Node):
         id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
 
         angle = None
+        threshold = 0 # ajustar
+        
         if len(id_colors) >= 2:
             (x1, y1, c1, a1), (x2, y2, c2, a2) = id_colors
 
@@ -281,10 +285,6 @@ class CameraDetections(Node):
             self.get_logger().info(f"Angle: {angle}")
             cv2.imshow("Orientacion", img)
             cv2.waitKey(1)
-
-            robot_id = patterns.get((team, c1, c2), None)
-            print("Robot id: ", robot_id)
-            return angle, robot_id
             
             if angle is not None:
                 vx = math.cos(math.radians(angle))
@@ -304,11 +304,36 @@ class CameraDetections(Node):
 
                 if robot_id is not None:
                     print("Robot id: ", robot_id)
-                    return angle, robot_id 
+                    for robot in robots:
+                        if robot_id in robot[0]:
+                            if robot[1] is None:
+                                robot[1] = position
+                                robot[2] = angle
+                                return angle, robot_id 
+                            else:
+                                past_x, past_y = robot[1]
+                                # calcular distancia
+                                if distance < threshold:
+                                    robot[1] = position
+                                    robot[2] = angle
+                                    return angle, robot_id 
+                                else:
+                                    return robot[2], robot[1] 
                 else: 
-                    return angle, None
+                    distances  = []
+                    for robot in robots:
+                        #calcular distancia
+                        distances.append((robot, distance))
+                    robot_id = sorted(distances)[0][0]
+                    return angle, robot_id
         else:
-            return 0,0
+            distances  = []
+            for robot in robots:
+                #calcular distancia
+                distances.append((robot, distance))
+            robot_id = sorted(distances)[0][0]
+            angle = sorted(distances)[0][2]
+            return angle, robot_id
 
     def tf_helper(self, id, x, y, roll, pitch, yaw):
         t = TransformStamped()
@@ -377,7 +402,7 @@ class CameraDetections(Node):
                         text = f"({x_field:.1f}, {y_field:.1f})"
                         cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                         #GET ORIENTATION --------------------------------------------------------
-                        angle_degrees, robot_id = self.orientation(roi)
+                        angle_degrees, robot_id = self.orientation(roi, (x_field, y_field))
                         if angle_degrees is not None:
                             yaw = math.radians(angle_degrees) 
                         else:
