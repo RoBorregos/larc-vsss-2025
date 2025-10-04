@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 
-# ROS2 node for sending RPMs to robots via TCP, subscribing to cmd_vel for each robot
+# ROS2 node for sending RPMs to robots via UDP, subscribing to cmd_vel for each robot
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
 import socket
 import struct
-import math
 
 
-class RobotTCPClient:
+class RobotUDPClient:
     def __init__(self, robot_ip, robot_port):
         self.robot_ip = robot_ip
         self.robot_port = robot_port
@@ -17,24 +16,22 @@ class RobotTCPClient:
         self.connect()
 
     def connect(self):
-        print("Connecting...")
+        print("Setting up UDP socket...")
         try:
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.client_socket.connect((self.robot_ip, self.robot_port))
-            print(f"Connected to {self.robot_ip}:{self.robot_port}")
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            print(f"UDP socket ready for {self.robot_ip}:{self.robot_port}")
         except socket.error as e:
             print(f"Socket error: {e}")
             self.client_socket = None
 
     def send_floats(self, float1, float2):
         if not self.client_socket:
-            print("Not connected to robot.")
+            print("UDP socket not available.")
             return False
         try:
-            packed_float1 = struct.pack('<f', float1)
-            self.client_socket.sendall(packed_float1)
-            packed_float2 = struct.pack('<f', float2)
-            self.client_socket.sendall(packed_float2)
+            # Pack both floats into a single UDP packet
+            packed_data = struct.pack('<ff', float1, float2)
+            self.client_socket.sendto(packed_data, (self.robot_ip, self.robot_port))
         except socket.error as e:
             print(f"Socket error during send: {e}")
             return False
@@ -47,7 +44,7 @@ class RobotTCPClient:
 
 def twist_to_rpm(twist, wheel_radius=0.03, wheel_base=0.076):
     # Example conversion: linear.x and angular.z to left/right wheel RPM
-    v = -twist.linear.x
+    v = twist.linear.x
     w = twist.angular.z
     v_left = v - w * wheel_base / 2.0
     v_right = v + w * wheel_base / 2.0
@@ -55,9 +52,9 @@ def twist_to_rpm(twist, wheel_radius=0.03, wheel_base=0.076):
     rpm_right = (v_right / (2 * 3.1416 * wheel_radius)) * 60.0
     return rpm_left, rpm_right
 
-class SingleRobotTCPNode(Node):
+class SingleRobotUDPNode(Node):
     def __init__(self):
-        super().__init__('single_robot_tcp_node')
+        super().__init__('single_robot_udp_node')
         # Parameters should be loaded from external YAML config via ROS2 launch or CLI
         
         self.get_logger().info(f"Waiting to Start")
@@ -71,7 +68,7 @@ class SingleRobotTCPNode(Node):
 
         
         self.get_logger().info(f"Node Started with values name {name}, connection->({ip}:{port})")
-        self.client = RobotTCPClient(ip, port)
+        self.client = RobotUDPClient(ip, port)
 
         self.get_logger().info(f"Waiting to Start")
         topic = f'/{name}/cmd_vel'
@@ -79,28 +76,22 @@ class SingleRobotTCPNode(Node):
         self.get_logger().info(f"Subscribed to {topic} for {name} ({ip}:{port})")
 
     def destroy_node(self):
-        # Ensure the TCP client is closed when the node is destroyed
-
-        self.client.send_floats(0, 0)
+        # Ensure the UDP client is closed when the node is destroyed
         if self.client:
-            self.client.send_floats(0, 0)
             self.client.close()
-
         super().destroy_node()
-
 
     def cmd_vel_callback(self, msg):
         rpm_left, rpm_right = twist_to_rpm(msg)
-        if(math.isnan(rpm_right) or math.isnan(rpm_left)):
-            return
         sent = self.client.send_floats(rpm_left, rpm_right)
-
-        self.get_logger().info(f"L={rpm_left:.2f} R={rpm_right:.2f}")
-        
+        if sent:
+            self.get_logger().info(f"Sent: L={rpm_left:.2f} R={rpm_right:.2f}")
+        else:
+            self.get_logger().error(f"Failed to send RPMs")
 
 def main(args=None):
     rclpy.init(args=args)
-    node = SingleRobotTCPNode()
+    node = SingleRobotUDPNode()
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:

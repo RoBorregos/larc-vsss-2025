@@ -10,7 +10,7 @@ class PID{
         float previo;
         float acumulativo;
         float diferencial;
-        PID();
+    PID() : previo(0), acumulativo(0), diferencial(0) {}
         float GetCorrection(float error){
             acumulativo += error; // Integral
             if ((error*acumulativo)<0) acumulativo=0;  // corrige el overshooting 
@@ -19,10 +19,9 @@ class PID{
             return kp * error + ki * acumulativo + kd * diferencial;
         };
     private:
-        const float kp =  0.1;
-        const float kd = 0.003;
+        const float kp =  0.12;
+        const float kd = 0.10;
         const float ki = 0.045;
-
 };
 
 

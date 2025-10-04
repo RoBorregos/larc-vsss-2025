@@ -1,12 +1,13 @@
 services:
-  vsss_gpu:
+  vsss_cuda:
     build:
       context: ../
       dockerfile: dockerfiles/vsss.dockerfile
       args:
-        BASE_IMAGE: ros2_cuda_base
-    image: vsss_gpu_image
-    container_name: vsss_gpu
+        BASE_IMAGE: roborregos/vsss:ros2_cuda_base
+        TORCH_INDEX: --index-url https://download.pytorch.org/whl/cu121
+    image: roborregos/vsss:vsss_cuda
+    container_name: vsss_cuda
     gpus: all
     environment:
       - DISPLAY=${DISPLAY}
@@ -34,11 +35,3 @@ services:
     working_dir: /workspace
     command: >
       bash -c "/bin/bash "
-
-  cuda_base:
-    build:
-      context: ../
-      dockerfile: dockerfiles/ros.dockerfile
-      args:
-        BASE_IMAGE: nvidia/cuda:12.2.2-devel-ubuntu22.04
-    image: ros2_cuda_base
