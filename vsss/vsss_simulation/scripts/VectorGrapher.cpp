@@ -72,7 +72,7 @@ private:
                 // Set position
                 marker.pose.position.x = i * spacing;
                 marker.pose.position.y = j * spacing;
-                marker.pose.position.z = 0.5;
+                marker.pose.position.z = 0.2;
               
                 Vector3 pos (marker.pose.position.x, marker.pose.position.y, marker.pose.position.z);
                 //get vector from pos to ball
