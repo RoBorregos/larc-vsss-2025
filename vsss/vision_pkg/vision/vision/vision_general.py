@@ -19,7 +19,8 @@ import math
 import numpy as np
 import torch
 import os
-from typing import List
+from typing import List, Dict
+from vision_pkg.vision.utils.select_robot import select_robot
 
 """
     Node to take camera input and detect robots position and orientation 
@@ -27,7 +28,6 @@ from typing import List
 """
 
 import ament_index_python.packages as pkg
-from pathlib import Path
 
 # Intentar obtener el directorio de datos del paquete instalado
 package_share_dir = pkg.get_package_share_directory('vision')
@@ -94,10 +94,11 @@ class robot:
         self.team = team
         self.relative_distance = None
 
+general_robots : Dict[int, robot] = {}
 yellow_team = []
 darkblue_team = []
-detected_robots = []
-past_robots_yellow = []
+detected_robots = [] #used
+past_robots_yellow = [] #used
 past_robots_darkblue = []
 
 kernel_size = 10
@@ -174,6 +175,9 @@ def getHomography(img, realCoor):
     return H, matrix
 
 def get_eucladian(pt1, pt2):
+    """
+    Get the eucladian distance between two points
+    """
     # pt1 is a tuple of two elements
     a = np.array([pt1[0], pt1[0]])
     b = np.array([pt2[0], pt2[1]])
@@ -206,7 +210,7 @@ class CameraDetections(Node):
 
     def timer_callback(self):
         """
-        Captura frames, los warpea y procesa detecciones sobre la imagen warpeada.
+        Captures frames, warps them and processess model detections in the warped image.
         """
         if rclpy.ok():
             success, frame = self.cap.read()
@@ -230,6 +234,10 @@ class CameraDetections(Node):
             self.ball_detection(warped_img)
 
     def warp_image(self, data):
+        '''
+        Gets the warped image if homography file is available, if not, 
+        will execute homography calibration process
+        '''
         if self.homography is not None:
             # print(f"Homography -> {self.homography}")
             warped_img = cv2.warpPerspective(data, self.perspectiveMatrix, (640, 480)) #see if it's better to have 640, 480
@@ -237,7 +245,43 @@ class CameraDetections(Node):
         else:
             self.homography, self.perspectiveMatrix = getHomography(data, real_field_coors)
 
+    def tf_helper(self, id, x, y, roll, pitch, yaw):
+        '''
+        Sends the data transforms (position and angle)
+        '''
+        t = TransformStamped()
+
+        qx, qy, qz, qw = euler.euler2quat(yaw, pitch, roll, axes='sxyz') #roll, pitch, yaw = radians
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = "lower_left_corner"
+        t.child_frame_id = id
+        t.transform.translation.x = float(x) 
+        t.transform.translation.y = float(y)
+        t.transform.translation.z = 0.0
+        t.transform.rotation.x = qx
+        t.transform.rotation.y = qy
+        t.transform.rotation.z = qz
+        t.transform.rotation.w = qw
+
+        self.tf_broadcaster.sendTransform(t)
+
+    def image_to_field(self, x_img, y_img):
+        '''
+        Uses homography and perspective matrix to get the actual field values in cm
+        '''
+        # Si la imagen ya está warpeada, no aplicar la inversa de perspectiveMatrix
+        pt_img = np.array([[[x_img, y_img]]], dtype=np.float32)
+        inverse_perspective = np.linalg.inv(self.perspectiveMatrix)
+        pt_original = cv2.perspectiveTransform(pt_img, inverse_perspective)
+        pt_transformed = cv2.perspectiveTransform(pt_original, self.homography)
+        x_field, y_field = pt_transformed[0][0]  # Coordenadas reales del campo
+        # x_field, y_field = pt_field[0][0]
+        return x_field, y_field
+
     def get_info_robot(self, img, position):
+        '''
+        
+        '''
         scale = 6
         img = cv2.resize(img, None, fx=scale, fy=scale)
 
@@ -249,7 +293,6 @@ class CameraDetections(Node):
         v = img_yuv[:, :, 2]
 
         centers = []
-
         for color_name, lut in colors.items():
             mask = lut[v, u]
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -312,99 +355,31 @@ class CameraDetections(Node):
 
                 robot_id = patterns.get((team, left_marker, right_marker), None)
                 self.get_logger().info("ID -> " + str(robot_id))
-
+                
+                for key, _ in general_robots.items():
+                    if key == robot_id:
+                        general_robots[robot_id].location = [position[0], position[1]]
+                
                 if robot_id is not None:
                     robot_detected = robot(robot_id, id_colors[0], team, position, angle)
                     detected_robots.append(robot_detected)
                 else:
                     robot_detected = robot(None, id_colors[0], team, position, angle)
                     detected_robots.append(robot_detected)
+
         elif len(id_colors) == 1:
             robot_detected = robot(None, id_colors[0], team, position)
             detected_robots.append(robot_detected)
         else:
             robot_detected = robot(None, None, team, position)
             detected_robots.append(robot_detected)   
-
-    def select_robot(self):
-        for past_robot in past_robots_yellow:
-            possibilities = []
-            same_id = []
-            same_color = []
-            same_team = []
-            not_same = []
-
-            for detected_robot in detected_robots:
-                distance = get_eucladian(past_robot.location, detected_robot.location)
-                detected_robot.relative_distance = distance
-                if detected_robot.id == past_robot.id:
-                    same_id.append(detected_robot)
-                elif detected_robot.secondary_color == past_robot.secondary_color:
-                    same_color.append(detected_robot)
-                elif detected_robot.team == past_robot.team:
-                    same_team.append(detected_robot)
-                else:
-                    not_same.append(detected_robot)
-
-            same_id_ordered = sorted(same_id, key=lambda r:r.relative_distance)
-            same_color_ordered = sorted(same_color, key=lambda r:r.relative_distance)
-            same_team_ordered = sorted(same_team, key=lambda r:r.relative_distance)
-            not_same_ordered = sorted(not_same, key=lambda r:r.relative_distance)
-            possibilities.append(same_id_ordered)
-            possibilities.append(same_color_ordered)
-            possibilities.append(same_team_ordered)
-            possibilities.append(not_same_ordered)
-
-            selected_robot = None
-            for possibility in possibilities:
-                if len(possibility) > 0:
-                    selected_robot = possibility[0]
-                    break
-
-            if selected_robot.id == None:
-                selected_robot.id = past_robot.id
-            if selected_robot.secondary_color == None:
-                selected_robot.secondary_color = past_robot.secondary_color
-            if selected_robot.team == None:
-                selected_robot.team = past_robot.team
-            if selected_robot.angle == None:
-                selected_robot.angle = past_robot.angle
-
-            yaw = math.radians(selected_robot.angle)
-            pitch, roll = 0.0, math.pi
-            self.tf_helper("robot" + str(selected_robot.id) + "_base_link", selected_robot.location[0], selected_robot.location[1], roll, pitch, yaw)
-
-            
-    def tf_helper(self, id, x, y, roll, pitch, yaw):
-        t = TransformStamped()
-
-        qx, qy, qz, qw = euler.euler2quat(yaw, pitch, roll, axes='sxyz') #roll, pitch, yaw = radians
-        t.header.stamp = self.get_clock().now().to_msg()
-        t.header.frame_id = "lower_left_corner"
-        t.child_frame_id = id
-        t.transform.translation.x = float(x) 
-        t.transform.translation.y = float(y)
-        t.transform.translation.z = 0.0
-        t.transform.rotation.x = qx
-        t.transform.rotation.y = qy
-        t.transform.rotation.z = qz
-        t.transform.rotation.w = qw
-
-        self.tf_broadcaster.sendTransform(t)
-
-
-    def image_to_field(self, x_img, y_img, H, perspectiveMatrix=None):
-        # Si la imagen ya está warpeada, no aplicar la inversa de perspectiveMatrix
-        pt_img = np.array([[[x_img, y_img]]], dtype=np.float32)
-        inverse_perspective = np.linalg.inv(self.perspectiveMatrix)
-        pt_original = cv2.perspectiveTransform(pt_img, inverse_perspective)
-        pt_transformed = cv2.perspectiveTransform(pt_original, self.homography)
-        x_field, y_field = pt_transformed[0][0]  # Coordenadas reales del campo
-        # x_field, y_field = pt_field[0][0]
-        return x_field, y_field
-
+    
 
     def model_use(self):
+        '''
+        Gets the robots bounding box and positions
+        return NONE
+        '''
         if self.image is None:
             self.get_logger().warn("No image received yet (model part)")
             return None
@@ -419,7 +394,7 @@ class CameraDetections(Node):
                     confidence = box.conf.item()
                     
                     if confidence > CONF_THRESH:
-                        #Robot position ---------------------------------------------------------
+                        #Robot position 
                         x1 = int(x - w / 2)
                         y1 = int(y - h / 2)
                         x2 = int(x + w / 2)
@@ -435,22 +410,18 @@ class CameraDetections(Node):
 
                         # Dibuja el bounding box
                         # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                        # # Opcional: muestra la confianza
-                        # conf_text = f"{confidence:.2f}"
-                        # cv2.putText(frame, conf_text, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-                        # cv2.circle(frame, (int(x_center), int(y_center)), 4, (0, 0, 255), -1)
+                        #Convert to field coordinates
                         
-                        #Convert to field coordinates - this may be the problem !!
-                        
-                        text = f"({x_field:.1f}, {y_field:.1f})"
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
-                        #GET informationof the robots --------------------------------------------------------
+                        #GET information of the robots (uses roi and robot position--------------------------------------------------------
                         self.get_info_robot(roi, [x_cm, y_cm])
 
-                cv2.putText(frame, F"COUNT: {count}", (300, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                # cv2.putText(frame, F"COUNT: {count}", (300, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         cv2.imshow("Model", frame)
-            # # msg = self.bridge.cv2_to_imgmsg(frame, encoding='bgr8')
-            # # self.model_view.publish(msg)
+
+
+    '''toma el id y lso mete a la lista, si es que no hay uno ya, y eso despues dera de la lista del pasado
+    la función de arriba va tanto para azul como amarillo'''
 
     def ball_detection(self, img):
         frame = img.copy()
