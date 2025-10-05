@@ -84,10 +84,8 @@ class SingleRobotUDPNode(Node):
     def cmd_vel_callback(self, msg):
         rpm_left, rpm_right = twist_to_rpm(msg)
         sent = self.client.send_floats(rpm_left, rpm_right)
-        if sent:
+
             self.get_logger().info(f"Sent: L={rpm_left:.2f} R={rpm_right:.2f}")
-        else:
-            self.get_logger().error(f"Failed to send RPMs")
 
 def main(args=None):
     rclpy.init(args=args)
