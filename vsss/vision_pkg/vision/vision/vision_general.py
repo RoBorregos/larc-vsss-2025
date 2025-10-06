@@ -94,10 +94,9 @@ class robot:
         self.team = team
         self.relative_distance = None
 
-general_robots : Dict[int, robot] = {}
 yellow_team = []
 darkblue_team = []
-detected_robots = [] #used
+detected_robots = [] #should always have a maximum of six robots
 past_robots_yellow = [] #used
 past_robots_darkblue = []
 
@@ -117,6 +116,8 @@ real_field_coors = [[0,0],
 
 clicked_points = []
 coors_clicked = []
+
+robot_capacity = 6
 
 def mouse_callback(event, x, y, _, __):
     """
@@ -192,6 +193,7 @@ class CameraDetections(Node):
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+
         self.yolo_model = YOLO(yolo_model_path)  
         self.yolo_model.to(device)
         self.get_logger().info("DEVICE: " + str(device))
@@ -199,7 +201,7 @@ class CameraDetections(Node):
             self.homography = np.load(os.path.join(utis_path, "homography.npy"))
             self.perspectiveMatrix = np.load(os.path.join(utis_path, "persMatrix.npy"))
         except (FileNotFoundError, FileExistsError):
-            self.get_logger().info("Homography || presmatrix not found, calibrate it")
+            self.get_logger().info("Homography || persmatrix not found, calibrate it")
             self.homography = None
             self.perspectiveMatrix = None
         self.image = None
@@ -292,6 +294,7 @@ class CameraDetections(Node):
         u = img_yuv[:, :, 1]
         v = img_yuv[:, :, 2]
 
+        #get the areas of the pattern colors 
         centers = []
         for color_name, lut in colors.items():
             mask = lut[v, u]
@@ -313,16 +316,18 @@ class CameraDetections(Node):
             if c in ["darkblue", "yellow"]:
                  darkblue_yellow.append((c, area))
                  
+        #get the team from the largest area color contour
         try:
             team = sorted(darkblue_yellow, key= lambda x: x[1], reverse=True)[0][0]
         except:
             team = "yellow"
 
+        #get the secondary two colors
         filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
+        #get the largesr color areas to get the two actual secondary plates and avoid noise
         id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
         
         angle = None
-        
         if len(id_colors) == 2:
             (x1, y1, c1, a1), (x2, y2, c2, a2) = id_colors
 
@@ -332,6 +337,7 @@ class CameraDetections(Node):
             cv2.line(img, img_center, (mid_x, mid_y), (255, 255, 255), 2)
             cv2.circle(img, (mid_x, mid_y), 6, (255, 255, 255), -1)
 
+            #get robot angle based on two secondary color plates
             dx = mid_x - img_center[0]
             dy = mid_y - img_center[1]
             angle = math.degrees(math.atan2(dy, dx))
@@ -340,13 +346,16 @@ class CameraDetections(Node):
             cv2.waitKey(1)
             
             if angle is not None:
+                #x and y components of angles
                 vx = math.cos(math.radians(angle))
                 vy = math.sin(math.radians(angle))
 
                 left_marker, right_marker = None, None
                 for (x, y, c, _) in [(x1, y1, c1, a1), (x2, y2, c2, a2)]:
+                    #get secondary center position relative to robot center (img center)
                     rel_x = x - mid_x
-                    rel_y = -(y - mid_y)
+                    rel_y = -(y - mid_y) # -  for y to be in the same refernece system as the image
+                    #use of cross product 2D to get 
                     cross = vx * rel_y - vy * rel_x
                     if cross > 0:
                         left_marker = c
@@ -356,23 +365,41 @@ class CameraDetections(Node):
                 robot_id = patterns.get((team, left_marker, right_marker), None)
                 self.get_logger().info("ID -> " + str(robot_id))
                 
-                for key, _ in general_robots.items():
-                    if key == robot_id:
-                        general_robots[robot_id].location = [position[0], position[1]]
-                
-                if robot_id is not None:
-                    robot_detected = robot(robot_id, id_colors[0], team, position, angle)
-                    detected_robots.append(robot_detected)
+                #initial list of detected robots
+                #TODO: Check transforms sending while list is not full yet
+                if len(detected_robots < robot_capacity): #change number when testing
+                    if robot_id is not None:
+                        robot_detected = robot(robot_id, id_colors[0], team, position, angle)
+                        detected_robots.append(robot_detected)
+                    else:
+                        robot_detected = robot(None, id_colors[0], team, position, angle)
+                        detected_robots.append(robot_detected)
                 else:
-                    robot_detected = robot(None, id_colors[0], team, position, angle)
-                    detected_robots.append(robot_detected)
+                    #no matter if id detected or not, select robot will handle that
+                    new_robot = robot(robot_id, id_colors[0], team, position, angle)
+                    #function will classify robot id based on past frame, and send it's transform
+                    detection_refresh = select_robot(detected_robots, new_robot, self.tf_helper, get_eucladian)
+                    #refresh detected robots list
+                    detected_robots = detection_refresh
 
-        elif len(id_colors) == 1:
-            robot_detected = robot(None, id_colors[0], team, position)
-            detected_robots.append(robot_detected)
+        #TODO: Are these two if's necessary if using select robot function?
+        elif len(id_colors) == 1: 
+            if len(detected_robots < robot_capacity):
+                robot_detected = robot(None, id_colors[0], team, position, 0,0) 
+                detected_robots.append(robot_detected)
+            else:
+                new_robot = robot(None, id_colors[0], team, position, 0,0)
+                detection_refresh = select_robot(detected_robots, new_robot, self.tf_helper, get_eucladian)
+                detected_robots = detection_refresh
         else:
-            robot_detected = robot(None, None, team, position)
-            detected_robots.append(robot_detected)   
+            if len(detected_robots < robot_capacity):
+                robot_detected = robot(None, None, team, position)
+                detected_robots.append(robot_detected)   
+            else:
+                new_robot = robot(None, None, team, position)
+                detection_refresh = select_robot(detected_robots, new_robot, self.tf_helper, get_eucladian)
+                detected_robots = detection_refresh
+ 
     
 
     def model_use(self):
