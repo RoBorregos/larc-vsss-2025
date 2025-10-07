@@ -20,8 +20,8 @@ import numpy as np
 import torch
 import os
 from typing import List, Dict
-from vision_pkg.vision.utils.select_robot import select_robot
-
+# from vision_pkg.vision.utils.select_robot import select_robot
+ 
 """
     Node to take camera input and detect robots position and orientation 
     as well as ball position in real field coordinates
@@ -86,7 +86,7 @@ patterns = {
 }
 
 class robot:
-    def __init__(self, id : int, secondary_color: str, team: str, location : List[float], angle : float):
+    def __init__(self, id : int, secondary_color: str, team: str, location : List[float], angle):
         self.id = id
         self.location = location
         self.angle = angle
@@ -94,11 +94,12 @@ class robot:
         self.team = team
         self.relative_distance = None
 
-yellow_team = []
+yellow_team = [19, 18]
 darkblue_team = []
+#TODO: Checar que al ser seleccionado un candidato, no se use para otro
+#TODO: Uso de archivos extra, para función como robot_select
 detected_robots = [] #should always have a maximum of six robots
-past_robots_yellow = [] #used
-past_robots_darkblue = []
+past_robots = [] #used
 
 kernel_size = 10
 kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size))
@@ -117,7 +118,7 @@ real_field_coors = [[0,0],
 clicked_points = []
 coors_clicked = []
 
-robot_capacity = 6
+robot_capacity = 1
 
 def mouse_callback(event, x, y, _, __):
     """
@@ -185,6 +186,7 @@ def get_eucladian(pt1, pt2):
     distance = np.linalg.norm(a - b)
     return distance
 
+
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
@@ -208,7 +210,7 @@ class CameraDetections(Node):
         self.tf_broadcaster = TransformBroadcaster(self)
         self.last_center = None
         self.timer = self.create_timer(0.03, self.timer_callback)
-        self.get_logger().info("Starting model node/general vision node")
+        self.get_logger().info("Starting model node\general vision node")
 
     def timer_callback(self):
         """
@@ -235,6 +237,72 @@ class CameraDetections(Node):
             self.model_use()
             self.ball_detection(warped_img)
 
+    def select_robot(self):
+        '''
+        Function to get the robots id's based on the last frame detections
+        using aspects such as: relative distance (now -> past), team, id, secondary color.
+        
+        Should be called for both color teams (yellow and blue)
+        
+        Returns a list of the detected robots in a frame
+        '''
+        global past_robots
+        robot_list = []
+        for past_robot in past_robots:
+            
+            #compare the actual robot with the list of past robots;
+            possibilities = []
+            same_id = []
+            same_color = []
+            same_team = []
+            not_same = []
+
+            for detected_robot in detected_robots:
+                distance = get_eucladian(detected_robot.location, past_robot.location) #check number sign, if negative, use abs
+                detected_robot.relative_distance = distance
+                if detected_robot.id == past_robot.id:
+                    same_id.append(detected_robot)
+                elif detected_robot.secondary_color == past_robot.secondary_color:
+                    same_color.append(detected_robot)
+                elif detected_robot.team == past_robot.team:
+                    same_team.append(detected_robot)
+                else:
+                    not_same.append(detected_robot)
+
+            same_id_ordered = sorted(same_id, key=lambda r:r.relative_distance) #check if this focus is correct, appending the four hole arrays?
+            same_color_ordered = sorted(same_color, key=lambda r:r.relative_distance)
+            same_team_ordered = sorted(same_team, key=lambda r:r.relative_distance)
+            not_same_ordered = sorted(not_same, key=lambda r:r.relative_distance)
+            possibilities.append(same_id_ordered)
+            possibilities.append(same_color_ordered)
+            possibilities.append(same_team_ordered)
+            possibilities.append(not_same_ordered)
+
+            selected_robot = None
+            for possibility in possibilities:
+                self.get_logger().warn("Entered possibility")
+                if len(possibility) > 0:
+                    selected_robot = possibility[0]
+
+            if selected_robot is not None:
+                if selected_robot.id == None or selected_robot.id != past_robot.id: #assign past id if different to past or not detected.
+                    selected_robot.id = past_robot.id
+                if selected_robot.secondary_color == None:
+                    selected_robot.secondary_color = past_robot.secondary_color
+                if selected_robot.team == None:
+                    selected_robot.team = past_robot.team
+                if selected_robot.angle == None:
+                    selected_robot.angle = past_robot.angle
+                
+                if selected_robot is not None:
+                    robot_list.append(selected_robot)
+
+                    yaw = math.radians(selected_robot.angle)
+                    pitch, roll = 0.0, math.pi
+                    self.tf_helper("robot" + str(selected_robot.id) + "_base_link", selected_robot.location[0], selected_robot.location[1], roll, pitch, yaw)
+            
+        past_robots = robot_list
+    
     def warp_image(self, data):
         '''
         Gets the warped image if homography file is available, if not, 
@@ -284,6 +352,7 @@ class CameraDetections(Node):
         '''
         
         '''
+        global detected_robots
         scale = 6
         img = cv2.resize(img, None, fx=scale, fy=scale)
 
@@ -364,42 +433,35 @@ class CameraDetections(Node):
 
                 robot_id = patterns.get((team, left_marker, right_marker), None)
                 self.get_logger().info("ID -> " + str(robot_id))
-                
+                # self.get_logger().info(" -> " + len(detected_robots))
                 #initial list of detected robots
-                #TODO: Check transforms sending while list is not full yet
-                if len(detected_robots < robot_capacity): #change number when testing
-                    if robot_id is not None:
+                if len(detected_robots) < robot_capacity: #change number when testing
+                    if robot_id is not None and robot_id in yellow_team:
                         robot_detected = robot(robot_id, id_colors[0], team, position, angle)
                         detected_robots.append(robot_detected)
+                        past_robots.append(robot_detected)
                     else:
-                        robot_detected = robot(None, id_colors[0], team, position, angle)
-                        detected_robots.append(robot_detected)
+                        return
                 else:
+                    if robot_id is not None:
                     #no matter if id detected or not, select robot will handle that
-                    new_robot = robot(robot_id, id_colors[0], team, position, angle)
+                        new_robot = robot(robot_id, id_colors[0], team, position, angle)
+                        detected_robots.append(new_robot)
                     #function will classify robot id based on past frame, and send it's transform
-                    detection_refresh = select_robot(detected_robots, new_robot, self.tf_helper, get_eucladian)
                     #refresh detected robots list
-                    detected_robots = detection_refresh
+                    else: 
+                        new_robot = robot(None, id_colors[0], team, position, angle)
+                        detected_robots.append(new_robot)
 
-        #TODO: Are these two if's necessary if using select robot function?
-        elif len(id_colors) == 1: 
-            if len(detected_robots < robot_capacity):
-                robot_detected = robot(None, id_colors[0], team, position, 0,0) 
-                detected_robots.append(robot_detected)
-            else:
-                new_robot = robot(None, id_colors[0], team, position, 0,0)
-                detection_refresh = select_robot(detected_robots, new_robot, self.tf_helper, get_eucladian)
-                detected_robots = detection_refresh
+        elif len(id_colors) == 1 and len(detected_robots) == robot_capacity: 
+            robot_detected = robot(None, id_colors[0], team, position, None) 
+            detected_robots.append(robot_detected)
+        elif len(detected_robots) == robot_capacity:
+            robot_detected = robot(None, None, team, position, None)
+            detected_robots.append(robot_detected)   
         else:
-            if len(detected_robots < robot_capacity):
-                robot_detected = robot(None, None, team, position)
-                detected_robots.append(robot_detected)   
-            else:
-                new_robot = robot(None, None, team, position)
-                detection_refresh = select_robot(detected_robots, new_robot, self.tf_helper, get_eucladian)
-                detected_robots = detection_refresh
- 
+            return
+        
     
 
     def model_use(self):
@@ -431,7 +493,7 @@ class CameraDetections(Node):
                         x_center = (x1 + x2) / 2 
                         y_center = (y1 + y2) / 2
 
-                        x_field, y_field = self.image_to_field(x_center, y_center, self.homography)
+                        x_field, y_field = self.image_to_field(x_center, y_center)
                         x_cm = x_field / 100
                         y_cm = y_field / 100
 
@@ -442,7 +504,9 @@ class CameraDetections(Node):
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                         #GET information of the robots (uses roi and robot position--------------------------------------------------------
                         self.get_info_robot(roi, [x_cm, y_cm])
-
+                
+                if len(result.boxes) != 0:
+                    self.select_robot()
                 # cv2.putText(frame, F"COUNT: {count}", (300, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         cv2.imshow("Model", frame)
 
@@ -508,7 +572,7 @@ class CameraDetections(Node):
             cv2.circle(frame, (int(x), int(y)), 5, (0, 0, 255), -1)
             self.get_logger().info("Ball center: " + str(self.last_center))
 
-            real_x, real_y = self.image_to_field(x, y, self.homography)
+            real_x, real_y = self.image_to_field(x, y)
             # Mostrar las coordenadas reales junto al círculo verde
             text = f"({real_x:.1f}, {real_y:.1f})"
             cv2.putText(frame, text, (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0,255,0), 2)
