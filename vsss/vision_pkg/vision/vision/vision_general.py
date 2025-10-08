@@ -77,22 +77,96 @@ patterns = {
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
     ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 15,
+    ("yellow", "pink", "green"): 19,
     ("yellow", "red", "blue"): 16,
     ("yellow", "green", "blue"): 17,
     ("yellow", "pink", "blue"): 18,
     ("yellow", "green", "pink"): 19,
-    ("yellow", "blue", "pink"): 20,
+    ("yellow", "blue", "pink"): 18,
 }
 
 class robot:
-    def __init__(self, id : int, secondary_color: str, team: str, location : List[float], angle):
+    def __init__(self, id : str, team: str, location : List[float], angle):
         self.id = id
         self.location = location
         self.angle = angle
-        self.secondary_color = secondary_color
         self.team = team
         self.relative_distance = None
+    
+    def __eq__(self, other):
+        return self.id == other.id and self.location == other.location and self.angle == other.angle and self.team == other.team
+    
+    def __hash__(self):
+        return hash((self.id, tuple(self.location), self.angle, self.team))
+    
+
+    def select_robot(self, detected_robots, tf_helper):
+        '''
+        Function to get the robots id's based on the last frame detections
+        using aspects such as: relative distance (now -> past), team, id, secondary color.
+        
+        Should be called for both color teams (yellow and blue)
+        
+        Returns a list of the detected robots in a frame
+        '''
+        #compare the actual robot with the list of past robots;
+        possibilities = []
+        same_id = []
+        same_color = []
+        same_team = []
+        not_same = []
+
+        for detected_robot in detected_robots:
+            distance = get_eucladian(detected_robot.location, self.location) #check number sign, if negative, use abs
+            detected_robot.relative_distance = distance
+            if detected_robot.id == self.id:
+                same_id.append(detected_robot)
+            elif detected_robot.team == self.team:
+                same_team.append(detected_robot)
+            else:
+                not_same.append(detected_robot)
+
+        same_id_ordered = sorted(same_id, key=lambda r:r.relative_distance) #check if this focus is correct, appending the four hole arrays?
+        same_color_ordered = sorted(same_color, key=lambda r:r.relative_distance)
+        same_team_ordered = sorted(same_team, key=lambda r:r.relative_distance)
+        not_same_ordered = sorted(not_same, key=lambda r:r.relative_distance)
+        
+        possibilities.append(same_id_ordered)    
+        ids_1 = [robot.id for robot in same_id_ordered]
+        # self.get_logger().info(f"ID ID: {ids_1}")
+
+        possibilities.append(same_color_ordered)
+        ids_2 = [robot.id for robot in same_color_ordered]
+        # self.get_logger().info(f"ID color: {ids_2}")
+
+        possibilities.append(same_team_ordered)
+        ids_3 = [robot.id for robot in same_team_ordered]
+        # self.get_logger().info(f"ID team: {ids_3}")
+
+        possibilities.append(not_same_ordered)
+        ids_4 = [robot.id for robot in not_same_ordered]
+        # self.get_logger().info(f"ID nor same ordered: {ids_4}")
+
+        selected_robot = None
+        for possibility in possibilities:
+            if len(possibility) > 0:
+                # self.get_logger().warn("selected possibility")
+                selected_robot = possibility[0]
+                break
+
+        if selected_robot is not None:
+            self.location = selected_robot.location
+            if selected_robot.angle is not None:
+                self.angle = selected_robot.angle
+            # self.get_logger().warn(f"Selected a robot: {selected_robot}")
+
+            yaw = math.radians(self.angle)
+            pitch, roll = 0.0, math.pi
+            tf_helper("robot" + str(self.id) + "_base_link", self.location[0], self.location[1], roll, pitch, yaw)
+
+        return selected_robot
+
+
 
 yellow_team = [19, 18]
 darkblue_team = []
@@ -118,7 +192,7 @@ real_field_coors = [[0,0],
 clicked_points = []
 coors_clicked = []
 
-robot_capacity = 1
+robot_capacity = len(yellow_team)
 
 def mouse_callback(event, x, y, _, __):
     """
@@ -190,8 +264,8 @@ def get_eucladian(pt1, pt2):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 2)
-        self.get_logger().info("Camera id taken")
+        self.video_id = self.declare_parameter("Video_ID", 0)
+        # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -236,72 +310,6 @@ class CameraDetections(Node):
             self.image = warped_img
             self.model_use()
             self.ball_detection(warped_img)
-
-    def select_robot(self):
-        '''
-        Function to get the robots id's based on the last frame detections
-        using aspects such as: relative distance (now -> past), team, id, secondary color.
-        
-        Should be called for both color teams (yellow and blue)
-        
-        Returns a list of the detected robots in a frame
-        '''
-        global past_robots
-        robot_list = []
-        for past_robot in past_robots:
-            
-            #compare the actual robot with the list of past robots;
-            possibilities = []
-            same_id = []
-            same_color = []
-            same_team = []
-            not_same = []
-
-            for detected_robot in detected_robots:
-                distance = get_eucladian(detected_robot.location, past_robot.location) #check number sign, if negative, use abs
-                detected_robot.relative_distance = distance
-                if detected_robot.id == past_robot.id:
-                    same_id.append(detected_robot)
-                elif detected_robot.secondary_color == past_robot.secondary_color:
-                    same_color.append(detected_robot)
-                elif detected_robot.team == past_robot.team:
-                    same_team.append(detected_robot)
-                else:
-                    not_same.append(detected_robot)
-
-            same_id_ordered = sorted(same_id, key=lambda r:r.relative_distance) #check if this focus is correct, appending the four hole arrays?
-            same_color_ordered = sorted(same_color, key=lambda r:r.relative_distance)
-            same_team_ordered = sorted(same_team, key=lambda r:r.relative_distance)
-            not_same_ordered = sorted(not_same, key=lambda r:r.relative_distance)
-            possibilities.append(same_id_ordered)
-            possibilities.append(same_color_ordered)
-            possibilities.append(same_team_ordered)
-            possibilities.append(not_same_ordered)
-
-            selected_robot = None
-            for possibility in possibilities:
-                self.get_logger().warn("Entered possibility")
-                if len(possibility) > 0:
-                    selected_robot = possibility[0]
-
-            if selected_robot is not None:
-                if selected_robot.id == None or selected_robot.id != past_robot.id: #assign past id if different to past or not detected.
-                    selected_robot.id = past_robot.id
-                if selected_robot.secondary_color == None:
-                    selected_robot.secondary_color = past_robot.secondary_color
-                if selected_robot.team == None:
-                    selected_robot.team = past_robot.team
-                if selected_robot.angle == None:
-                    selected_robot.angle = past_robot.angle
-                
-                if selected_robot is not None:
-                    robot_list.append(selected_robot)
-
-                    yaw = math.radians(selected_robot.angle)
-                    pitch, roll = 0.0, math.pi
-                    self.tf_helper("robot" + str(selected_robot.id) + "_base_link", selected_robot.location[0], selected_robot.location[1], roll, pitch, yaw)
-            
-        past_robots = robot_list
     
     def warp_image(self, data):
         '''
@@ -320,7 +328,7 @@ class CameraDetections(Node):
         Sends the data transforms (position and angle)
         '''
         t = TransformStamped()
-
+        self.get_logger().warn("Sending tf's")
         qx, qy, qz, qw = euler.euler2quat(yaw, pitch, roll, axes='sxyz') #roll, pitch, yaw = radians
         t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = "lower_left_corner"
@@ -352,7 +360,6 @@ class CameraDetections(Node):
         '''
         
         '''
-        global detected_robots
         scale = 6
         img = cv2.resize(img, None, fx=scale, fy=scale)
 
@@ -435,31 +442,35 @@ class CameraDetections(Node):
                 self.get_logger().info("ID -> " + str(robot_id))
                 # self.get_logger().info(" -> " + len(detected_robots))
                 #initial list of detected robots
-                if len(detected_robots) < robot_capacity: #change number when testing
-                    if robot_id is not None and robot_id in yellow_team:
-                        robot_detected = robot(robot_id, id_colors[0], team, position, angle)
-                        detected_robots.append(robot_detected)
+                if len(past_robots) < robot_capacity: #change number when testing
+                    in_past = any(past_robot.id == robot_id for past_robot in past_robots)
+                    if robot_id is not None and robot_id in yellow_team and not in_past:
+                        robot_detected = robot(robot_id, team, position, angle)
                         past_robots.append(robot_detected)
+                        self.get_logger().info("ID metido-> " + str(robot_id))
+                        return
+                    elif robot_id is not None and robot_id in yellow_team and in_past:
+                        bot = robot(robot_id, team, position, angle)
+                        return bot
                     else:
                         return
                 else:
+                    self.get_logger().info("IDs llenos -> ")
                     if robot_id is not None:
                     #no matter if id detected or not, select robot will handle that
-                        new_robot = robot(robot_id, id_colors[0], team, position, angle)
-                        detected_robots.append(new_robot)
+                        new_robot = robot(robot_id, team, position, angle)
+                        return new_robot
                     #function will classify robot id based on past frame, and send it's transform
                     #refresh detected robots list
                     else: 
-                        new_robot = robot(None, id_colors[0], team, position, angle)
-                        detected_robots.append(new_robot)
+                        new_robot = robot(None, team, position, angle)
+                        return new_robot
 
-        elif len(id_colors) == 1 and len(detected_robots) == robot_capacity: 
-            robot_detected = robot(None, id_colors[0], team, position, None) 
-            detected_robots.append(robot_detected)
-        elif len(detected_robots) == robot_capacity:
-            robot_detected = robot(None, None, team, position, None)
-            detected_robots.append(robot_detected)   
+        elif len(past_robots) == robot_capacity:
+            robot_detected = robot(None, team, position, None)
+            return robot_detected   
         else:
+            robot_detected = robot(None, None, position, None)
             return
         
     
@@ -475,6 +486,7 @@ class CameraDetections(Node):
         frame = self.image.copy()
         results = self.yolo_model(frame, verbose=False, classes=0)
         if results is not None:
+            robots_present = [] #robots per frame
             for result in results:
                 count = len(result.boxes)
                 self.get_logger().warn(f"MODEL IDENTIFIED ROBOTS = {len(result.boxes)}")
@@ -503,10 +515,25 @@ class CameraDetections(Node):
                         
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                         #GET information of the robots (uses roi and robot position--------------------------------------------------------
-                        self.get_info_robot(roi, [x_cm, y_cm])
-                
-                if len(result.boxes) != 0:
-                    self.select_robot()
+                        robot_info = self.get_info_robot(roi, [x_cm, y_cm]) #fill table 
+                        self.get_logger().info(f"{type(robot_info)}")
+                        if (robot_info is not None):
+                            robots_present.append(robot_info)
+
+                nones = any(robot is None for robot in robots_present)
+                if len(result.boxes) != 0 and not nones:
+                    selected_robots = []
+                    self.get_logger().info(f"PAST LENE -> {len(selected_robots)}")
+                    for past_robot in past_robots:
+                        self.get_logger().info(f"Actualizando past {past_robot.id}")
+                        self.get_logger().info(f"ROBOTS_PRESENT -> {len(robots_present)}")
+                        robots_present = list(set(robots_present) - set(selected_robots))
+                        self.get_logger().info(f" RESULTS -> {len(robots_present)}")
+                        selected_robot = past_robot.select_robot(robots_present, self.tf_helper)
+                        selected_robots.append(selected_robot)
+                    robots_present.clear()
+                    selected_robots.clear()
+
                 # cv2.putText(frame, F"COUNT: {count}", (300, 400), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
         cv2.imshow("Model", frame)
 
