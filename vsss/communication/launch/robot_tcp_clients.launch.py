@@ -10,12 +10,12 @@ def generate_launch_description():
 
     return LaunchDescription([
         Node(
-           package= pkg_name,
-           executable='robot_tcp_client_node.py',
-           name='robot1_tcp_client',
-           output='screen',
-           parameters=[robots_params]
-        ),
+            package= pkg_name,
+            executable='robot_tcp_client_node.py',
+            name='robot1_tcp_client',
+            output='screen',
+            parameters=[robots_params]
+         ),
         #Node(
         #    package= pkg_name,
         #    executable='robot_tcp_client_node.py',

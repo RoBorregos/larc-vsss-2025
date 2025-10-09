@@ -11,9 +11,9 @@ echo "Detected environment: $ENV_TYPE"
 
 function run_container() {
     echo "Running vsss container"
-    mkdir ../compose/log ../compose/install ../compose/build
-    docker compose -f ../compose/docker-compose-$ENV_TYPE-base.yml build
-    docker compose -f ../compose/docker-compose-$ENV_TYPE.yml up -d
+    mkdir ./compose/log ./compose/install ./compose/build
+    docker compose -f ./compose/docker-compose-$ENV_TYPE-base.yml build
+    docker compose -f ./compose/docker-compose-$ENV_TYPE.yml up -d
 }
 
 function dev_mode() {
@@ -22,11 +22,11 @@ function dev_mode() {
 }
 
 function stop_container() {
-    docker compose -f ../compose/docker-compose-$ENV_TYPE.yml stop
+    docker compose -f ./compose/docker-compose-$ENV_TYPE.yml stop
 }
 
 function remove_container() {
-    docker compose -f ../compose/docker-compose-$ENV_TYPE.yml down
+    docker compose -f ./compose/docker-compose-$ENV_TYPE.yml down
 }
 
 function help_message() {
