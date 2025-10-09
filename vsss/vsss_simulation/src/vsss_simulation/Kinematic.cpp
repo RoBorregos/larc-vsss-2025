@@ -37,6 +37,7 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
         dif += M_PI;
         dif = wrapToPI(dif);
         invert = true;
+        cout<<"Inversing"<<endl;
     }
 
     response.angular.z = dif*ANGULAR_CONSTANT;

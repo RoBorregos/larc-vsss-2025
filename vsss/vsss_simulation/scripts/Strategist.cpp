@@ -20,8 +20,14 @@ public:
     {
         
         this->declare_parameter<int>("Robot_count",  0);
+        this->declare_parameter<bool>("Robot_side", false);
 
         robot_count = this->get_parameter("Robot_count").as_int();
+        field_side = this->get_parameter("Robot_side").as_bool();
+
+        objective_name = field_side ? "goal_pos" : "own_goal";
+        defender_name = field_side ? "own_goal": "goal_pos";
+
         timer_ = this->create_wall_timer(
             chrono::milliseconds(50),
             bind(&Strategist::publish_poses, this));
@@ -72,7 +78,7 @@ private:
             geometry_msgs::msg::TransformStamped ball_tf, goal_tf;
             try {
                 ball_tf = tf_buffer_->lookupTransform("world", "sphere_link", TimePointZero);
-                goal_tf = tf_buffer_->lookupTransform("world", "goal_pos", TimePointZero);
+                goal_tf = tf_buffer_->lookupTransform("world", objective_name, TimePointZero);
                
             } catch (const TransformException &ex) {
                 RCLCPP_INFO(this->get_logger(), "No transform sphere_link or  goal_pos to world: %s", ex.what());
@@ -81,7 +87,7 @@ private:
 
         ball.setTrans(ball_tf);
         fromMsg(goal_tf.transform, attacker_goal);
-        Line trayectory(ball.transform.getOrigin(), attacker_goal.getOrigin());
+        Line trayectory(ball.transform.getOrigin(), attacker_goal.getOrigin()  + Vector3(0.08 * (field_side ? 1 : -1), 0, 0));
         int attacker_ID = 1;
         vsss_simulation::msg::RobotAction attacker_msg;
         attacker_msg.type.data = 1;
@@ -98,7 +104,7 @@ private:
         //Get point for defense
         //$ Could be in the init function to avoid doing this every time;
         try {
-            auto ole = tf_buffer_->lookupTransform("world", "own_goal", TimePointZero);
+            auto ole = tf_buffer_->lookupTransform("world", defender_name, TimePointZero);
             fromMsg(ole.transform, own_goal);
         } catch (const TransformException & ex) {
             RCLCPP_INFO(this->get_logger(), "Could not transform own goal ends: %s", ex.what());
@@ -126,13 +132,15 @@ private:
         pair<int, Vector3> intersect_result = defensive_range.Intersect(ball_trayectory);
         if(defenderZone.isInside(ball.transform.getOrigin())){
             defend_point = ball.transform.getOrigin();
+            cout<<"Going for ball"<<endl;
         }else if(intersect_result.first == 1){
-            defend_point = intersect_result.second;
+            defend_point = intersect_result.second /* + Vector3(0.10 * (field_side ? -1 : 1), 0, 0)*/;
+            cout<<"Going for prediction"<<endl;
         }
         
         //Go to Intersection or spin to get the ball out of the place
         vsss_simulation::msg::RobotAction defense_action;
-        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.13 ){
+        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.10 ){
             defense_action.type.data = 3;
             defense_action.spin_direction.data = (ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() > 0;
         }else{
@@ -150,7 +158,10 @@ private:
 
 
     }
+    //Parameters
+    bool field_side;
     int robot_count;
+
     //Publishers for information in each robot
     unordered_map<int, rclcpp::Publisher<vsss_simulation::msg::RobotAction>::SharedPtr> pubs_actions;
     //Saved information for each robot
@@ -170,6 +181,10 @@ private:
     //Defender
     Transform own_goal;
     Vector3 defend_point;
+
+    //Global Roles varaibles
+    string objective_name = "";
+    string defender_name = "";
 
 };
 
