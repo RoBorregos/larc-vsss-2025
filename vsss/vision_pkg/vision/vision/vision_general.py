@@ -64,12 +64,12 @@ draw_colors = {
 
 patterns = {
     ("darkblue", "green", "red"): 1,
-    ("darkblue", "blue", "red"): 2,
+    ("darkblue", "blue", "red"): 1,
     ("darkblue", "red", "green"): 1,
-    ("darkblue", "blue", "green"): 3,
+    ("darkblue", "blue", "green"): 1,
     ("darkblue", "pink", "green"): 4,
-    ("darkblue", "red", "blue"): 2,
-    ("darkblue", "green", "blue"): 3,
+    ("darkblue", "red", "blue"): 1,
+    ("darkblue", "green", "blue"): 1,
     ("darkblue", "pink", "blue"): 5,
     ("darkblue", "green", "pink"): 4,
     ("darkblue", "blue", "pink"): 5,

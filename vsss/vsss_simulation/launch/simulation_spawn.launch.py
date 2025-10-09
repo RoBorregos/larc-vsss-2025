@@ -7,7 +7,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.substitutions import FindPackageShare
 import os
 from launch_ros.parameter_descriptions import ParameterValue
-from launch.substitutions import Command
+from launch.substitutions import Command, TextSubstitution, LaunchConfiguration
 import random
  
 def generate_launch_description():
@@ -18,12 +18,18 @@ def generate_launch_description():
     camera_file = os.path.join(pkg_share, 'urdf', 'camera.urdf')
     config_file_path = os.path.join(pkg_share, 'config', 'ball_odom2_tf.yaml')
 
-
-    robot_count = 2  # Number of robots
+    robot_count = 2
     robot_spawns = []
     team_colors = ['Blue', 'Yellow']  # Colors for the teams
     robot_colors = [ 'Green', 'Turquoise', 'Purple']  # Colors for the robots
     random.seed()
+
+
+    strategiest_side = DeclareLaunchArgument(
+        "team_side",
+        default_value="false",
+        description="Team side flag (true/false)"
+    )
     
     for i in range(robot_count):
         robotName = f"robot{i+1}"
@@ -93,6 +99,7 @@ def generate_launch_description():
 
 
     return LaunchDescription([
+        strategiest_side,
         DeclareLaunchArgument('use_sim_time', default_value='true'),
 
         # Set GAZEBO_MODEL_PATH to include desired models
@@ -180,7 +187,7 @@ def generate_launch_description():
             executable = "Strategist",
             name = "strategist",
             output = "screen",
-            parameters=[{"Robot_count":(i+1)}],
+            parameters=[{"Robot_count": robot_count, "Robot_side": LaunchConfiguration("team_side")}],
         ),
         
 
