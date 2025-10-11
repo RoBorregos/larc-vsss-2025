@@ -181,9 +181,9 @@
         </ros>
             <left_joint>left_wheel_joint</left_joint>
             <right_joint>right_wheel_joint</right_joint>
-            <wheel_separation>0.3</wheel_separation>
-            <wheel_radius>0.05</wheel_radius>
-            <wheel_diameter>0.1</wheel_diameter>
+            <wheel_separation>0.076</wheel_separation>
+            <wheel_radius>0.03</wheel_radius>
+            <wheel_diameter>0.06</wheel_diameter>
             <publish_odom>true</publish_odom>
             <odom_topic>odom</odom_topic>
             <cmd_vel_topic>cmd_vel</cmd_vel_topic>
