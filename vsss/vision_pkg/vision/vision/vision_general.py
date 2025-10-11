@@ -4,13 +4,10 @@ import cv2
 from .vision_constants import (
     YOLO_LOCATION,
     CONF_THRESH,
-    MODEL_VIEW_TOPIC,
-    WARPED_VIEW_TOPIC
 )
 
 import rclpy 
 from rclpy.node import Node
-from sensor_msgs.msg import Image
 from ultralytics import YOLO
 from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
@@ -21,10 +18,6 @@ import torch
 import os
 from typing import List, Dict
 # from vision_pkg.vision.utils.select_robot import select_robot
-
-
-from std_msgs.msg import Float32
-import time
  
 """
     Node to take camera input and detect robots position and orientation 
@@ -67,12 +60,12 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 16,
-    ("darkblue", "blue", "red"): 2,
+    ("darkblue", "green", "red"): 133,
+    ("darkblue", "blue", "red"): 26,
     ("darkblue", "red", "green"): 3,
-    ("darkblue", "blue", "green"): 4,
+    ("darkblue", "blue", "green"): 1,
     ("darkblue", "pink", "green"): 5,
-    ("darkblue", "red", "blue"): 6,
+    ("darkblue", "red", "blue"): 2,
     ("darkblue", "green", "blue"): 7,
     ("darkblue", "pink", "blue"): 8,
     ("darkblue", "green", "pink"): 9,
@@ -89,20 +82,23 @@ patterns = {
     ("yellow", "blue", "pink"): 1,
 }
 
+# threshold = 5.0 #thought in cm, but see if this should be in pixels.
+
 class robot:
-    def __init__(self, id : str, team: str, location : List[float], angle):
+    def __init__(self, id : str, team: str, location, angle):
         self.id = id
         self.location = location
         self.angle = angle
         self.team = team
         self.relative_distance = None
+        self.angle_window = []
+        # self.pos_window = []
     
     def __eq__(self, other):
         return self.id == other.id and self.location == other.location and self.angle == other.angle and self.team == other.team
     
     def __hash__(self):
         return hash((self.id, tuple(self.location), self.angle, self.team))
-    
 
     def select_robot(self, detected_robots, tf_helper):
         '''
@@ -155,8 +151,11 @@ class robot:
         for possibility in possibilities:
             if len(possibility) > 0:
                 # self.get_logger().warn("selected possibility")
+                #possibility[0] should be the most optimal
+                #TODO: See if using mre than the first robot could help.
                 selected_robot = possibility[0]
                 break
+                    
 
         if selected_robot is not None:
             self.location = selected_robot.location
@@ -172,10 +171,8 @@ class robot:
 
 
 
-yellow_team = [1,2]
+yellow_team = [1, 2] #4, 6 #19, 18
 darkblue_team = []
-#TODO: Checar que al ser seleccionado un candidato, no se use para otro
-#TODO: Uso de archivos extra, para función como robot_select
 detected_robots = [] #should always have a maximum of six robots
 past_robots = [] #used
 
@@ -184,8 +181,8 @@ kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (kernel_size, kernel_size)
 
 orange = np.load(os.path.join(luts_path, "lut_orange.npy"))
 
-width = 640
-height = 480
+width = 1280
+height = 720
 
 objectivePoints = np.float32([[0, 0], [0,height], [width, height], [width, 0]])
 real_field_coors = [[0,0],
@@ -268,17 +265,11 @@ def get_eucladian(pt1, pt2):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 0)
+        self.video_id = self.declare_parameter("Video_ID", 2)
         # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
-        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
-
-
-##
-
-        self.exec_time_pub = self.create_publisher(Float32, 'timer_exec_time', 10)
-##
+        self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
+        self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
 
         self.yolo_model = YOLO(yolo_model_path)  
         self.yolo_model.to(device)
@@ -479,7 +470,7 @@ class CameraDetections(Node):
                         bot = robot(robot_id, team, position, angle)
                         return bot
                     else:
-                        return
+                        return #check return of Nonetype
                 else:
                     self.get_logger().info("IDs llenos -> ")
                     if robot_id is not None:
@@ -536,9 +527,9 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         # Dibuja el bounding box
-                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
-                        
+                        # text = f"{x_cm}, {y_cm}"
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                         #GET information of the robots (uses roi and robot position--------------------------------------------------------
                         robot_info = self.get_info_robot(roi, [x_cm, y_cm]) #fill table 
@@ -564,7 +555,7 @@ class CameraDetections(Node):
         cv2.imshow("Model", frame)
 
 
-    '''toma el id y lso mete a la lista, si es que no hay uno ya, y eso despues dera de la lista del pasado
+    '''toma el id y lo mete a la lista, si es que no hay uno ya, y eso despues dera de la lista del pasado
     la función de arriba va tanto para azul como amarillo'''
 
     def ball_detection(self, img):
