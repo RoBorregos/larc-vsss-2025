@@ -23,7 +23,7 @@ def generate_launch_description():
                 output = "screen",
                 name='goal_tf',
                 arguments=[
-                    "0.75",
+                    "0.72",
                     "0.0",
                     "0.0",     
                     "0",
@@ -39,7 +39,7 @@ def generate_launch_description():
                 output="screen",
                 name='own_goal',
                 arguments=[
-                    "-0.70",
+                    "-0.72",
                     "0.0",
                     "0.0",
                     "0",

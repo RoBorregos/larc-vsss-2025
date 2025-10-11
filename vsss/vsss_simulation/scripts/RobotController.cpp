@@ -94,7 +94,7 @@ class Robot_Controller : public rclcpp::Node
         Vector3 vectorR  =  quatRotate(robots[id].transform.getRotation(), Vector3(1,0,0));
         boxCollider.rotation = atan2(vectorR.y(), vectorR.x());
         boxCollider.translade();
-        if(!field_box_Collider.fullInside(boxCollider)){
+        if(!field_box_Collider.fullInside(boxCollider) && type == 1){
           geometry_msgs::msg::Twist backwards;
           geometry_msgs::msg::Vector3 linear;
           linear.x = 0.4f;
@@ -109,11 +109,11 @@ class Robot_Controller : public rclcpp::Node
         //Spin if needed
         if(type == 3){
           geometry_msgs::msg::Twist gira_gira;
-          gira_gira.angular.set__z(12 *( direction? -1 : 1));
+          gira_gira.angular.set__z(12 *( direction? 1 : -1));
           self_vel_pub->publish(gira_gira);
           return;
         }
-        if(stuck){
+        if(stuck && type == 1){
           return;
         }
         Transform self_transform = robots[id].transform;
@@ -121,7 +121,9 @@ class Robot_Controller : public rclcpp::Node
         if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.08){
           Vector3 tieso(0,1,0);
           self_vel_pub->publish(robots[id].orient_to_msg(tieso));
+          cout<<"Tiesing"<<endl;
           return;
+
         }
         Vector3 vector2ball;
         float theta_obj ;

@@ -17,14 +17,19 @@ def generate_launch_description():
     robot_controllers = []
     pkg_name = "vsss_simulation"
 
-    
+    strategiest_side = DeclareLaunchArgument(
+        "team_side",
+        default_value="false",
+        description="Team side flag (true/false)"
+    )
+    # use this when passing into node parameters to get a real bool:
 
     Strat = Node(
             package=pkg_name,
             executable = "Strategist",
             name = "strategist",
             output = "screen",
-            parameters=[{"Robot_count":(robot_count)}],
+            parameters=[{"Robot_count":(robot_count) , "Robot_side": LaunchConfiguration("team_side")}],
         )
 
     for i in range(robot_count):
@@ -49,5 +54,5 @@ def generate_launch_description():
         )
 
     
-    return LaunchDescription([StaticPoints, Strat, *robot_controllers])
+    return LaunchDescription([strategiest_side, StaticPoints, Strat, *robot_controllers])
     
