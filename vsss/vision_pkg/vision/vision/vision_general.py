@@ -21,6 +21,10 @@ import torch
 import os
 from typing import List, Dict
 # from vision_pkg.vision.utils.select_robot import select_robot
+
+
+from std_msgs.msg import Float32
+import time
  
 """
     Node to take camera input and detect robots position and orientation 
@@ -63,7 +67,7 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 1,
+    ("darkblue", "green", "red"): 16,
     ("darkblue", "blue", "red"): 2,
     ("darkblue", "red", "green"): 3,
     ("darkblue", "blue", "green"): 4,
@@ -77,12 +81,12 @@ patterns = {
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
     ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 19,
+    ("yellow", "pink", "green"): 2,
     ("yellow", "red", "blue"): 16,
     ("yellow", "green", "blue"): 17,
-    ("yellow", "pink", "blue"): 18,
-    ("yellow", "green", "pink"): 19,
-    ("yellow", "blue", "pink"): 18,
+    ("yellow", "pink", "blue"): 1,
+    ("yellow", "green", "pink"): 2,
+    ("yellow", "blue", "pink"): 1,
 }
 
 class robot:
@@ -168,7 +172,7 @@ class robot:
 
 
 
-yellow_team = [19, 18]
+yellow_team = [1,2]
 darkblue_team = []
 #TODO: Checar que al ser seleccionado un candidato, no se use para otro
 #TODO: Uso de archivos extra, para función como robot_select
@@ -270,6 +274,12 @@ class CameraDetections(Node):
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
         self.cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
+
+##
+
+        self.exec_time_pub = self.create_publisher(Float32, 'timer_exec_time', 10)
+##
+
         self.yolo_model = YOLO(yolo_model_path)  
         self.yolo_model.to(device)
         self.get_logger().info("DEVICE: " + str(device))
@@ -283,10 +293,17 @@ class CameraDetections(Node):
         self.image = None
         self.tf_broadcaster = TransformBroadcaster(self)
         self.last_center = None
-        self.timer = self.create_timer(0.03, self.timer_callback)
+        self.timer = self.create_timer(0.05, self.timer_callback)
         self.get_logger().info("Starting model node\general vision node")
 
     def timer_callback(self):
+
+
+        start = time.perf_counter()
+
+
+
+
         """
         Captures frames, warps them and processess model detections in the warped image.
         """
@@ -310,6 +327,15 @@ class CameraDetections(Node):
             self.image = warped_img
             self.model_use()
             self.ball_detection(warped_img)
+            elapsed = time.perf_counter() - start
+            try:
+                self.exec_time_pub.publish(Float32(data=elapsed))
+            except Exception:
+                # avoid crashing the timer if publishing fails
+                pass
+
+
+        
     
     def warp_image(self, data):
         '''

@@ -13,8 +13,8 @@ class Kinematic{
         Transform prevTransform;
         rclcpp::Time prevTime;
         bool firstUpdate = true;
-        float ANGULAR_CONSTANT = 3.0f;
-        float LINEAR_CONSTANT = 0.25f;
+        float ANGULAR_CONSTANT = 2.3f;
+        float LINEAR_CONSTANT = 0.3f;
         
     public:
         Kinematic();

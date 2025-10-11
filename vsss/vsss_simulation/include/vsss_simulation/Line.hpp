@@ -21,5 +21,6 @@ class Line{
         float Dist(Vector3 pos);
         float Evaluate(float x);
         float getTheta();
+        string print();
         pair<int, Vector3> Intersect(Line other); //The int explains the edge cases of a intersection
 };

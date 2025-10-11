@@ -50,6 +50,14 @@ pair<int, Vector3> Line::Intersect(Line other){
     if(0 <= t && t <= 1){
         return pair<int, Vector3>(1, Init + r * t);
     }
+}
 
-
+string Line::print(){
+    string res;
+    res = "m: " + std::to_string(m)
+        + ", b: " + std::to_string(b)
+        + ", theta: " + std::to_string(theta)
+        + "\nInit: (" + std::to_string(Init.x()) + ", " + std::to_string(Init.y()) + ", " + std::to_string(Init.z()) + ")"
+        + "\nEnd: (" + std::to_string(End.x()) + ", " + std::to_string(End.y()) + ", " + std::to_string(End.z()) + ")";
+    return res;
 }

@@ -7,14 +7,23 @@ void Kinematic::setTrans(geometry_msgs::msg::TransformStamped t){
         TransformFromMSG(t.transform, transform);
         prevTime = rclcpp::Time(t.header.stamp);
         firstUpdate = false;
+        velocity = Vector3(0,0,0);
         return;
     }
     t.transform.translation.z = 0;
     prevTransform = transform;
     TransformFromMSG(t.transform, transform);
     rclcpp::Time newTime = rclcpp::Time(t.header.stamp);
-    velocity = (transform.getOrigin() - prevTransform.getOrigin())/(newTime-prevTime).seconds();
+    
+    float delta_time = (newTime-prevTime).seconds();
+    if(delta_time < 1e-6)
+        return;
+    Vector3 delta_position = (transform.getOrigin() - prevTransform.getOrigin());
+    velocity += delta_position/delta_time;
+    velocity /= 2;
     prevTime = newTime;
+    if(velocity.length() < 1e-6)
+        velocity = Vector3(0,0,0);
 }
 
 
@@ -37,7 +46,6 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
         dif += M_PI;
         dif = wrapToPI(dif);
         invert = true;
-        cout<<"Inversing"<<endl;
     }
 
     response.angular.z = dif*ANGULAR_CONSTANT;

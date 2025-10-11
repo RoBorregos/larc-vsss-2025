@@ -86,8 +86,9 @@ private:
             }
 
         ball.setTrans(ball_tf);
-        fromMsg(goal_tf.transform, attacker_goal);
-        Line trayectory(ball.transform.getOrigin(), attacker_goal.getOrigin()  + Vector3(0.08 * (field_side ? 1 : -1), 0, 0));
+        fromMsg(goal_tf.transform.translation, attacker_goal);
+        Line trayectory(ball.transform.getOrigin(), attacker_goal  /*+ Vector3(0.08 * (field_side ? 1 : -1), 0, 0)*/);
+        
         int attacker_ID = 1;
         vsss_simulation::msg::RobotAction attacker_msg;
         attacker_msg.type.data = 1;
@@ -111,7 +112,7 @@ private:
             return;
         }
         Vector3 vertical_dif =  Vector3(0, 0.40 ,0); //Diference from the start of the center of the goal towards its vertical limits
-        Vector3 horizontal_dif = Vector3(0.075, 0, 0); //Diference from the start of the center of the goal towards its horizontal limits
+        Vector3 horizontal_dif = Vector3(0.085, 0, 0); //Diference from the start of the center of the goal towards its horizontal limits
         Vector3 upper_end = own_goal.getOrigin() + vertical_dif;
         Vector3 lower_end = own_goal.getOrigin() - vertical_dif;
 
@@ -130,19 +131,18 @@ private:
         //See if intersection in these lines  between the trayectory of the ball;
         Line ball_trayectory = Line(ball.transform.getOrigin(), ball.transform.getOrigin() + ball.velocity);
         pair<int, Vector3> intersect_result = defensive_range.Intersect(ball_trayectory);
+        intersect_result.first &= ball.velocity.length() > 0.1;
         if(defenderZone.isInside(ball.transform.getOrigin())){
             defend_point = ball.transform.getOrigin();
-            cout<<"Going for ball"<<endl;
         }else if(intersect_result.first == 1){
             defend_point = intersect_result.second /* + Vector3(0.10 * (field_side ? -1 : 1), 0, 0)*/;
-            cout<<"Going for prediction"<<endl;
         }
         
         //Go to Intersection or spin to get the ball out of the place
         vsss_simulation::msg::RobotAction defense_action;
-        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.10 ){
+        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.08 ){
             defense_action.type.data = 3;
-            defense_action.spin_direction.data = (ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() > 0;
+            defense_action.spin_direction.data = ((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() > 0) != field_side;
         }else{
             defense_action.type.data = 2;
             defense_action.objective.set__x(defend_point.x());
@@ -176,7 +176,7 @@ private:
 
     //Atacker
     Kinematic ball;
-    Transform attacker_goal;
+    Vector3 attacker_goal;
     
     //Defender
     Transform own_goal;

@@ -27,6 +27,24 @@ vector<Vector3> field = Rectangle(Vector3(0,0,0), 1.5, 1.3);
                           
 
 
+
+
+
+void vector_2_pose(std::unique_ptr<geometry_msgs::msg::PoseStamped, std::default_delete<geometry_msgs::msg::PoseStamped>>& res, Vector3& dir, float angle){
+  res->header.frame_id ="world";
+  Quaternion q;
+  q.setRPY(0,0,angle);
+  res->pose.orientation = toMsg(q);
+  res->pose.position.set__x(dir.x());
+  res->pose.position.set__y(dir.y());
+  return;
+
+}
+
+
+
+
+
 void printOdom(const nav_msgs::msg::Odometry::SharedPtr  & msg, const rclcpp::Logger & logger)
 {
     const auto & pos = msg->pose.pose.position;
@@ -53,9 +71,16 @@ class Robot_Controller : public rclcpp::Node
       robot_action_sub = this->create_subscription<vsss_simulation::msg::RobotAction>(
         "action", 50, bind(&Robot_Controller::refresh_action,this,_1));
 
-      main_timer = this->create_wall_timer(std::chrono::milliseconds(50), std::bind(&Robot_Controller::Main, this));
+      main_timer = this->create_wall_timer(
+                      std::chrono::milliseconds(50), 
+                      std::bind(&Robot_Controller::Main, this));
 
       stuck_timer = this->create_wall_timer(std::chrono::milliseconds(300), std::bind(&Robot_Controller::end_stuck, this));
+
+
+      //Debuger arrowDirection
+      robot_direction = this->create_publisher<geometry_msgs::msg::PoseStamped>("objective_pose", 10);
+
 
       tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
       tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
@@ -97,7 +122,7 @@ class Robot_Controller : public rclcpp::Node
         if(!field_box_Collider.fullInside(boxCollider) && type == 1){
           geometry_msgs::msg::Twist backwards;
           geometry_msgs::msg::Vector3 linear;
-          linear.x = 0.4f;
+          linear.x = 0.2f;
           backwards.set__linear(linear);
           self_vel_pub->publish(backwards);
           stuck = true;
@@ -118,10 +143,10 @@ class Robot_Controller : public rclcpp::Node
         }
         Transform self_transform = robots[id].transform;
         //if the objective is near, just achieve its rotation
-        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.08){
+        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.12){
           Vector3 tieso(0,1,0);
           self_vel_pub->publish(robots[id].orient_to_msg(tieso));
-          cout<<"Tiesing"<<endl;
+          //cout<<"Tiesing"<<endl;
           return;
 
         }
@@ -138,12 +163,27 @@ class Robot_Controller : public rclcpp::Node
           theta_obj = phiTuf(robot_t_obj, self_transform.getOrigin(),objective_position,  optimalPath); 
           //transform the angle to a vector
           vector2ball =  Theta2Vector(theta_obj);
-        
+          
+
+
+
+
           if(robots.size() <= 1){
             //Publish if no enemy to search
             self_vel_pub->publish(robots[id].result_to_msg(vector2ball, type));
+
+            auto msg = std::make_unique<geometry_msgs::msg::PoseStamped>();
+
+          msg->header.stamp = this->now();
+          vector_2_pose(msg, robots[id].transform.getOrigin(), theta_obj);
+          //cout<<vector2ball.x()<<" ----- --- -- -- --- -----"<<vector2ball.y();
+          robot_direction->publish(move(msg));
+
+
             return;
           }
+
+
         }else{
           vector2ball = (objective_position - self_transform.getOrigin()).normalize();
           theta_obj = atan2(vector2ball[1], vector2ball[0]);
@@ -181,6 +221,12 @@ class Robot_Controller : public rclcpp::Node
         Vector3 result = Theta2Vector(joined);
         self_vel_pub->publish(robots[id].result_to_msg(result, type));
 
+
+        auto msg = std::make_unique<geometry_msgs::msg::PoseStamped>();
+
+          msg->header.stamp = this->now();
+          vector_2_pose(msg, robots[id].transform.getOrigin(), joined);
+          robot_direction->publish(move(msg));
         
         //Needs Function to get union of theta_obj and theta_enemy
       // Avoid Each Obst
@@ -199,6 +245,7 @@ class Robot_Controller : public rclcpp::Node
     int id;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr self_vel_pub;
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr imag_pub;
+    rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr robot_direction;
     rclcpp::Subscription<vsss_simulation::msg::RobotAction>::SharedPtr robot_action_sub;
     rclcpp::TimerBase::SharedPtr main_timer;
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
@@ -226,5 +273,3 @@ int main(int argc, char * argv[])
   rclcpp::shutdown();
   return 0;
 }
-
-
