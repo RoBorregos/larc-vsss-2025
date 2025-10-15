@@ -16,8 +16,7 @@ import math
 import numpy as np
 import torch
 import os
-from typing import List, Dict
-# from vision_pkg.vision.utils.select_robot import select_robot
+from typing import List
  
 """
     Node to take camera input and detect robots position and orientation 
@@ -63,23 +62,23 @@ patterns = {
     ("darkblue", "green", "red"): 133,
     ("darkblue", "blue", "red"): 26,
     ("darkblue", "red", "green"): 3,
-    ("darkblue", "blue", "green"): 1,
-    ("darkblue", "pink", "green"): 5,
-    ("darkblue", "red", "blue"): 2,
-    ("darkblue", "green", "blue"): 7,
-    ("darkblue", "pink", "blue"): 8,
-    ("darkblue", "green", "pink"): 9,
+    ("darkblue", "blue", "green"): 132,
+    ("darkblue", "pink", "green"): 2,
+    ("darkblue", "red", "blue"): 233,
+    ("darkblue", "green", "blue"): 173,
+    ("darkblue", "pink", "blue"): 877,
+    ("darkblue", "green", "pink"): 2,
     ("darkblue", "blue", "pink"): 10,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
-    ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 2,
+    ("yellow", "blue", "green"): 1,
+    ("yellow", "pink", "green"): 19,
     ("yellow", "red", "blue"): 16,
-    ("yellow", "green", "blue"): 17,
-    ("yellow", "pink", "blue"): 1,
-    ("yellow", "green", "pink"): 2,
-    ("yellow", "blue", "pink"): 1,
+    ("yellow", "green", "blue"): 1,
+    ("yellow", "pink", "blue"): 18,
+    ("yellow", "green", "pink"): 19,
+    ("yellow", "blue", "pink"): 18,
 }
 
 # threshold = 5.0 #thought in cm, but see if this should be in pixels.
@@ -284,17 +283,10 @@ class CameraDetections(Node):
         self.image = None
         self.tf_broadcaster = TransformBroadcaster(self)
         self.last_center = None
-        self.timer = self.create_timer(0.05, self.timer_callback)
+        self.timer = self.create_timer(0.03, self.timer_callback)
         self.get_logger().info("Starting model node\general vision node")
 
     def timer_callback(self):
-
-
-        start = time.perf_counter()
-
-
-
-
         """
         Captures frames, warps them and processess model detections in the warped image.
         """
@@ -318,15 +310,6 @@ class CameraDetections(Node):
             self.image = warped_img
             self.model_use()
             self.ball_detection(warped_img)
-            elapsed = time.perf_counter() - start
-            try:
-                self.exec_time_pub.publish(Float32(data=elapsed))
-            except Exception:
-                # avoid crashing the timer if publishing fails
-                pass
-
-
-        
     
     def warp_image(self, data):
         '''

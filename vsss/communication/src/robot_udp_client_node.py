@@ -6,7 +6,7 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 import socket
 import struct
-
+import math 
 
 class RobotUDPClient:
     def __init__(self, robot_ip, robot_port):
@@ -56,13 +56,14 @@ def twist_to_rpm(twist, wheel_radius=0.03, wheel_base=0.076):
 
 class SingleRobotUDPNode(Node):
     def __init__(self):
-        super().__init__('single_robot_udp_node')
         # Parameters should be loaded from external YAML config via ROS2 launch or CLI
-        
+        super().__init__('single_robot_udp_node')
+
+
         self.get_logger().info(f"Waiting to Start")
         self.declare_parameter('robot_name', 'robot1')
-        self.declare_parameter('robot_ip', '192.168.0.188')
-        self.declare_parameter('robot_port', 8080)    
+        self.declare_parameter('robot_ip', '192.168.0.133')
+        self.declare_parameter('robot_port', 808)    
 
 
         name = self.get_parameter('robot_name').value
@@ -94,6 +95,10 @@ class SingleRobotUDPNode(Node):
     def cmd_vel_callback(self, msg):
         # convert Twist to wheel RPMs
         rpm_left, rpm_right = twist_to_rpm(msg)
+        if math.isnan(rpm_right) or math.isnan(rpm_left):
+            self.get_logger().warn(f"NaN values detected, skipping: L={rpm_left:.2f} R={rpm_right:.2f}")
+            return
+        
         self.last_rpm = (rpm_left, rpm_right)
 
     def timer_callback(self):
