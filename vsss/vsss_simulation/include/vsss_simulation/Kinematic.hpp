@@ -13,8 +13,7 @@ class Kinematic{
         Transform prevTransform;
         rclcpp::Time prevTime;
         bool firstUpdate = true;
-        float ANGULAR_CONSTANT = 2.3f;
-        float LINEAR_CONSTANT = 0.3f;
+        float prev_dif_angle;
         
     public:
         Kinematic();
@@ -23,4 +22,7 @@ class Kinematic{
         geometry_msgs::msg::Twist orient_to_msg(Vector3);
         Vector3 velocity;
         Transform transform;
+        float ANGULAR_PROPORTIONAL_CONSTANT = 2.3f;
+        float ANGULAR_INTEGRAL_CONSTANT = 0;
+        float LINEAR_CONSTANT = 0.3f;
 };

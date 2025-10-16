@@ -1,6 +1,8 @@
 #include <memory>
 #include <cmath>
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp/parameter_client.hpp>
+#include <rclcpp/parameter_event_handler.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 #include "tf2_ros/transform_listener.h"
 #include <vsss_simulation/UnivectorF.hpp>
@@ -21,17 +23,78 @@ class VectorGrapher : public rclcpp::Node {
 public:
     VectorGrapher() : Node("VectorGrapher") {
         
-
+        //Publisher de los markers
         marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(
             "arrow_grid", 10);
-
+        //timer de los mismos
         timer_ = this->create_wall_timer(
             std::chrono::milliseconds(30),
             std::bind(&VectorGrapher::publish_arrows, this));
-        
-        imaginary_sub = this->create_subscription<geometry_msgs::msg::Vector3>("robot1/imaginary_position",50, bind(&VectorGrapher::refresh_imag_pos,this,_1));
+        //Subscrupcion al topico de el robot a vigilar
+        imaginary_sub = this->create_subscription<geometry_msgs::msg::Vector3>(
+          "robot1/imaginary_position",50,
+          bind(&VectorGrapher::refresh_imag_pos,this,_1));
+        //Obtener transformadas
         tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
         tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
+
+        //External Parameters
+        string global_server = "global_parameter_server_node";
+
+
+
+
+
+ // External Parameters client + event handler
+        param_event_handler_ = std::make_shared<rclcpp::ParameterEventHandler>(this);
+        // sync client to read initial values from global server
+        auto param_client = std::make_shared<rclcpp::SyncParametersClient>(this, "global_parameter_server_node");
+        if (param_client->wait_for_service(std::chrono::seconds(2))) {
+            try {
+            auto params = param_client->get_parameters({"Campo_DE", "Campo_KR", "Campo_deltaMin", "Campo_delta__"});
+                for (const auto &p : params) {
+                    if (p.get_name() == "Campo_DE") de = static_cast<float>(p.as_double());
+                    else if (p.get_name() == "Campo_KR") kr = static_cast<float>(p.as_double());
+                    else if (p.get_name() == "Campo_deltaMin") d_min = static_cast<float>(p.as_double());
+                    else if (p.get_name() == "Campo_delta__") delta__ = static_cast<float>(p.as_double());
+                }
+                RCLCPP_INFO(this->get_logger(), "Loaded params de=%f kr=%f d_min=%f delta__=%f", de, kr, d_min, delta__);
+            } catch (const std::exception &e) {
+                RCLCPP_WARN(this->get_logger(), "Failed to read initial params: %s", e.what());
+            }
+        } 
+
+        // subscribe to future changes on the global server parameters
+        string global_server_name =  "global_parameter_server_node";
+        de_cb_handle_ = param_event_handler_->add_parameter_callback(
+            "Campo_DE",
+            [this](const rclcpp::Parameter &p) {
+                de = static_cast<float>(p.as_double());
+            },
+            global_server_name
+          );
+        kr_cb_handle_ = param_event_handler_->add_parameter_callback(
+            "Campo_KR",
+            [this](const rclcpp::Parameter &p) {
+                kr = static_cast<float>(p.as_double());
+            },
+           global_server_name
+        );
+        dmin_cb_handle_ = param_event_handler_->add_parameter_callback(
+            "Campo_deltaMin",
+            [this](const rclcpp::Parameter &p) {
+                d_min = static_cast<float>(p.as_double());
+            },
+           global_server_name
+        );
+        delta_cb_handle_ = param_event_handler_->add_parameter_callback(
+            "Campo_delta__",
+            [this](const rclcpp::Parameter &p) {
+                delta__ = static_cast<float>(p.as_double());
+            },
+           global_server_name
+        );
+
 
     }
 
@@ -47,8 +110,9 @@ private:
 
         } catch (const TransformException & ex) {
           RCLCPP_INFO(
-            this->get_logger(), "Could not transform %s to %s: %s",
-            "world", "goal_pos", ex.what());
+            this->get_logger(), 
+              "Could not transform %s to %s: %s",
+              "world", "goal_pos", ex.what());
           return;
         }
         Line optimalPath (ball_transform.getOrigin(), goal);
@@ -78,12 +142,12 @@ private:
                 //get vector from pos to ball
                 Vector3 pos_2_ball = pos - ball_transform.getOrigin();
                 double pos_t_ball = atan2(pos_2_ball[1], pos_2_ball[0]);
-                double theta_ball = phiTuf(pos_t_ball, pos, ball_transform.getOrigin(), optimalPath);
+                double theta_ball = phiTuf(pos_t_ball, pos, ball_transform.getOrigin(), optimalPath, de, kr);
                 //Distance from pos to enemy
                 Vector3 distan_to_I = pos - imag_pos;
                 float theta_enemy = atan2(distan_to_I[1], distan_to_I[0]);
                 // Join the angles
-                float joined = phiCompose(theta_ball,theta_enemy, distan_to_I.length());
+                float joined = phiCompose(theta_ball,theta_enemy, distan_to_I.length(), d_min, delta__);
                 // Orientation (pointing in +X direction)
                 Quaternion orientation;
                 orientation.setRPY (0.0,0.0,joined);
@@ -161,12 +225,29 @@ private:
     Transform ball_transform;
     Vector3 imag_pos;
     Vector3 goal; 
+    //RCLCPP
     rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
     rclcpp::TimerBase::SharedPtr timer_;
     rclcpp::Subscription<geometry_msgs::msg::Vector3>::SharedPtr imaginary_sub;
+    //tf_references
     std::shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     bool is_enemy =false;
+
+
+    //Campo Vectorial Variables
+    float kr;
+    float de;
+    float d_min;
+    float delta__;
+
+
+    std::shared_ptr<rclcpp::ParameterEventHandler> param_event_handler_;
+    rclcpp::ParameterCallbackHandle::SharedPtr de_cb_handle_;
+    rclcpp::ParameterCallbackHandle::SharedPtr kr_cb_handle_;
+    rclcpp::ParameterCallbackHandle::SharedPtr dmin_cb_handle_;
+    rclcpp::ParameterCallbackHandle::SharedPtr delta_cb_handle_;
+
 };
 
 

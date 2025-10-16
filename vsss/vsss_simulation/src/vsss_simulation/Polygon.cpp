@@ -9,7 +9,7 @@ Polygon::Polygon(vector<Vector3> n){
     rotation = 0;
 }
 
-
+//check if point p is inside the polygon
 bool Polygon::isInside(Vector3 p){
     bool inside = false;
     float minX = poly[0].x(), maxX = poly[0].x();

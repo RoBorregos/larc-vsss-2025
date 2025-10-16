@@ -1,6 +1,8 @@
 #include <memory>
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include <rclcpp/parameter_client.hpp>
+#include <rclcpp/parameter_event_handler.hpp>
 #include <tf2/LinearMath/Transform.h>
 #include <tf2/LinearMath/Quaternion.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
@@ -19,11 +21,22 @@ using std::placeholders::_1;
 using namespace tf2;
 using namespace std;
 
+
+//Field Sizes
+float field_width = 1.5f;
+float field_height = 1.3f;
+float goal_height = 0.4f;
+float defender_height = 0.7f;
+
+
 //Square on the front of the robot
-vector<Vector3> square = Rectangle(Vector3(0.035,0,0), 0.035, 0.035);
+vector<Vector3> square = Rectangle(Vector3(0.035,0,0), 0.015, 0.035);
 //Thinks about the use of static transforms. but they seem over engennier for the same hardcoded values
 
-vector<Vector3> field = Rectangle(Vector3(0,0,0), 1.5, 1.3);
+vector<Vector3> field = Rectangle(Vector3(0,0,0), field_width, field_height);
+
+//Triangle 
+
                           
 
 
@@ -43,39 +56,32 @@ void vector_2_pose(std::unique_ptr<geometry_msgs::msg::PoseStamped, std::default
 
 
 
-
-
-void printOdom(const nav_msgs::msg::Odometry::SharedPtr  & msg, const rclcpp::Logger & logger)
-{
-    const auto & pos = msg->pose.pose.position;
-    const auto & ori = msg->pose.pose.orientation;
-
-    RCLCPP_INFO(logger, "  Position:     (%.3f, %.3f, %.3f)", pos.x, pos.y, pos.z);
-    RCLCPP_INFO(logger, "  Orientation:  (x=%.3f, y=%.3f, z=%.3f, w=%.3f)", ori.x, ori.y, ori.z, ori.w);
-}
-
-
 class Robot_Controller : public rclcpp::Node
 {
   public:
     Robot_Controller()
     : Node("robot_controller")
     {
+
+      this->declare_parameter<bool>("Robot_side", false);
+      field_side = this->get_parameter("Robot_side").as_bool();
       this->declare_parameter<int>("number",  0);
-      
       id = this->get_parameter("number").as_int();
       
 
       self_vel_pub = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel",50 );
       imag_pub = this->create_publisher<geometry_msgs::msg::Vector3>("imaginary_position",50);
       robot_action_sub = this->create_subscription<vsss_simulation::msg::RobotAction>(
-        "action", 50, bind(&Robot_Controller::refresh_action,this,_1));
+        "action", 50, 
+        bind(&Robot_Controller::refresh_action,this,_1));
 
       main_timer = this->create_wall_timer(
-                      std::chrono::milliseconds(50), 
-                      std::bind(&Robot_Controller::Main, this));
+        std::chrono::milliseconds(50), 
+        std::bind(&Robot_Controller::Main, this));
 
-      stuck_timer = this->create_wall_timer(std::chrono::milliseconds(300), std::bind(&Robot_Controller::end_stuck, this));
+      stuck_timer = this->create_wall_timer(
+        std::chrono::milliseconds(300), 
+        std::bind(&Robot_Controller::end_stuck, this));
 
 
       //Debuger arrowDirection
@@ -87,11 +93,68 @@ class Robot_Controller : public rclcpp::Node
       RCLCPP_INFO(get_logger(), "Robot Node With ID: '%i' .", id);
       boxCollider = Polygon(square);
       field_box_Collider = Polygon(field);
+      //Set the area depending on the side of the field
+      int triangle_flip = field_side ? 1 : -1;
+      vector<Vector3> triangle_area = {Vector3(-field_width/2, -field_height/2, 0) , Vector3(field_width/2, -field_height/2, 0) , Vector3(field_width/2 * triangle_flip, -goal_height/2, 0)};
+      kickArea_down = Polygon(triangle_area);
+      for(int i = 0; i < triangle_area.size(); i++){
+        triangle_area[i].setY(-triangle_area[i].getY());  
+      }
+      kickArea_up = Polygon(triangle_area);
 
-      
+      //External Params Recieve Declaration
+      param_event_sub_ = this->create_subscription<rcl_interfaces::msg::ParameterEvent>(
+        "/parameter_events",
+        10,
+        bind(&Robot_Controller::update_parameters, this, placeholders::_1)
+      );
+
+      //Recieve All params
+      // Initialize updatable parameters from the global parameter server
+      {
+        auto param_client = std::make_shared<rclcpp::SyncParametersClient>(this, "/global_parameter_server_node");
+        if (!param_client->wait_for_service(std::chrono::seconds(2))) {
+          RCLCPP_WARN(this->get_logger(), "Parameter service '/global_parameter_server_node' not available, using defaults");
+        } else {
+          std::vector<std::string> names;
+          names.reserve(updatable_parameters.size());
+          for (const auto &kv : updatable_parameters) {
+            names.push_back(kv.first);
+          }
+
+          try {
+            auto params = param_client->get_parameters(names);
+            for (const auto &p : params) {
+              const std::string name = p.get_name();
+              if (updatable_parameters.find(name) != updatable_parameters.end()) {
+                // use as_double() and cast to float
+                *updatable_parameters[name] = static_cast<float>(p.as_double());
+              }
+            }
+            RCLCPP_INFO(this->get_logger(), "Loaded parameters from '/global_parameter_server_node'");
+          } catch (const std::exception &e) {
+            RCLCPP_WARN(this->get_logger(), "Failed to get parameters: %s", e.what());
+          }
+        }
+      }
     }
 
   private:
+
+    void update_parameters(const rcl_interfaces::msg::ParameterEvent::SharedPtr event){
+      if(event->node != "/global_parameter_server_node"){
+        return;
+      }
+      for (const auto& changed_param : event->changed_parameters) {
+        auto param = rclcpp::Parameter::from_parameter_msg (changed_param);
+        const string name = param.get_name();
+        if(updatable_parameters.find(name) != updatable_parameters.end()){
+          *updatable_parameters[name] = static_cast<float>(param.get_value<double>());
+        }
+      }
+
+    }
+
 
     void end_stuck(){
       stuck  = false;
@@ -113,7 +176,10 @@ class Robot_Controller : public rclcpp::Node
             //RCLCPP_INFO(this->get_logger(), "Could not transform %s to %s: %s","world", rName.c_str(), ex.what());
           }
         }
-
+        //Set the variables recieved by the global_parameters_server
+        robots[id].ANGULAR_PROPORTIONAL_CONSTANT =  kpAngular;
+        robots[id].ANGULAR_INTEGRAL_CONSTANT = kiAngular;
+        robots[id].LINEAR_CONSTANT = kLinear;
         //GoBack if Needed
         boxCollider.origin = robots[id].transform.getOrigin();
         Vector3 vectorR  =  quatRotate(robots[id].transform.getRotation(), Vector3(1,0,0));
@@ -131,6 +197,11 @@ class Robot_Controller : public rclcpp::Node
         }
 
 
+        if(kickArea_down.isInside(objective_position)|| kickArea_up.isInside(objective_position)){
+          type = 2;
+        }
+
+
         //Spin if needed
         if(type == 3){
           geometry_msgs::msg::Twist gira_gira;
@@ -141,6 +212,8 @@ class Robot_Controller : public rclcpp::Node
         if(stuck && type == 1){
           return;
         }
+
+
         Transform self_transform = robots[id].transform;
         //if the objective is near, just achieve its rotation
         if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.12){
@@ -160,13 +233,9 @@ class Robot_Controller : public rclcpp::Node
           Vector3 robot_2_obj = self_transform.getOrigin() - objective_position; 
           //obtain the angle from the functions
           float robot_t_obj = atan2(robot_2_obj[1], robot_2_obj[0]);
-          theta_obj = phiTuf(robot_t_obj, self_transform.getOrigin(),objective_position,  optimalPath); 
+          theta_obj = phiTuf(robot_t_obj, self_transform.getOrigin(),objective_position,  optimalPath,de, kr); 
           //transform the angle to a vector
           vector2ball =  Theta2Vector(theta_obj);
-          
-
-
-
 
           if(robots.size() <= 1){
             //Publish if no enemy to search
@@ -174,14 +243,14 @@ class Robot_Controller : public rclcpp::Node
 
             auto msg = std::make_unique<geometry_msgs::msg::PoseStamped>();
 
-          msg->header.stamp = this->now();
-          vector_2_pose(msg, robots[id].transform.getOrigin(), theta_obj);
-          //cout<<vector2ball.x()<<" ----- --- -- -- --- -----"<<vector2ball.y();
-          robot_direction->publish(move(msg));
+            msg->header.stamp = this->now();
+            vector_2_pose(msg, robots[id].transform.getOrigin(), theta_obj);
+            robot_direction->publish(move(msg));
 
 
             return;
           }
+          
 
 
         }else{
@@ -207,16 +276,16 @@ class Robot_Controller : public rclcpp::Node
         }
 
         //Publish imaginary position for the vector grapher
-        Vector3 imaginary_obst = getImagePos(robots[id],robots[nearObstID]);
+        Vector3 imaginary_obst = getImagePos(robots[id],robots[nearObstID], ko);
         geometry_msgs::msg::Vector3 imaginary_position;
         MSGFromVector3(imaginary_obst, imaginary_position );
         imag_pub->publish(imaginary_position);
         float dist_2_imag = (imaginary_obst - self_transform.getOrigin()).length();
 
         //Get the angle coefficient of avoidance
-        float theta_enemy = phiAuf(robots[id],robots[nearObstID]);
+        float theta_enemy = phiAuf(robots[id],robots[nearObstID], ko);
         // Join the angles
-        float joined = phiCompose(theta_obj,theta_enemy, dist_2_imag);
+        float joined = phiCompose(theta_obj,theta_enemy, dist_2_imag, d_min, delta__);
         //Publish final 
         Vector3 result = Theta2Vector(joined);
         self_vel_pub->publish(robots[id].result_to_msg(result, type));
@@ -243,6 +312,7 @@ class Robot_Controller : public rclcpp::Node
 
     unordered_map<int, Kinematic> robots;
     int id;
+    bool field_side;
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr self_vel_pub;
     rclcpp::Publisher<geometry_msgs::msg::Vector3>::SharedPtr imag_pub;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr robot_direction;
@@ -260,8 +330,31 @@ class Robot_Controller : public rclcpp::Node
     //BoxCollider
     Polygon boxCollider;
     Polygon field_box_Collider;
+    Polygon kickArea_down;
+    Polygon kickArea_up;
+
     bool stuck;
     rclcpp::TimerBase::SharedPtr stuck_timer;
+
+    //External Preferences Declaration
+    
+    rclcpp::Subscription<rcl_interfaces::msg::ParameterEvent>::SharedPtr param_event_sub_;
+      //Campo Vectorialfield_side
+    float de, kr, ko, d_min, delta__;
+      //Constantes de Movimiento
+    float kLinear, kiAngular, kpAngular;
+
+    unordered_map<string, float*> updatable_parameters = {
+      {"KLinear", &kLinear},
+      {"KpAngular", &kpAngular},
+      {"KiAngular", &kiAngular},
+      {"Campo_DE", &de},
+      {"Campo_KR", &kr},
+      {"Enemigo_KO", &ko},
+      {"Campo_deltaMin", &d_min},
+      {"Campo_delta__", &delta__},
+
+    };
 
     
 };

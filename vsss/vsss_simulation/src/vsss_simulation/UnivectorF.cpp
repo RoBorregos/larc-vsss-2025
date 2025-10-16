@@ -1,11 +1,9 @@
 #include "vsss_simulation/UnivectorF.hpp"
 
-float de = 0.035;
-float kr = 0.015;
-float ko = 0.01;
-float d_min = 0.03;
-float delta__ = 0.05;
-float phiH(float rho,  float theta, bool cw)    //Hyperbolic angle
+
+
+
+float phiH(float rho,  float theta, bool cw, float de, float kr)    //Hyperbolic angle
 {
     float angle = 0;
     if (rho > de){
@@ -24,7 +22,7 @@ float phiH(float rho,  float theta, bool cw)    //Hyperbolic angle
 }
 
 
-float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory) { // Move to Goal
+float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory, float de, float kr) { // Move to Goal
     /*
     Merges a clockwise and a counterclockwise hyperbolic spiral and returns a coefficient of 
     movement that guides the robot to the ball, following the smallest path 
@@ -40,8 +38,8 @@ float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory) { // Move to 
     float ro_r = RightSp.distance(p);
     
     //objective of each spiral
-    float phi_ccw = phiH(ro_l, theta, true);
-    float phi_cw = phiH(ro_r, theta, false);
+    float phi_ccw = phiH(ro_l, theta, true, de, kr);
+    float phi_cw = phiH(ro_r, theta, false, de, kr);
 
     Vector3 nh_ccw = Theta2Vector(phi_ccw);
     Vector3 nh_cw = Theta2Vector(phi_cw);
@@ -68,9 +66,9 @@ float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory) { // Move to 
     if (-de <= distance_from_trayectory && distance_from_trayectory < de){
         phi_tuf = atan2(spiral_merge[1], spiral_merge[0]);
     }else if( distance_from_trayectory < -de){
-        phi_tuf = phiH(ro_r, theta, false);
+        phi_tuf = phiH(ro_r, theta, false, de, kr);
     }else{
-        phi_tuf = phiH(ro_l, theta, true);
+        phi_tuf = phiH(ro_l, theta, true, de, kr);
     }
 
     return wrapToPI(phi_tuf);
@@ -80,7 +78,7 @@ float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory) { // Move to 
 }
 
 
-Vector3 getImagePos(Kinematic main, Kinematic obst){
+Vector3 getImagePos(Kinematic main, Kinematic obst, float ko){
     Vector3 imag = ko*(obst.velocity - main.velocity);
     imag[2] = 0;
     float distImag = imag.length();
@@ -94,15 +92,15 @@ Vector3 getImagePos(Kinematic main, Kinematic obst){
     return imagPos;
 }
 
-float phiAuf(Kinematic main, Kinematic obst){
-    Vector3 Imag = getImagePos(main, obst);
+float phiAuf(Kinematic main, Kinematic obst, float ko){
+    Vector3 Imag = getImagePos(main, obst, ko);
     Vector3 result = main.transform.getOrigin() - Imag;
     return wrapToPI(atan2(result[1], result[0]));
 }
 
 
 
-float phiCompose(float ball_c, float enemy_c, float distance_){
+float phiCompose(float ball_c, float enemy_c, float distance_, float d_min, float delta__){
     if(distance_ <= d_min){
         return enemy_c;
     }

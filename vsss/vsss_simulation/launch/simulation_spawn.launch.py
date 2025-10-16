@@ -54,7 +54,9 @@ def generate_launch_description():
                 package=pkg_name,
                 namespace= robotName,
                 executable="RobotController",
-                parameters=[{"number":(i+1)}],
+                parameters=[
+                {"number":(i+1) ,
+                 "team_side":LaunchConfiguration("team_side")}],
                 output="screen"
             )
         else:
@@ -188,6 +190,13 @@ def generate_launch_description():
             name = "strategist",
             output = "screen",
             parameters=[{"Robot_count": robot_count, "Robot_side": LaunchConfiguration("team_side")}],
+        ),
+
+        Node(
+            package = pkg_name,
+            executable = "global_parameter_server_node",
+            name = "global_parameter_server_node",
+            output="screen"
         ),
         
 

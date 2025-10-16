@@ -87,7 +87,7 @@ private:
 
         ball.setTrans(ball_tf);
         fromMsg(goal_tf.transform.translation, attacker_goal);
-        Line trayectory(ball.transform.getOrigin(), attacker_goal  /*+ Vector3(0.08 * (field_side ? 1 : -1), 0, 0)*/);
+        Line trayectory(ball.transform.getOrigin(), attacker_goal  );
         
         int attacker_ID = 1;
         vsss_simulation::msg::RobotAction attacker_msg;
