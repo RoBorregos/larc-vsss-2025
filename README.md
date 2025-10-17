@@ -3,12 +3,16 @@
 A simple ROS 2 simulation built for the IEEE VSSS competition.
 
 ---
-## Docker support for development environment
-
-If you wish to set up a Docker container to develop or automate commands in isolated environments, please refer to [docker](/docker/README.md)
-
+>## Docker support for development environment
+>
+>If you wish to set up a Docker container to develop or automate commands in isolated environments please refer to [docker](/docker/README.md)
+>
 ---
-## 📦 Dependencies
+
+
+# Repository Setup
+
+###  Dependencies
 
 First, make sure your system is up to date:
 
@@ -32,7 +36,7 @@ rosdep install --from-paths src --ignore-src -r -y
 
 This reads the package.xml files in your workspace and installs any missing system dependencies.
 
-## 🔨 Build and Source
+### Build and Source
 
 Inside your workspace root (~/your_ws), build the workspace:
 
@@ -46,31 +50,30 @@ Then, source it:
 source install/setup.bash
 ```
 
-## 🧭 Launch Simulation
-To start the Gazebo simulation (robot + field + overhead camera), run:
 
+# Packages
+## vsss_simulation
+
+For this packages there are two main launch files
+- Simulation package
+>This launch file: can recive a parameter of team_side selecting what side the robot will attack
 ```bash
-ros2 launch vsss_simulation simulation_spawn.launch.py 
-
-```
-
-## 📷 View the Camera Feed
-To view the camera's point of view, use rqt_image_view:
-
-```python3
-ros2 run rqt_image_view rqt_image_view
-```
-
-Or you can use the topi **`/camera/image_raw`**
-
-## 🛞 How to move the robot
-The robot uses internally the **`diff_drive`** gazebo tags to perform the differential motion in its motors. In order to communicate with the driver, use the **`cmd_vel`** topic
-
-A simple example to publish velocities to the robot's controller is to activate the **`teleop_twist_keyboard`** executable
-
+ros2 launch vsss_simulation vsss_simulation.launch.py team_side:=<true/false>
+``` 
+- In Real Life launch
+>This launch file recives the same parameters team_side
 ```bash
-ros2 run teleop_twist_keyboard teleop_twist_keyboard
-```
-
-## 🛠️ Notes
-Feel free to modify or extend this package to fit your specific simulation needs.
+ros2 launch vsss_simulation irl_play.launch.py team_side:=<true/false>
+``` 
+---
+As for the debuging, there are also two scripts
+- Vector Grapher
+> File to display in rviz2 the vector field, the attacker will follow
+```bash
+ros2 run vsss_simulation VectorGrapher
+``` 
+- Robot Action Visualizer
+> Displays an arrow indicating the final objective of the corresponfing robot
+```bash
+ros2 run vsss_simulation RobotActionVisualizer <robot_name>
+``` 
