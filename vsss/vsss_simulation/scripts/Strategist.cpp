@@ -13,6 +13,20 @@
 #include <string>
 using namespace std;
 using namespace tf2;
+
+
+//Values of map
+//Field Sizes
+float field_width = 1.5f;
+float field_height = 1.3f;
+float goal_height = 0.4f;
+float defender_height = 0.7f;
+
+
+float kick_distance = 0.12;
+
+
+
 class Strategist : public rclcpp::Node
 {
 public:
@@ -48,6 +62,17 @@ public:
         //Create the publisher for the spin action direction
 
         RCLCPP_INFO(this->get_logger(), "Strategist Started with %i robots", robot_count);
+        //Triangle of unaccessible area a.k.a area where is better to kick than to push the ball
+          //Set the area depending on the side of the field
+        int triangle_flip = field_side ? 1 : -1;
+        vector<Vector3> triangle_area = {Vector3(-field_width/2, -field_height/2, 0) , Vector3(field_width/2, -field_height/2, 0) , Vector3(field_width/2 * triangle_flip, -goal_height/2, 0)};
+        kick_area_down = Polygon(triangle_area);
+        for(int i = 0; i < triangle_area.size(); i++){
+            triangle_area[i].setY(-triangle_area[i].getY());  
+        }
+        kick_area_up = Polygon(triangle_area);
+
+
 
     
     }
@@ -95,6 +120,18 @@ private:
         attacker_msg.objective.set__x(ball.transform.getOrigin().x());
         attacker_msg.objective.set__y(ball.transform.getOrigin().y());
         attacker_msg.objective.set__theta(trayectory.getTheta());
+        
+        //Check if ball imposible to move, so try to kick
+        if(kick_area_down.isInside(ball.transform.getOrigin())|| kick_area_up.isInside(ball.transform.getOrigin())){
+            attacker_msg.type.data = 2;
+            //If near enough just rotate
+            if((ball.transform.getOrigin() - robots[attacker_ID].getOrigin()).length() < kick_distance){
+                attacker_msg.type.data = 3;
+                attacker_msg .spin_direction.data = ((ball.transform.getOrigin() - robots[attacker_ID].getOrigin()).y() > 0) != field_side;
+            }
+        }
+
+
 
         pubs_actions[attacker_ID]->publish(attacker_msg);
         if(robot_count < 2) return;
@@ -115,7 +152,7 @@ private:
         Vector3 horizontal_dif = Vector3(0.085, 0, 0); //Diference from the start of the center of the goal towards its horizontal limits
         Vector3 upper_end = own_goal.getOrigin() + vertical_dif;
         Vector3 lower_end = own_goal.getOrigin() - vertical_dif;
-
+        //Range for prediction
         Line defensive_range(lower_end , upper_end);
 
         Vector3 ul = own_goal.getOrigin() - horizontal_dif + vertical_dif;
@@ -123,6 +160,7 @@ private:
         Vector3 lr = own_goal.getOrigin() + horizontal_dif - vertical_dif;
         Vector3 ll = own_goal.getOrigin() - horizontal_dif - vertical_dif;
         vector<Vector3> p {ul, ur, lr, ll};
+        //Create the defender zone for the defender
         Polygon defenderZone (p);
 
         //$$$
@@ -140,7 +178,7 @@ private:
         
         //Go to Intersection or spin to get the ball out of the place
         vsss_simulation::msg::RobotAction defense_action;
-        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < 0.08 ){
+        if((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).length() < kick_distance ){
             defense_action.type.data = 3;
             defense_action.spin_direction.data = ((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() > 0) != field_side;
         }else{
@@ -177,6 +215,7 @@ private:
     //Atacker
     Kinematic ball;
     Vector3 attacker_goal;
+    Polygon kick_area_up, kick_area_down;
     
     //Defender
     Transform own_goal;

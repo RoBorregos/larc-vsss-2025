@@ -57,8 +57,8 @@ def generate_launch_description():
             executable = "global_parameter_server_node",
             name = "global_parameter_server_node",
             output="screen"
-        ),
+        )
 
     
-    return LaunchDescription([strategiest_side, StaticPoints, Strat, *robot_controllers , params_server])
+    return LaunchDescription([params_server, strategiest_side, StaticPoints, Strat, *robot_controllers ])
     

@@ -34,9 +34,6 @@ vector<Vector3> square = Rectangle(Vector3(0.035,0,0), 0.015, 0.035);
 //Thinks about the use of static transforms. but they seem over engennier for the same hardcoded values
 
 vector<Vector3> field = Rectangle(Vector3(0,0,0), field_width, field_height);
-
-//Triangle 
-
                           
 
 
@@ -73,13 +70,14 @@ class Robot_Controller : public rclcpp::Node
       imag_pub = this->create_publisher<geometry_msgs::msg::Vector3>("imaginary_position",50);
       robot_action_sub = this->create_subscription<vsss_simulation::msg::RobotAction>(
         "action", 50, 
-        bind(&Robot_Controller::refresh_action,this,_1));
+        bind(&Robot_Controller::update_action,this,_1));
 
       main_timer = this->create_wall_timer(
         std::chrono::milliseconds(50), 
         std::bind(&Robot_Controller::Main, this));
 
       stuck_timer = this->create_wall_timer(
+        //Time to activate the end stuck function
         std::chrono::milliseconds(300), 
         std::bind(&Robot_Controller::end_stuck, this));
 
@@ -93,14 +91,7 @@ class Robot_Controller : public rclcpp::Node
       RCLCPP_INFO(get_logger(), "Robot Node With ID: '%i' .", id);
       boxCollider = Polygon(square);
       field_box_Collider = Polygon(field);
-      //Set the area depending on the side of the field
-      int triangle_flip = field_side ? 1 : -1;
-      vector<Vector3> triangle_area = {Vector3(-field_width/2, -field_height/2, 0) , Vector3(field_width/2, -field_height/2, 0) , Vector3(field_width/2 * triangle_flip, -goal_height/2, 0)};
-      kickArea_down = Polygon(triangle_area);
-      for(int i = 0; i < triangle_area.size(); i++){
-        triangle_area[i].setY(-triangle_area[i].getY());  
-      }
-      kickArea_up = Polygon(triangle_area);
+    
 
       //External Params Recieve Declaration
       param_event_sub_ = this->create_subscription<rcl_interfaces::msg::ParameterEvent>(
@@ -155,7 +146,7 @@ class Robot_Controller : public rclcpp::Node
 
     }
 
-
+    //when this functions activates the stuck variable ends and it will not be activated again, until an exteranl source resets it
     void end_stuck(){
       stuck  = false;
       stuck_timer->cancel();
@@ -185,6 +176,7 @@ class Robot_Controller : public rclcpp::Node
         Vector3 vectorR  =  quatRotate(robots[id].transform.getRotation(), Vector3(1,0,0));
         boxCollider.rotation = atan2(vectorR.y(), vectorR.x());
         boxCollider.translade();
+        //If box outside the field, activate timer of stop and set velocity backwards
         if(!field_box_Collider.fullInside(boxCollider) && type == 1){
           geometry_msgs::msg::Twist backwards;
           geometry_msgs::msg::Vector3 linear;
@@ -192,15 +184,10 @@ class Robot_Controller : public rclcpp::Node
           backwards.set__linear(linear);
           self_vel_pub->publish(backwards);
           stuck = true;
+          //This starts again the timer for the function end_stuck()
           stuck_timer->reset();
           return;
         }
-
-
-        if(kickArea_down.isInside(objective_position)|| kickArea_up.isInside(objective_position)){
-          type = 2;
-        }
-
 
         //Spin if needed
         if(type == 3){
@@ -216,7 +203,7 @@ class Robot_Controller : public rclcpp::Node
 
         Transform self_transform = robots[id].transform;
         //if the objective is near, just achieve its rotation
-        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.12){
+        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.8){
           Vector3 tieso(0,1,0);
           self_vel_pub->publish(robots[id].orient_to_msg(tieso));
           //cout<<"Tiesing"<<endl;
@@ -301,7 +288,7 @@ class Robot_Controller : public rclcpp::Node
       // Avoid Each Obst
     }
     
-    void refresh_action(const vsss_simulation::msg::RobotAction m){
+    void update_action(const vsss_simulation::msg::RobotAction m){
       type = m.type.data;
       direction = m.spin_direction.data;
       objective_position.setX( m.objective.x);
@@ -330,8 +317,6 @@ class Robot_Controller : public rclcpp::Node
     //BoxCollider
     Polygon boxCollider;
     Polygon field_box_Collider;
-    Polygon kickArea_down;
-    Polygon kickArea_up;
 
     bool stuck;
     rclcpp::TimerBase::SharedPtr stuck_timer;

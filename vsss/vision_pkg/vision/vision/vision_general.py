@@ -73,11 +73,11 @@ patterns = {
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
     ("yellow", "blue", "green"): 1,
-    ("yellow", "pink", "green"): 19,
+    ("yellow", "pink", "green"): 1,
     ("yellow", "red", "blue"): 16,
     ("yellow", "green", "blue"): 1,
     ("yellow", "pink", "blue"): 18,
-    ("yellow", "green", "pink"): 19,
+    ("yellow", "green", "pink"): 1,
     ("yellow", "blue", "pink"): 18,
 }
 
@@ -170,7 +170,7 @@ class robot:
 
 
 
-yellow_team = [1, 2] #4, 6 #19, 18
+yellow_team = [1] #4, 6 #19, 18
 darkblue_team = []
 detected_robots = [] #should always have a maximum of six robots
 past_robots = [] #used
