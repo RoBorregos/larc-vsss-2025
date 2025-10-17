@@ -15,6 +15,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-odom-to-tf-ros2 \
     ros-humble-urdf-launch \
     ros-humble-gazebo-ros-pkgs \
+    ros-humble-controller-manager \
+    ros-humble-controller-manager-msgs \
+    ros-humble-controller-interface \
     && rm -rf /var/lib/apt/lists/*
 
 # Optional dev tools
