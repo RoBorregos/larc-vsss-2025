@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
+import os
+
+# Añadir estas líneas al inicio, antes de import cv2
+os.environ['OPENCV_VIDEOIO_PRIORITY_MSMF'] = '0'
+os.environ['OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS'] = '0'
+os.environ['GDK_SYNCHRONIZE'] = '1'
+# Add these new environment variables
+os.environ['QT_X11_NO_MITSHM'] = '1'
+
 
 import cv2
+
+cv2.setUseOptimized(False)
+
 from .vision_constants import (
     YOLO_LOCATION,
     CONF_THRESH,
@@ -15,7 +27,6 @@ import transforms3d.euler as euler
 import math
 import numpy as np
 import torch
-import os
 from typing import List
  
 """
@@ -63,7 +74,7 @@ patterns = {
     ("darkblue", "blue", "red"): 26,
     ("darkblue", "red", "green"): 3,
     ("darkblue", "blue", "green"): 1,
-    ("darkblue", "pink", "green"): 5,
+    ("darkblue", "pink", "green"): 9,
     ("darkblue", "red", "blue"): 2,
     ("darkblue", "green", "blue"): 7,
     ("darkblue", "pink", "blue"): 8,
@@ -74,14 +85,28 @@ patterns = {
     ("yellow", "red", "green"): 13,
     ("yellow", "blue", "green"): 14,
     ("yellow", "pink", "green"): 19,
-    ("yellow", "red", "blue"): 16,
+    ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 17,
     ("yellow", "pink", "blue"): 18,
     ("yellow", "green", "pink"): 19,
     ("yellow", "blue", "pink"): 18,
 }
 
-# threshold = 5.0 #thought in cm, but see if this should be in pixels.
+yellow_team = [9, 12, 19]
+
+def circular_mean(angles):
+    a = sum(math.sin(math.radians(angle)) for angle in angles)
+    b = sum(math.cos(math.radians(angle)) for angle in angles)
+    cir_mean = math.degrees(math.atan2(a, b))
+    return cir_mean
+
+def normalize_angle_diff(angle1, angle2):
+    diff = angle2 - angle1
+    while diff > 180:
+        diff -= 360
+    while diff < -180:
+        diff += 360
+    return abs(diff)
 
 class robot:
     def __init__(self, id : str, team: str, location, angle):
@@ -116,7 +141,7 @@ class robot:
         not_same = []
 
         for detected_robot in detected_robots:
-            distance = get_eucladian(detected_robot.location, self.location) #check number sign, if negative, use abs
+            distance = get_eucladian(detected_robot.location, self.location)
             detected_robot.relative_distance = distance
             if detected_robot.id == self.id:
                 same_id.append(detected_robot)
@@ -125,7 +150,7 @@ class robot:
             else:
                 not_same.append(detected_robot)
 
-        same_id_ordered = sorted(same_id, key=lambda r:r.relative_distance) #check if this focus is correct, appending the four hole arrays?
+        same_id_ordered = sorted(same_id, key=lambda r:r.relative_distance) 
         same_color_ordered = sorted(same_color, key=lambda r:r.relative_distance)
         same_team_ordered = sorted(same_team, key=lambda r:r.relative_distance)
         not_same_ordered = sorted(not_same, key=lambda r:r.relative_distance)
@@ -144,22 +169,31 @@ class robot:
 
         possibilities.append(not_same_ordered)
         ids_4 = [robot.id for robot in not_same_ordered]
-        # self.get_logger().info(f"ID nor same ordered: {ids_4}")
+        # self.get_logger().info(f"ID nor same ordered: {ids_4}")       
 
         selected_robot = None
         for possibility in possibilities:
             if len(possibility) > 0:
                 # self.get_logger().warn("selected possibility")
                 #possibility[0] should be the most optimal
-                #TODO: See if using mre than the first robot could help.
                 selected_robot = possibility[0]
                 break
-                    
 
+        frame_angle_threshold = 40
         if selected_robot is not None:
             self.location = selected_robot.location
             if selected_robot.angle is not None:
-                self.angle = selected_robot.angle
+                #The len of the window allows for smoother transforms, but traits off real time response to rapid angle changes
+                if len(self.angle_window) < 10: 
+                    self.angle_window.append(selected_robot.angle)
+                    if normalize_angle_diff(self.angle, selected_robot.angle) > frame_angle_threshold:
+                        pass
+                    else:
+                        self.angle = selected_robot.angle
+                else:
+                    self.angle_window.pop(0)
+                    self.angle_window.append(selected_robot.angle)
+                    self.angle = circular_mean(self.angle_window)
             # self.get_logger().warn(f"Selected a robot: {selected_robot}")
 
             yaw = math.radians(self.angle)
@@ -169,9 +203,6 @@ class robot:
         return selected_robot
 
 
-
-yellow_team = [1, 2] #4, 6 #19, 18
-darkblue_team = []
 detected_robots = [] #should always have a maximum of six robots
 past_robots = [] #used
 
@@ -183,6 +214,7 @@ orange = np.load(os.path.join(luts_path, "lut_orange.npy"))
 width = 1280
 height = 720
 
+ #TODO:this is the reason for having weird visualization, fix it, but not a priority
 objectivePoints = np.float32([[0, 0], [0,height], [width, height], [width, 0]])
 real_field_coors = [[0,0],
                     [0, 130],
@@ -209,7 +241,7 @@ def mouse_callback(event, x, y, _, __):
         print(f"Clicked: {x}, {y}")
         clicked_points.append((x, y))
 
-def getHomography(img, realCoor):
+def getHomography(img, realCoor, save_dir=None):
     """
     Computes the homography matrix based on user-clicked points and real-world coordinates.
     
@@ -243,10 +275,45 @@ def getHomography(img, realCoor):
     realCoors = np.array(realCoor, dtype=np.float32)
 
     H, _ = cv2.findHomography(pxCoors, realCoors, cv2.RANSAC, 5.0)
-    np.save("homography.npy", H)
     
-    matrix = cv2.getPerspectiveTransform(pxCoors, objectivePoints)
-    np.save("persMatrix.npy", matrix)
+    # EXPANDIR puntos para más campo de visión
+    expansion_factor = 1.4  # 40% más área
+    
+    # Calcular centro de los puntos
+    center_x = np.mean(pxCoors[:, 0])
+    center_y = np.mean(pxCoors[:, 1])
+    
+    # Expandir cada punto desde el centro
+    expanded_points = []
+    for point in pxCoors:
+        dx = point[0] - center_x
+        dy = point[1] - center_y
+        
+        new_x = center_x + dx * expansion_factor
+        new_y = center_y + dy
+        
+        # Mantener dentro de los límites de la imagen
+        new_x = max(0, min(img.shape[1]-1, new_x))
+        new_y = max(0, min(img.shape[0]-1, new_y))
+        
+        expanded_points.append([new_x, new_y])
+    
+    expanded_points = np.array(expanded_points, dtype=np.float32)
+    
+    # Usar dimensiones originales para mostrar todo el ancho
+    img_height, img_width = img.shape[:2]
+    objectivePoints = np.float32([[0, 0], [0, img_height], [img_width, img_height], [img_width, 0]])
+    
+    # Perspective matrix con puntos expandidos (más campo de visión)
+    matrix = cv2.getPerspectiveTransform(expanded_points, objectivePoints)
+
+
+    if save_dir is None:
+        save_dir = utis_path
+    os.makedirs(save_dir, exist_ok=True)
+
+    np.save(os.path.join(save_dir, "homography.npy"), H)
+    np.save(os.path.join(save_dir, "persMatrix.npy"), matrix)
 
     return H, matrix
 
@@ -255,16 +322,16 @@ def get_eucladian(pt1, pt2):
     Get the eucladian distance between two points
     """
     # pt1 is a tuple of two elements
-    a = np.array([pt1[0], pt1[0]])
+    a = np.array([pt1[0], pt1[1]])
     b = np.array([pt2[0], pt2[1]])
     distance = np.linalg.norm(a - b)
     return distance
-
 
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
         self.video_id = self.declare_parameter("Video_ID", 2)
+
         # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
@@ -306,22 +373,11 @@ class CameraDetections(Node):
                     return
                 
             # Warpea la imagen antes de procesar
-            warped_img = cv2.warpPerspective(frame, self.perspectiveMatrix, (width, height))
+            frame_height, frame_width = frame.shape[:2]
+            warped_img = cv2.warpPerspective(frame, self.perspectiveMatrix, (frame_width, frame_height))
             self.image = warped_img
             self.model_use()
             self.ball_detection(warped_img)
-    
-    def warp_image(self, data):
-        '''
-        Gets the warped image if homography file is available, if not, 
-        will execute homography calibration process
-        '''
-        if self.homography is not None:
-            # print(f"Homography -> {self.homography}")
-            warped_img = cv2.warpPerspective(data, self.perspectiveMatrix, (640, 480)) #see if it's better to have 640, 480
-                  
-        else:
-            self.homography, self.perspectiveMatrix = getHomography(data, real_field_coors)
 
     def tf_helper(self, id, x, y, roll, pitch, yaw):
         '''
@@ -351,9 +407,9 @@ class CameraDetections(Node):
         pt_img = np.array([[[x_img, y_img]]], dtype=np.float32)
         inverse_perspective = np.linalg.inv(self.perspectiveMatrix)
         pt_original = cv2.perspectiveTransform(pt_img, inverse_perspective)
+
         pt_transformed = cv2.perspectiveTransform(pt_original, self.homography)
         x_field, y_field = pt_transformed[0][0]  # Coordenadas reales del campo
-        # x_field, y_field = pt_field[0][0]
         return x_field, y_field
 
     def get_info_robot(self, img, position):
@@ -473,8 +529,6 @@ class CameraDetections(Node):
             robot_detected = robot(None, None, position, None)
             return
         
-    
-
     def model_use(self):
         '''
         Gets the robots bounding box and positions
@@ -512,8 +566,8 @@ class CameraDetections(Node):
                         # Dibuja el bounding box
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
-                        # text = f"{x_cm}, {y_cm}"
-                        # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                        text = f"{x_cm}, {y_cm}"
+                        cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                         #GET information of the robots (uses roi and robot position--------------------------------------------------------
                         robot_info = self.get_info_robot(roi, [x_cm, y_cm]) #fill table 
                         self.get_logger().info(f"{type(robot_info)}")
