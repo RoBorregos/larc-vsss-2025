@@ -23,7 +23,7 @@ float goal_height = 0.4f;
 float defender_height = 0.7f;
 
 
-float kick_distance = 0.1;
+float kick_distance = 0.08;
 
 
 

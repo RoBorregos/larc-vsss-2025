@@ -73,26 +73,26 @@ patterns = {
     ("darkblue", "green", "red"): 133,
     ("darkblue", "blue", "red"): 26,
     ("darkblue", "red", "green"): 3,
-    ("darkblue", "blue", "green"): 1,
-    ("darkblue", "pink", "green"): 9,
+    ("darkblue", "blue", "green"): 2,
+    ("darkblue", "pink", "green"): 2,
     ("darkblue", "red", "blue"): 2,
     ("darkblue", "green", "blue"): 7,
-    ("darkblue", "pink", "blue"): 8,
-    ("darkblue", "green", "pink"): 9,
+    ("darkblue", "pink", "blue"): 1,
+    ("darkblue", "green", "pink"): 2,
     ("darkblue", "blue", "pink"): 10,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
     ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 19,
+    ("yellow", "pink", "green"): 2,
     ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 17,
     ("yellow", "pink", "blue"): 18,
-    ("yellow", "green", "pink"): 1,
+    ("yellow", "green", "pink"): 2,
     ("yellow", "blue", "pink"): 18,
 }
 
-yellow_team = [9, 12, 19]
+yellow_team = [2, 1]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -564,10 +564,10 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         # Dibuja el bounding box
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
-                        text = f"{x_cm}, {y_cm}"
-                        cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                        # text = f"{x_cm}, {y_cm}"
+                        # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                         #GET information of the robots (uses roi and robot position--------------------------------------------------------
                         robot_info = self.get_info_robot(roi, [x_cm, y_cm]) #fill table 
                         self.get_logger().info(f"{type(robot_info)}")

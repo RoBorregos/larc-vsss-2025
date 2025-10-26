@@ -13,7 +13,9 @@ class Kinematic{
         Transform prevTransform;
         rclcpp::Time prevTime;
         bool firstUpdate = true;
-        float prev_dif_angle;
+        float prev_dif_angle = 0;
+        float acumulative_dif_angle = 0;
+        bool inverted = false;
         
     public:
         Kinematic();
@@ -24,5 +26,6 @@ class Kinematic{
         Transform transform;
         float ANGULAR_PROPORTIONAL_CONSTANT = 2.3f;
         float ANGULAR_INTEGRAL_CONSTANT = 0;
+        float ANGULAR_DERIVATIVE_CONSTAT = 0;
         float LINEAR_CONSTANT = 0.3f;
 };
