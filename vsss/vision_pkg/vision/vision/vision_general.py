@@ -179,22 +179,31 @@ class robot:
                 selected_robot = possibility[0]
                 break
 
-        frame_angle_threshold = 40
+        frame_angle_threshold = 50
         if selected_robot is not None:
             self.location = selected_robot.location
             if selected_robot.angle is not None:
                 #The len of the window allows for smoother transforms, but traits off real time response to rapid angle changes
-                if len(self.angle_window) < 10: 
+                if self.angle is None:
+                    self.angle = selected_robot.angle
                     self.angle_window.append(selected_robot.angle)
-                    if normalize_angle_diff(self.angle, selected_robot.angle) > frame_angle_threshold:
-                        pass
-                    else:
-                        self.angle = selected_robot.angle
                 else:
-                    self.angle_window.pop(0)
-                    self.angle_window.append(selected_robot.angle)
-                    self.angle = circular_mean(self.angle_window)
-            # self.get_logger().warn(f"Selected a robot: {selected_robot}")
+                    angle_diff = normalize_angle_diff(self.angle, selected_robot.angle)
+
+                    # Cambios pequeños, acepta inmediatamente
+                    if angle_diff <= 25:
+                        self.angle = selected_robot.angle
+                        self.angle_window.append(selected_robot.angle)
+                        if len(self.angle_window) > 4:  # Ventana pequeña
+                            self.angle_window.pop(0)
+
+                    elif angle_diff <= frame_angle_threshold:
+                        new_angle = circular_mean([self.angle, selected_robot.angle])
+                        self.angle = new_angle
+                        self.angle_window.append(selected_robot.angle)
+                        if len(self.angle_window) > 4:
+                            self.angle_window.pop(0)
+                # self.get_logger().warn(f"Selected a robot: {selected_robot}")
 
             yaw = math.radians(self.angle)
             pitch, roll = 0.0, math.pi
