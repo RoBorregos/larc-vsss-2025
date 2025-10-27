@@ -1,6 +1,6 @@
   #include <WiFi.h>
   #include <WiFiUdp.h>
-  #include "PID.hpp"
+  #include "PID.h"
 
   template<typename T1, typename T2>
   struct pair {
@@ -17,14 +17,17 @@
   WiFiUDP udp;
   const int localPort = 8081;
 
-  //MotorPins
-  #define MotorA1 17
-  #define MotorA2 19  
-  #define MotorA_PWM_PIN 1  
+  //MotorPins 
+  
+  // right one 
+  #define MotorB1 17
+  #define MotorB2 19  
+  #define MotorB_PWM_PIN 20  
 
-  #define MotorB1 2
-  #define MotorB2 21
-  #define MotorB_PWM_PIN 0  
+  // left one
+  #define MotorA1 21
+  #define MotorA2 22
+  #define MotorA_PWM_PIN 16
 
   //TimeControl Variables
   unsigned long previousTime;
@@ -32,8 +35,8 @@
   float deltaTime;
 
   //Encoder Pins
-  #define rEncoder 23
-  #define lEncoder 16
+  #define lEncoder 23 
+  #define rEncoder 18
   #define NoTicks 350.0
 
   //Encoder Values
