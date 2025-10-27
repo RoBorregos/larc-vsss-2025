@@ -249,11 +249,12 @@ class Robot_Controller : public rclcpp::Node
 
         //Look up for nearest enemy
         int nearObstID = 0;
+        
         for(auto rob: robots){
-          if(rob.first == id){
+          if(rob.first == id || rob.first == 0){
             continue;
           }
-          if(nearObstID == 0){
+          if(nearObstID == 0 ){
             nearObstID= rob.first;
             continue;
           }else{
@@ -262,8 +263,19 @@ class Robot_Controller : public rclcpp::Node
                                   rob.first : nearObstID;
           }
         }
+        //If no enemy detected (error exit)   - > publish the prev decision without enemys into account
+        // if(nearObstID == 0){
+        //     self_vel_pub->publish(robots[id].result_to_msg(vector2ball, type));
+        //     auto msg = std::make_unique<geometry_msgs::msg::PoseStamped>();
+        //     msg->header.stamp = this->now();
+        //     vector_2_pose(msg, robots[id].transform.getOrigin(), theta_obj);
+        //     robot_direction->publish(move(msg));
+        //     return;
+        // }
+        
 
         //Publish imaginary position for the vector grapher
+        // cout<<"For robot "<<id<<" detected: "<<robots.size()<<" and selected "<<nearObstID<<endl;
         Vector3 imaginary_obst = getImagePos(robots[id],robots[nearObstID], ko);
         geometry_msgs::msg::Vector3 imaginary_position;
         MSGFromVector3(imaginary_obst, imaginary_position );

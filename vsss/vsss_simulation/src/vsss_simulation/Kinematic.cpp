@@ -1,6 +1,22 @@
 #include "vsss_simulation/Kinematic.hpp"
 using namespace tf2;
 
+
+
+//Change of gear depenging on the angulr diference
+float finalLinearVelByDif(float dif){
+
+    if(dif > M_PI*3/4){
+        return 0.2;
+    }else if( dif > M_PI/4){
+        return 0.7;
+    }else if(dif > M_PI/7){
+        return 0.8;
+    }else{
+        return 1;
+    }
+}
+
 Kinematic::Kinematic(){}
 void Kinematic::setTrans(geometry_msgs::msg::TransformStamped t){
     if(firstUpdate){
@@ -57,7 +73,8 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
     acumulative_dif_angle /= 2;
     response.angular.z = dif*ANGULAR_PROPORTIONAL_CONSTANT + (acumulative_dif_angle) * ANGULAR_INTEGRAL_CONSTANT + (dif - prev_dif_angle) * ANGULAR_DERIVATIVE_CONSTAT;
     //cout<<ANGULAR_DERIVATIVE_CONSTAT<<" "<<ANGULAR_PROPORTIONAL_CONSTANT<<" "<<ANGULAR_INTEGRAL_CONSTANT<<endl;
-    response.linear.x = -LINEAR_CONSTANT;
+    //Change the vel depending on the angular diference
+    response.linear.x = -LINEAR_CONSTANT * finalLinearVelByDif(abs(dif)) ;
     response.linear.x *= inverted ? -1 : 1;
     prev_dif_angle = dif;
     return response;

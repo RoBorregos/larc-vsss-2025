@@ -17,10 +17,13 @@ using namespace tf2;
 
 //Values of map
 //Field Sizes
-float field_width = 1.5f;
-float field_height = 1.3f;
-float goal_height = 0.4f;
-float defender_height = 0.7f;
+const float field_width = 1.5f;
+const float field_height = 1.3f;
+const float goal_height = 0.45f;
+const float defender_height = 0.8f;
+const float defender_width = 0.15;
+Vector3 vertical_dif =  Vector3(0, defender_height/2 ,0); //Diference from the start of the center of the goal towards its vertical limits
+Vector3 horizontal_dif = Vector3(defender_width/2, 0, 0); //Diference from the start of the center of the goal towards its horizontal limits
 
 
 float kick_distance = 0.08;
@@ -148,12 +151,9 @@ private:
             RCLCPP_INFO(this->get_logger(), "Could not transform own goal ends: %s", ex.what());
             return;
         }
-        Vector3 vertical_dif =  Vector3(0, 0.40 ,0); //Diference from the start of the center of the goal towards its vertical limits
-        Vector3 horizontal_dif = Vector3(0.085, 0, 0); //Diference from the start of the center of the goal towards its horizontal limits
+        own_goal.getOrigin().setX(own_goal.getOrigin().getX() + (field_side ? 1 : -1) * defender_width/2); //Little offset because the goal is the line between the field and the goal
         Vector3 upper_end = own_goal.getOrigin() + vertical_dif;
         Vector3 lower_end = own_goal.getOrigin() - vertical_dif;
-        //Range for prediction
-        Line defensive_range(lower_end , upper_end);
 
         Vector3 ul = own_goal.getOrigin() - horizontal_dif + vertical_dif;
         Vector3 ur = own_goal.getOrigin() + horizontal_dif + vertical_dif;
@@ -162,6 +162,14 @@ private:
         vector<Vector3> p {ul, ur, lr, ll};
         //Create the defender zone for the defender
         Polygon defenderZone (p);
+        //if the robot is inside its own defensive zone, the prediction should be in the own line of robot, or its own defensive range (what ever is near to the goal)
+        //set the x coord of the line
+        float defender_x_coordinate = max(min(ur.x(), robots[defender_ID].getOrigin().x()), ul.x()); // max(min(r,v), l) -> l < v < r
+        upper_end.setX(defender_x_coordinate);
+        lower_end.setX(defender_x_coordinate);
+       
+    
+        Line defensive_range(lower_end , upper_end);
 
         //$$$
 
@@ -170,10 +178,11 @@ private:
         Line ball_trayectory = Line(ball.transform.getOrigin(), ball.transform.getOrigin() + ball.velocity);
         pair<int, Vector3> intersect_result = defensive_range.Intersect(ball_trayectory);
         intersect_result.first &= ball.velocity.length() > 0.1;
-        if(defenderZone.isInside(ball.transform.getOrigin())){
+        bool ball_inside_detected = defenderZone.isInside(ball.transform.getOrigin());
+        if(ball_inside_detected){
             defend_point = ball.transform.getOrigin();
         }else if(intersect_result.first == 1){
-            defend_point = intersect_result.second /* + Vector3(0.10 * (field_side ? -1 : 1), 0, 0)*/;
+            defend_point = intersect_result.second ;
         }
         
         //Go to Intersection or spin to get the ball out of the place
@@ -186,6 +195,9 @@ private:
             defense_action.objective.set__x(defend_point.x());
             defense_action.objective.set__y(defend_point.y());
             defense_action.objective.set__theta(M_PI / 2);
+            if(!ball_inside_detected){
+                defense_action.objective.set__x(defender_x_coordinate);
+            }
         }
 
         pubs_actions[defender_ID]->publish(defense_action);
@@ -202,8 +214,6 @@ private:
 
     //Publishers for information in each robot
     unordered_map<int, rclcpp::Publisher<vsss_simulation::msg::RobotAction>::SharedPtr> pubs_actions;
-    //Saved information for each robot
-    unordered_map<int, Transform> robots_transform;
     //Transform listener
     shared_ptr<tf2_ros::TransformListener> tf_listener_{nullptr};
     unique_ptr<tf2_ros::Buffer> tf_buffer_;

@@ -17,9 +17,9 @@ public:
         param_desc.set__description("Constante Angular para la velocidad linear");
         this->declare_parameter<double>("KLinear", 0.35, param_desc);
         param_desc.set__description("Constante angular proporcional, en donde el angulo de diferencia determina que tanto rota el robot");
-        this->declare_parameter<double>("KpAngular", 2.4, param_desc);
+        this->declare_parameter<double>("KpAngular", 1.5, param_desc);
         param_desc.set__description("Constante angular integral, en donde el promedio de los errores es lo que se aporta para poder hacer un movimiento suave hacia el valor");
-        this->declare_parameter<double>("KiAngular", 0.01, param_desc);
+        this->declare_parameter<double>("KiAngular", 0.4, param_desc);
         param_desc.set__description("Constante angular derivativo, en donde el promedio de los errores es lo que se aporta para poder hacer un movimiento suave hacia el valor");
         this->declare_parameter<double>("kdAngular", 0.0, param_desc);
 

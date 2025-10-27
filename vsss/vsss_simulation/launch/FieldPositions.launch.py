@@ -25,7 +25,7 @@ def generate_launch_description():
                 name='goal_tf',
                 ## x, y, z, orientacion y relacion hijo padre
                 arguments=[
-                    "0.68", 
+                    "0.75", 
                     "0.0",
                     "0.0",     
                     "0",
@@ -41,7 +41,7 @@ def generate_launch_description():
                 output="screen",
                 name='own_goal',
                 arguments=[
-                    "-0.68",
+                    "-0.75",
                     "0.0",
                     "0.0",
                     "0",

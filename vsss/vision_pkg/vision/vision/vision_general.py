@@ -92,7 +92,7 @@ patterns = {
     ("yellow", "blue", "pink"): 18,
 }
 
-yellow_team = [2, 1]
+yellow_team = [ 1, 2]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
