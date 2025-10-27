@@ -203,7 +203,12 @@ class robot:
                         self.angle_window.append(selected_robot.angle)
                         if len(self.angle_window) > 4:
                             self.angle_window.pop(0)
-                # self.get_logger().warn(f"Selected a robot: {selected_robot}")
+                    else: #cambios mas grandes
+                        # cambios grandes -> interpolar rápido
+                        alpha = 0.7
+                        delta = (selected_robot.angle - self.angle + 540) % 360 - 180
+                        self.angle = (self.angle + alpha * delta) % 360
+                        # self.get_logger().warn(f"Selected a robot: {selected_robot}")
 
             yaw = math.radians(self.angle)
             pitch, roll = 0.0, math.pi
