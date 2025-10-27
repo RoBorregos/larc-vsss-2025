@@ -41,19 +41,25 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
 
     float dif = dif_vector(objective, transform);
     geometry_msgs::msg::Twist response;
-    bool invert = false;
-    if(type == 2 && abs(dif) > M_PI/2){
+    if(inverted){
         dif += M_PI;
         dif = wrapToPI(dif);
-        invert = true;
     }
 
-    response.angular.z = dif*ANGULAR_PROPORTIONAL_CONSTANT + ((dif+prev_dif_angle)/2) * ANGULAR_INTEGRAL_CONSTANT;
+    if(type == 2 && abs(dif) > M_PI*3/5){
+        inverted =! inverted;
+    }
+    if(type == 1){
+        inverted = false;
+    }
+    //PID shit
+    acumulative_dif_angle += dif;
+    acumulative_dif_angle /= 2;
+    response.angular.z = dif*ANGULAR_PROPORTIONAL_CONSTANT + (acumulative_dif_angle) * ANGULAR_INTEGRAL_CONSTANT + (dif - prev_dif_angle) * ANGULAR_DERIVATIVE_CONSTAT;
+    //cout<<ANGULAR_DERIVATIVE_CONSTAT<<" "<<ANGULAR_PROPORTIONAL_CONSTANT<<" "<<ANGULAR_INTEGRAL_CONSTANT<<endl;
     response.linear.x = -LINEAR_CONSTANT;
-    response.linear.x *= invert ? -1 : 1;
-    response.angular.z = type ==2 ? response.angular.z*2: response.angular.z;
+    response.linear.x *= inverted ? -1 : 1;
     prev_dif_angle = dif;
-
     return response;
 }
 

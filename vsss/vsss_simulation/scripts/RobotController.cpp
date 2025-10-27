@@ -170,6 +170,7 @@ class Robot_Controller : public rclcpp::Node
         //Set the variables recieved by the global_parameters_server
         robots[id].ANGULAR_PROPORTIONAL_CONSTANT =  kpAngular;
         robots[id].ANGULAR_INTEGRAL_CONSTANT = kiAngular;
+        robots[id].ANGULAR_DERIVATIVE_CONSTAT = kdAngular;
         robots[id].LINEAR_CONSTANT = kLinear;
         //GoBack if Needed
         boxCollider.origin = robots[id].transform.getOrigin();
@@ -203,7 +204,7 @@ class Robot_Controller : public rclcpp::Node
 
         Transform self_transform = robots[id].transform;
         //if the objective is near, just achieve its rotation
-        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.08){
+        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.06){
           Vector3 tieso(0,1,0);
           self_vel_pub->publish(robots[id].orient_to_msg(tieso));
           //cout<<"Tiesing"<<endl;
@@ -327,12 +328,13 @@ class Robot_Controller : public rclcpp::Node
       //Campo Vectorialfield_side
     float de, kr, ko, d_min, delta__;
       //Constantes de Movimiento
-    float kLinear, kiAngular, kpAngular;
+    float kLinear, kiAngular, kpAngular, kdAngular;
 
     unordered_map<string, float*> updatable_parameters = {
       {"KLinear", &kLinear},
       {"KpAngular", &kpAngular},
       {"KiAngular", &kiAngular},
+      {"kdAngular", &kdAngular},
       {"Campo_DE", &de},
       {"Campo_KR", &kr},
       {"Enemigo_KO", &ko},
