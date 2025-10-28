@@ -18,7 +18,7 @@ def generate_launch_description():
     camera_file = os.path.join(pkg_share, 'urdf', 'camera.urdf')
     config_file_path = os.path.join(pkg_share, 'config', 'ball_odom2_tf.yaml')
 
-    robot_count = 2
+    robot_count = 3
     robot_spawns = []
     team_colors = ['Blue', 'Yellow']  # Colors for the teams
     robot_colors = [ 'Green', 'Turquoise', 'Purple']  # Colors for the robots
@@ -49,7 +49,7 @@ def generate_launch_description():
         # small_plate1_color = robot_colors[color_index_1]
         # small_plate2_color = robot_colors[color_index_2]
 
-        if(i < 2):
+        if(i < 3):
             controlNode = Node(
                 package=pkg_name,
                 namespace= robotName,

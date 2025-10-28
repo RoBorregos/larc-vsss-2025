@@ -100,39 +100,53 @@ private:
             //RCLCPP_INFO(this->get_logger(), "Could not transform %s to %s: %s","world", rName.c_str(), ex.what());
           }
         }
-//-------------------------------------------------------------------------------------------\\
-        //Attacker
-            // Get ball and goal transform
-            geometry_msgs::msg::TransformStamped ball_tf, goal_tf;
-            try {
-                ball_tf = tf_buffer_->lookupTransform("world", "sphere_link", TimePointZero);
-                goal_tf = tf_buffer_->lookupTransform("world", objective_name, TimePointZero);
-               
-            } catch (const TransformException &ex) {
-                RCLCPP_INFO(this->get_logger(), "No transform sphere_link or  goal_pos to world: %s", ex.what());
-                return;
-            }
 
+        // Get ball and goal transform
+        geometry_msgs::msg::TransformStamped ball_tf, goal_tf;
+        try {
+            ball_tf = tf_buffer_->lookupTransform("world", "sphere_link", TimePointZero);
+            goal_tf = tf_buffer_->lookupTransform("world", objective_name, TimePointZero);
+            
+        } catch (const TransformException &ex) {
+            RCLCPP_INFO(this->get_logger(), "No transform sphere_link or  goal_pos to world: %s", ex.what());
+            return;
+        }
         ball.setTrans(ball_tf);
+
+//-------------------------------------------------------------------------------------------\\
+
+        
+        //Attacker
+   
         fromMsg(goal_tf.transform.translation, attacker_goal);
         Line trayectory(ball.transform.getOrigin(), attacker_goal  );
         
-        int attacker_ID = 1;
         vsss_simulation::msg::RobotAction attacker_msg;
-        attacker_msg.type.data = 1;
-        attacker_msg.objective.set__x(ball.transform.getOrigin().x());
-        attacker_msg.objective.set__y(ball.transform.getOrigin().y());
-        attacker_msg.objective.set__theta(trayectory.getTheta());
-        
-        //Check if ball imposible to move, so try to kick
-        if(kick_area_down.isInside(ball.transform.getOrigin())|| kick_area_up.isInside(ball.transform.getOrigin())){
-            attacker_msg.type.data = 2;
-            //If near enough just rotate
-            if((ball.transform.getOrigin() - robots[attacker_ID].getOrigin()).length() < kick_distance){
-                attacker_msg.type.data = 3;
-                attacker_msg .spin_direction.data = ((ball.transform.getOrigin() - robots[attacker_ID].getOrigin()).y() > 0) != field_side;
+        if(ball.transform.getOrigin().x() < 0 != field_side){
+            attacker_msg.type.data = 1;
+            attacker_msg.objective.set__x(ball.transform.getOrigin().x());
+            attacker_msg.objective.set__y(ball.transform.getOrigin().y());
+            attacker_msg.objective.set__theta(trayectory.getTheta());
+            
+            //Check if ball imposible to move, so try to kick
+            if(kick_area_down.isInside(ball.transform.getOrigin())|| kick_area_up.isInside(ball.transform.getOrigin())){
+                attacker_msg.type.data = 2;
+                //If near enough just rotate
+                if((ball.transform.getOrigin() - robots[attacker_ID].getOrigin()).length() < kick_distance){
+                    attacker_msg.type.data = 3;
+                    attacker_msg .spin_direction.data = ((ball.transform.getOrigin() - robots[attacker_ID].getOrigin()).y() > 0) != field_side;
+                }
             }
+        }else{
+            attacker_msg.type.data = 2;
+            float attacker_range_start = field_side ? 0.0 : attacker_goal.getX();
+            float attacker_range_end = !field_side ? 0.0 : attacker_goal.getX(); 
+            float attacker_x_coord = max(min(attacker_range_end, (float)robots[attacker_ID].getOrigin().x()), attacker_range_start);
+            attacker_msg.objective.set__x(attacker_x_coord);
+            attacker_msg.objective.set__y(-ball.transform.getOrigin().y());
+            attacker_msg.objective.set__theta(M_PI / 2);
         }
+        
 
 
 
@@ -140,8 +154,6 @@ private:
         if(robot_count < 2) return;
 //----------------------------------------------------------------------------------------------------\\
 
-        //Defender
-        int defender_ID = 2;
         //Get point for defense
         //$ Could be in the init function to avoid doing this every time;
         try {
@@ -180,9 +192,9 @@ private:
         intersect_result.first &= ball.velocity.length() > 0.1;
         bool ball_inside_detected = defenderZone.isInside(ball.transform.getOrigin());
         if(ball_inside_detected){
-            defend_point = ball.transform.getOrigin();
+            defender_point = ball.transform.getOrigin();
         }else if(intersect_result.first == 1){
-            defend_point = intersect_result.second ;
+            defender_point = intersect_result.second ;
         }
         
         //Go to Intersection or spin to get the ball out of the place
@@ -192,8 +204,8 @@ private:
             defense_action.spin_direction.data = ((ball.transform.getOrigin() - robots[defender_ID].getOrigin()).y() > 0) != field_side;
         }else{
             defense_action.type.data = 2;
-            defense_action.objective.set__x(defend_point.x());
-            defense_action.objective.set__y(defend_point.y());
+            defense_action.objective.set__x(defender_point.x());
+            defense_action.objective.set__y(defender_point.y());
             defense_action.objective.set__theta(M_PI / 2);
             if(!ball_inside_detected){
                 defense_action.objective.set__x(defender_x_coordinate);
@@ -201,8 +213,42 @@ private:
         }
 
         pubs_actions[defender_ID]->publish(defense_action);
+        if(robot_count < 3) return;
         
+
+//----------------------------------------------------------------------------------------------------\\
+    //support
+
         
+        trayectory = Line(ball.transform.getOrigin(), robots[attacker_ID].getOrigin()  );
+        
+        vsss_simulation::msg::RobotAction support_msg;
+        if(ball.transform.getOrigin().x() > 0 != field_side){
+            support_msg.type.data = 1;
+            support_msg.objective.set__x(ball.transform.getOrigin().x());
+            support_msg.objective.set__y(ball.transform.getOrigin().y());
+            support_msg.objective.set__theta(trayectory.getTheta());
+            
+            //Check if ball imposible to move, so try to kick
+            if(abs(ball.transform.getOrigin().getY()) > (defender_height) /2 ){
+                support_msg.type.data = 2;
+                //If near enough just rotate
+                if((ball.transform.getOrigin() - robots[support_ID].getOrigin()).length() < kick_distance){
+                    support_msg.type.data = 3;
+                    support_msg .spin_direction.data = ((ball.transform.getOrigin() - robots[support_ID].getOrigin()).y() > 0) != field_side;
+                }
+            }
+        }else{
+            support_msg.type.data = 2;
+            float support_range_start = !field_side ? 0.0 : defender_point.getX();
+            float support_range_end = field_side ? 0.0 : defender_point.getX(); 
+            float support_x_coord = max(min(support_range_end, (float)robots[support_ID].getOrigin().x()), support_range_start);
+            support_msg.objective.set__x(support_x_coord);
+            support_msg.objective.set__y(ball.transform.getOrigin().y());
+            support_msg.objective.set__theta(M_PI / 2);
+        }
+        
+        pubs_actions[support_ID]->publish(support_msg);
 
         
 
@@ -229,11 +275,20 @@ private:
     
     //Defender
     Transform own_goal;
-    Vector3 defend_point;
+    Vector3 defender_point;
 
     //Global Roles varaibles
     string objective_name = "";
     string defender_name = "";
+
+
+    //IDS
+        //Attacker
+        int attacker_ID = 1;
+        //Defender
+        int defender_ID = 2;
+        //Support
+        int support_ID = 3;
 
 };
 

@@ -90,7 +90,7 @@ Visualization Manager:
       Name: TF
       Show Arrows: false
       Show Axes: true
-      Show Names: false
+      Show Names: true
       Tree:
         lower_left_corner:
           robot1_base_link:
