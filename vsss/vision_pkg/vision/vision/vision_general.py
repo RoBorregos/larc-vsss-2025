@@ -91,7 +91,7 @@ class robot:
         self.team = team
         self.relative_distance = None
         self.angle_window = []
-        # self.pos_window = []
+        self.angle_window = []
     
     def __eq__(self, other):
         return self.id == other.id and self.location == other.location and self.angle == other.angle and self.team == other.team
@@ -159,14 +159,28 @@ class robot:
         if selected_robot is not None:
             self.location = selected_robot.location
             if selected_robot.angle is not None:
-                self.angle = selected_robot.angle
+                angle = self.get_angle(self, selected_robot.angle)
+                self.angle = angle
             # self.get_logger().warn(f"Selected a robot: {selected_robot}")
+            else:
+                angle = self.get_angle(self, self.angle)
+                self.angle = angle
 
             yaw = math.radians(self.angle)
             pitch, roll = 0.0, math.pi
             tf_helper("robot" + str(self.id) + "_base_link", self.location[0], self.location[1], roll, pitch, yaw)
 
         return selected_robot
+    
+    def get_angle(self, angle):
+        if len(self.angle_window) < 5:
+            self.angle_window.append(angle)
+            return angle
+        else:
+            del self.angle_window[0]
+            self.angle_window.append(angle)
+            angle_calculated = sum(self.angle_window) / len(self.angle_window)
+            return angle_calculated
 
 
 
@@ -193,6 +207,40 @@ clicked_points = []
 coors_clicked = []
 
 robot_capacity = len(yellow_team)
+
+def nothing(x):
+    pass
+
+def ids_selection():
+    cv2.namedWindow("Robot Selector")
+    cv2.namedWindow("Teams")
+
+    # Crear trackbars para los 3 robots azules (0–10)
+    for i in range(3):
+        cv2.createTrackbar(f"Darkblue {i+1}", "Robot Selector", darkblue_team[i] , 9, nothing)
+
+    # Crear trackbars para los 3 robots amarillos (11–20)
+    for i in range(3):
+        cv2.createTrackbar(f"Yellow {i+1}", "Robot Selector", yellow_team[i] - 11, 9, nothing)
+
+    while True:
+        for i in range(3):
+            darkblue_team[i] = cv2.getTrackbarPos(f"Darkblue {i+1}", "Robot Selector")+1
+            yellow_team[i] = cv2.getTrackbarPos(f"Yellow {i+1}", "Robot Selector") + 11
+
+        # Crear imagen informativa
+        img = np.ones((200, 520, 3), dtype=np.uint8) * 255
+        cv2.putText(img, "IDs for each team", (90, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 0), 2)
+        cv2.putText(img, f"DarkBlue: {darkblue_team}", (30, 90), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+        cv2.putText(img, f"Yellow:   {yellow_team}", (30, 140), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 215, 255), 2)
+
+        cv2.imshow("Teams", img)
+
+        key = cv2.waitKey(100) & 0xFF
+        if key == ord('q'):
+            break
+
+    cv2.destroyAllWindows()
 
 def mouse_callback(event, x, y, _, __):
     """
@@ -429,8 +477,8 @@ class CameraDetections(Node):
                 left_marker, right_marker = None, None
                 for (x, y, c, _) in [(x1, y1, c1, a1), (x2, y2, c2, a2)]:
                     #get secondary center position relative to robot center (img center)
-                    rel_x = x - mid_x
-                    rel_y = -(y - mid_y) # -  for y to be in the same refernece system as the image
+                    rel_x = x - img_center[0]
+                    rel_y = -(y - img_center[1]) # -  for y to be in the same refernece system as the image
                     #use of cross product 2D to get 
                     cross = vx * rel_y - vy * rel_x
                     if cross > 0:
@@ -444,14 +492,21 @@ class CameraDetections(Node):
                 #initial list of detected robots
                 if len(past_robots) < robot_capacity: #change number when testing
                     in_past = any(past_robot.id == robot_id for past_robot in past_robots)
-                    if robot_id is not None and robot_id in yellow_team and not in_past:
-                        robot_detected = robot(robot_id, team, position, angle)
-                        past_robots.append(robot_detected)
-                        self.get_logger().info("ID metido-> " + str(robot_id))
-                        return
+                    if robot_id is not None and not in_past:
+                        if robot_id in yellow_team and team == "yellow":
+                            robot_detected = robot(robot_id, team, position, angle)
+                            past_robots.append(robot_detected)
+                            self.get_logger().info("ID metido-> " + str(robot_id))
+                            return
+                        elif robot_id in darkblue_team and team == "darkblue":
+                            robot_detected = robot(robot_id, team, position, angle)
+                            past_robots.append(robot_detected)
+                            self.get_logger().info("ID metido-> " + str(robot_id))
+                            return
                     elif robot_id is not None and robot_id in yellow_team and in_past:
-                        bot = robot(robot_id, team, position, angle)
-                        return bot
+                        if robot_id in yellow_team or robot_id in darkblue_team:
+                            bot = robot(robot_id, team, position, angle)
+                            return bot
                     else:
                         return #check return of Nonetype
                 else:
@@ -624,4 +679,4 @@ def main(args=None):
         rclpy.shutdown()
 
 if __name__ == '__main__':
-    main()
+    main() 
