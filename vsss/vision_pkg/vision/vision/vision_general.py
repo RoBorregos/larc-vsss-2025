@@ -8,7 +8,6 @@ os.environ['GDK_SYNCHRONIZE'] = '1'
 # Add these new environment variables
 os.environ['QT_X11_NO_MITSHM'] = '1'
 
-
 import cv2
 
 cv2.setUseOptimized(False)
@@ -74,13 +73,13 @@ patterns = {
     ("darkblue", "green", "red"): 2,
     ("darkblue", "blue", "red"): 1,
     ("darkblue", "red", "green"): 2,
-    ("darkblue", "blue", "green"): 42,
+    ("darkblue", "blue", "green"): 3,
     ("darkblue", "pink", "green"): 42,
     ("darkblue", "red", "blue"): 1,
-    ("darkblue", "green", "blue"): 7,
-    ("darkblue", "pink", "blue"): 3,
+    ("darkblue", "green", "blue"): 3,
+    ("darkblue", "pink", "blue"): 8,
     ("darkblue", "green", "pink"): 42,
-    ("darkblue", "blue", "pink"): 3,
+    ("darkblue", "blue", "pink"): 8,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
@@ -93,8 +92,8 @@ patterns = {
     ("yellow", "blue", "pink"): 6,
 }
 
-yellow_team = [1, 2, 3]
-darkblue_team = [4, 5, 6]
+yellow_team = []
+darkblue_team = [1]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -250,7 +249,8 @@ real_field_coors = [[0,0],
 clicked_points = []
 coors_clicked = []
 
-robot_capacity = len(yellow_team) + len(darkblue_team)
+robot_capacity = 1
+# robot_capacity = len(yellow_team) + len(darkblue_team)
 
 def nothing(x):
     pass
@@ -390,7 +390,7 @@ def get_eucladian(pt1, pt2):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 2)
+        self.video_id = self.declare_parameter("Video_ID", 0)
 
         # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
@@ -636,7 +636,7 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         # Dibuja el bounding box
-                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
                         # text = f"{x_cm}, {y_cm}"
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
