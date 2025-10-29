@@ -6,14 +6,20 @@ using namespace tf2;
 //Change of gear depenging on the angulr diference
 float finalLinearVelByDif(float dif){
 
-    if(dif > M_PI*3/4){
+    // if(dif > M_PI*3/4){
+    //     return 0.2;
+    // }else if( dif > M_PI/4){
+    //     return 0.4;
+    // }else if(dif > M_PI/7){
+    //     return 0.6;
+    // }else{
+    //     return 1;
+    // }
+    float val = (M_PI)/ abs(dif);
+    if(val < 0.2){
         return 0.2;
-    }else if( dif > M_PI/4){
-        return 0.7;
-    }else if(dif > M_PI/7){
-        return 0.8;
     }else{
-        return 1;
+        return val;
     }
 }
 

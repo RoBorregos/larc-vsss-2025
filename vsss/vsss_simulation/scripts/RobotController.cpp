@@ -29,9 +29,10 @@ float goal_height = 0.4f;
 float defender_height = 0.7f;
 
 
-//Square on the front of the robot
-vector<Vector3> square = Rectangle(Vector3(0.035,0,0), 0.015, 0.035);
-//Thinks about the use of static transforms. but they seem over engennier for the same hardcoded values
+//FrontSquare on the front and the back of the robot
+vector<Vector3> FrontSquare = Rectangle(Vector3(0.035,0,0), 0.015, 0.04);
+vector<Vector3> BackSquare = Rectangle(Vector3(-0.035,0,0), 0.015, 0.04);
+//there was an idea about the use of static transforms. but they seem over engennier for the same hardcoded values
 
 vector<Vector3> field = Rectangle(Vector3(0,0,0), field_width, field_height);
                           
@@ -89,7 +90,8 @@ class Robot_Controller : public rclcpp::Node
       tf_buffer_ = std::make_unique<tf2_ros::Buffer>(this->get_clock());
       tf_listener_ = std::make_shared<tf2_ros::TransformListener>(*tf_buffer_);
       RCLCPP_INFO(get_logger(), "Robot Node With ID: '%i' .", id);
-      boxCollider = Polygon(square);
+      frontBoxCollider = Polygon(FrontSquare);
+      backBoxCollider = Polygon(BackSquare);
       field_box_Collider = Polygon(field);
     
 
@@ -173,12 +175,23 @@ class Robot_Controller : public rclcpp::Node
         robots[id].ANGULAR_DERIVATIVE_CONSTAT = kdAngular;
         robots[id].LINEAR_CONSTANT = kLinear;
         //GoBack if Needed
-        boxCollider.origin = robots[id].transform.getOrigin();
+        frontBoxCollider.origin = robots[id].transform.getOrigin();
+        backBoxCollider.origin = robots[id].transform.getOrigin();
         Vector3 vectorR  =  quatRotate(robots[id].transform.getRotation(), Vector3(1,0,0));
-        boxCollider.rotation = atan2(vectorR.y(), vectorR.x());
-        boxCollider.translade();
+
+        frontBoxCollider.rotation = atan2(vectorR.y(), vectorR.x());
+        frontBoxCollider.translade();
+        backBoxCollider.rotation = atan2(vectorR.y(), vectorR.x());
+        backBoxCollider.translade();
+        //If robot stuck backwards in zone go forward
+        if(!field_box_Collider.fullInside(backBoxCollider)){
+          robots[id].inverted = false;
+        }
+        if(!field_box_Collider.fullInside(frontBoxCollider)){
+          robots[id].inverted = true;
+        }
         //If box outside the field, activate timer of stop and set velocity backwards
-        if(!field_box_Collider.fullInside(boxCollider) && type == 1){
+        if(!field_box_Collider.fullInside(frontBoxCollider) && type == 1){
           geometry_msgs::msg::Twist backwards;
           geometry_msgs::msg::Vector3 linear;
           linear.x = 0.2f;
@@ -190,6 +203,7 @@ class Robot_Controller : public rclcpp::Node
           return;
         }
 
+
         //Spin if needed
         if(type == 3){
           geometry_msgs::msg::Twist gira_gira;
@@ -198,6 +212,7 @@ class Robot_Controller : public rclcpp::Node
           return;
         }
         if(stuck && type == 1){
+            cout<<"Robot: "<<id<<"is Stuck"<<endl; 
           return;
         }
 
@@ -327,9 +342,11 @@ class Robot_Controller : public rclcpp::Node
     Vector3 objective_position;
     float theta;
 
-    //BoxCollider
-    Polygon boxCollider;
+    //frontBoxCollider
+    Polygon frontBoxCollider;
+    Polygon backBoxCollider;
     Polygon field_box_Collider;
+  
 
     bool stuck;
     rclcpp::TimerBase::SharedPtr stuck_timer;

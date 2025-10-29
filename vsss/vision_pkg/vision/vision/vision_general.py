@@ -70,21 +70,21 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 133,
-    ("darkblue", "blue", "red"): 26,
+    ("darkblue", "green", "red"): 13,
+    ("darkblue", "blue", "red"): 42,
     ("darkblue", "red", "green"): 3,
-    ("darkblue", "blue", "green"): 2,
-    ("darkblue", "pink", "green"): 2,
-    ("darkblue", "red", "blue"): 2,
+    ("darkblue", "blue", "green"): 42,
+    ("darkblue", "pink", "green"): 42,
+    ("darkblue", "red", "blue"): 42,
     ("darkblue", "green", "blue"): 7,
     ("darkblue", "pink", "blue"): 1,
-    ("darkblue", "green", "pink"): 2,
+    ("darkblue", "green", "pink"): 42,
     ("darkblue", "blue", "pink"): 10,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
     ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 2,
+    ("yellow", "pink", "green"): 42,
     ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 17,
     ("yellow", "pink", "blue"): 18,
@@ -344,7 +344,7 @@ def get_eucladian(pt1, pt2):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 2)
+        self.video_id = self.declare_parameter("Video_ID", 0)
 
         # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
