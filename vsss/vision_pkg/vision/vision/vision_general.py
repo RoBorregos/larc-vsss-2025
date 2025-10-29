@@ -71,29 +71,30 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 13,
-    ("darkblue", "blue", "red"): 42,
-    ("darkblue", "red", "green"): 3,
+    ("darkblue", "green", "red"): 2,
+    ("darkblue", "blue", "red"): 1,
+    ("darkblue", "red", "green"): 2,
     ("darkblue", "blue", "green"): 42,
     ("darkblue", "pink", "green"): 42,
-    ("darkblue", "red", "blue"): 42,
+    ("darkblue", "red", "blue"): 1,
     ("darkblue", "green", "blue"): 7,
-    ("darkblue", "pink", "blue"): 1,
+    ("darkblue", "pink", "blue"): 3,
     ("darkblue", "green", "pink"): 42,
-    ("darkblue", "blue", "pink"): 10,
+    ("darkblue", "blue", "pink"): 3,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
-    ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 42,
+    ("yellow", "blue", "green"): 5,
+    ("yellow", "pink", "green"): 4,
     ("yellow", "red", "blue"): 12,
-    ("yellow", "green", "blue"): 17,
-    ("yellow", "pink", "blue"): 18,
-    ("yellow", "green", "pink"): 2,
-    ("yellow", "blue", "pink"): 18,
+    ("yellow", "green", "blue"): 5,
+    ("yellow", "pink", "blue"): 6,
+    ("yellow", "green", "pink"): 4,
+    ("yellow", "blue", "pink"): 6,
 }
 
-yellow_team = [ 1, 2]
+yellow_team = [1, 2, 3]
+darkblue_team = [4, 5, 6]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -206,7 +207,7 @@ class robot:
                             self.angle_window.pop(0)
                     else: #cambios mas grandes
                         # cambios grandes -> interpolar rápido
-                        alpha = 0.7
+                        alpha = 0.83
                         delta = (selected_robot.angle - self.angle + 540) % 360 - 180
                         self.angle = (self.angle + alpha * delta) % 360
                         # self.get_logger().warn(f"Selected a robot: {selected_robot}")
@@ -228,9 +229,6 @@ class robot:
             return angle_calculated
 
 
-
-yellow_team = [1, 2] #4, 6 #19, 18
-darkblue_team = []
 detected_robots = [] #should always have a maximum of six robots
 past_robots = [] #used
 
@@ -252,7 +250,7 @@ real_field_coors = [[0,0],
 clicked_points = []
 coors_clicked = []
 
-robot_capacity = len(yellow_team)
+robot_capacity = len(yellow_team) + len(darkblue_team)
 
 def nothing(x):
     pass
@@ -392,7 +390,7 @@ def get_eucladian(pt1, pt2):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 0)
+        self.video_id = self.declare_parameter("Video_ID", 2)
 
         # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
@@ -560,20 +558,25 @@ class CameraDetections(Node):
                 self.get_logger().info("ID -> " + str(robot_id))
                 # self.get_logger().info(" -> " + len(detected_robots))
                 #initial list of detected robots
+                self.get_logger().info("PAST" + str(len(past_robots)))
                 if len(past_robots) < robot_capacity: #change number when testing
                     in_past = any(past_robot.id == robot_id for past_robot in past_robots)
+                    self.get_logger().info("ENTRE")
                     if robot_id is not None and not in_past:
-                        if robot_id in yellow_team and team == "yellow":
+                        self.get_logger().info("ENTRE2")
+                        self.get_logger().info(f"{type(team)}")
+                        if robot_id in yellow_team:
+                            self.get_logger().info("ENTRE3")
                             robot_detected = robot(robot_id, team, position, angle)
                             past_robots.append(robot_detected)
                             self.get_logger().info("ID metido-> " + str(robot_id))
-                            return
-                        elif robot_id in darkblue_team and team == "darkblue":
+                            return robot_detected
+                        elif robot_id in darkblue_team:
                             robot_detected = robot(robot_id, team, position, angle)
                             past_robots.append(robot_detected)
                             self.get_logger().info("ID metido-> " + str(robot_id))
-                            return
-                    elif robot_id is not None and robot_id in yellow_team and in_past:
+                            return robot_detected
+                    elif robot_id is not None and in_past:
                         if robot_id in yellow_team or robot_id in darkblue_team:
                             bot = robot(robot_id, team, position, angle)
                             return bot
