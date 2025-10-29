@@ -71,11 +71,11 @@ draw_colors = {
 
 patterns = {
     ("darkblue", "green", "red"): 2,
-    ("darkblue", "blue", "red"): 1,
+    ("darkblue", "blue", "red"): 6,
     ("darkblue", "red", "green"): 2,
     ("darkblue", "blue", "green"): 3,
     ("darkblue", "pink", "green"): 42,
-    ("darkblue", "red", "blue"): 1,
+    ("darkblue", "red", "blue"): 6,
     ("darkblue", "green", "blue"): 3,
     ("darkblue", "pink", "blue"): 8,
     ("darkblue", "green", "pink"): 42,
@@ -87,12 +87,12 @@ patterns = {
     ("yellow", "pink", "green"): 4,
     ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 5,
-    ("yellow", "pink", "blue"): 6,
+    ("yellow", "pink", "blue"): 1,
     ("yellow", "green", "pink"): 4,
-    ("yellow", "blue", "pink"): 6,
+    ("yellow", "blue", "pink"): 1,
 }
 
-yellow_team = [6]
+yellow_team = [1]
 darkblue_team = []
 
 def circular_mean(angles):
