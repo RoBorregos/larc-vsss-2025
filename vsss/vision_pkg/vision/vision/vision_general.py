@@ -184,14 +184,6 @@ class robot:
         if selected_robot is not None:
             self.location = selected_robot.location
             if selected_robot.angle is not None:
-<<<<<<< HEAD
-                angle = self.get_angle(self, selected_robot.angle)
-                self.angle = angle
-            # self.get_logger().warn(f"Selected a robot: {selected_robot}")
-            else:
-                angle = self.get_angle(self, self.angle)
-                self.angle = angle
-=======
                 #The len of the window allows for smoother transforms, but traits off real time response to rapid angle changes
                 if self.angle is None:
                     self.angle = selected_robot.angle
@@ -218,7 +210,6 @@ class robot:
                         delta = (selected_robot.angle - self.angle + 540) % 360 - 180
                         self.angle = (self.angle + alpha * delta) % 360
                         # self.get_logger().warn(f"Selected a robot: {selected_robot}")
->>>>>>> 7551d71811ea8102c453bcdbaebd55033178f9a4
 
             yaw = math.radians(self.angle)
             pitch, roll = 0.0, math.pi
