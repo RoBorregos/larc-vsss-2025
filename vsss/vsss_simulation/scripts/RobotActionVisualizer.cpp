@@ -74,7 +74,7 @@ private:
             marker.scale.z = 0.25; // text height
 
             if (last_spin_dir_ ) {
-                marker.color.r = 0.1f; marker.color.g = 0.2f; marker.color.b = 1.0f; marker.color.a = 1.0f;
+                marker.color.r = 0.0f; marker.color.g = 0.2f; marker.color.b = 1.0f; marker.color.a = 1.0f;
             } else {
                 marker.color.r = 1.0f; marker.color.g = 0.2f; marker.color.b = 1.0f; marker.color.a = 1.0f;
             } 
@@ -84,12 +84,12 @@ private:
 
         // Default: display pose objective as an arrow
         marker.type = visualization_msgs::msg::Marker::ARROW;
-        marker.scale.x = 0.4; // shaft length
-        marker.scale.y = 0.08; // shaft diameter
-        marker.scale.z = 0.08; // head diameter
+        marker.scale.x = 0.1; // shaft length
+        marker.scale.y = 0.04; // shaft diameter
+        marker.scale.z = 0.04; // head diameter
         marker.pose.position.x = last_pose_.x;
         marker.pose.position.y = last_pose_.y;
-        marker.pose.position.z = 0.05;
+        marker.pose.position.z = 0;
 
         // Build quaternion from theta (rotation about z)
         tf2::Quaternion q;

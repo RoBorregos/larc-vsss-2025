@@ -15,3 +15,4 @@ Vector3 Theta2Vector(float a);
 float gaussian(float r, float constant);
 
 vector<Vector3> Rectangle(Vector3 origin, float width, float hight);
+

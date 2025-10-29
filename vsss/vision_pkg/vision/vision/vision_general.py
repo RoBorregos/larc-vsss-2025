@@ -71,29 +71,29 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 133,
-    ("darkblue", "blue", "red"): 26,
+    ("darkblue", "green", "red"): 13,
+    ("darkblue", "blue", "red"): 42,
     ("darkblue", "red", "green"): 3,
-    ("darkblue", "blue", "green"): 1,
-    ("darkblue", "pink", "green"): 9,
-    ("darkblue", "red", "blue"): 2,
+    ("darkblue", "blue", "green"): 42,
+    ("darkblue", "pink", "green"): 42,
+    ("darkblue", "red", "blue"): 42,
     ("darkblue", "green", "blue"): 7,
-    ("darkblue", "pink", "blue"): 8,
-    ("darkblue", "green", "pink"): 9,
+    ("darkblue", "pink", "blue"): 1,
+    ("darkblue", "green", "pink"): 42,
     ("darkblue", "blue", "pink"): 10,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
     ("yellow", "red", "green"): 13,
     ("yellow", "blue", "green"): 14,
-    ("yellow", "pink", "green"): 19,
+    ("yellow", "pink", "green"): 42,
     ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 17,
     ("yellow", "pink", "blue"): 18,
-    ("yellow", "green", "pink"): 19,
+    ("yellow", "green", "pink"): 2,
     ("yellow", "blue", "pink"): 18,
 }
 
-yellow_team = [9, 12, 19]
+yellow_team = [ 1, 2]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -212,7 +212,12 @@ class robot:
                         self.angle_window.append(selected_robot.angle)
                         if len(self.angle_window) > 4:
                             self.angle_window.pop(0)
-                # self.get_logger().warn(f"Selected a robot: {selected_robot}")
+                    else: #cambios mas grandes
+                        # cambios grandes -> interpolar rápido
+                        alpha = 0.7
+                        delta = (selected_robot.angle - self.angle + 540) % 360 - 180
+                        self.angle = (self.angle + alpha * delta) % 360
+                        # self.get_logger().warn(f"Selected a robot: {selected_robot}")
 >>>>>>> 7551d71811ea8102c453bcdbaebd55033178f9a4
 
             yaw = math.radians(self.angle)
@@ -396,7 +401,7 @@ def get_eucladian(pt1, pt2):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 2)
+        self.video_id = self.declare_parameter("Video_ID", 0)
 
         # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
@@ -637,10 +642,10 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         # Dibuja el bounding box
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
-                        text = f"{x_cm}, {y_cm}"
-                        cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
+                        # text = f"{x_cm}, {y_cm}"
+                        # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
                         #GET information of the robots (uses roi and robot position--------------------------------------------------------
                         robot_info = self.get_info_robot(roi, [x_cm, y_cm]) #fill table 
                         self.get_logger().info(f"{type(robot_info)}")

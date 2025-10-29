@@ -1,20 +1,51 @@
 #include "vsss_simulation/Kinematic.hpp"
 using namespace tf2;
 
+
+
+//Change of gear depenging on the angulr diference
+float finalLinearVelByDif(float dif){
+
+    // if(dif > M_PI*3/4){
+    //     return 0.2;
+    // }else if( dif > M_PI/4){
+    //     return 0.4;
+    // }else if(dif > M_PI/7){
+    //     return 0.6;
+    // }else{
+    //     return 1;
+    // }
+    float val = (M_PI)/ abs(dif);
+    if(val < 0.2){
+        return 0.2;
+    }else{
+        return val;
+    }
+}
+
 Kinematic::Kinematic(){}
 void Kinematic::setTrans(geometry_msgs::msg::TransformStamped t){
     if(firstUpdate){
         TransformFromMSG(t.transform, transform);
         prevTime = rclcpp::Time(t.header.stamp);
         firstUpdate = false;
+        velocity = Vector3(0,0,0);
         return;
     }
     t.transform.translation.z = 0;
     prevTransform = transform;
     TransformFromMSG(t.transform, transform);
     rclcpp::Time newTime = rclcpp::Time(t.header.stamp);
-    velocity = (transform.getOrigin() - prevTransform.getOrigin())/(newTime-prevTime).seconds();
+    
+    float delta_time = (newTime-prevTime).seconds();
+    if(delta_time < 1e-6)
+        return;
+    Vector3 delta_position = (transform.getOrigin() - prevTransform.getOrigin());
+    velocity += delta_position/delta_time;
+    velocity /= 2;
     prevTime = newTime;
+    if(velocity.length() < 1e-6)
+        velocity = Vector3(0,0,0);
 }
 
 
@@ -32,19 +63,26 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
 
     float dif = dif_vector(objective, transform);
     geometry_msgs::msg::Twist response;
-    bool invert = false;
-    if(type == 2 && abs(dif) > M_PI/2){
+    if(inverted){
         dif += M_PI;
         dif = wrapToPI(dif);
-        invert = true;
-        cout<<"Inversing"<<endl;
     }
 
-    response.angular.z = dif*ANGULAR_CONSTANT;
-    response.linear.x = -LINEAR_CONSTANT;
-    response.linear.x *= invert ? -1 : 1;
-    response.angular.z = type ==2 ? response.angular.z*4: response.angular.z;
-
+    if(type == 2 && abs(dif) > M_PI*3/5){
+        inverted =! inverted;
+    }
+    if(type == 1){
+        inverted = false;
+    }
+    //PID shit
+    acumulative_dif_angle += dif;
+    acumulative_dif_angle /= 2;
+    response.angular.z = dif*ANGULAR_PROPORTIONAL_CONSTANT + (acumulative_dif_angle) * ANGULAR_INTEGRAL_CONSTANT + (dif - prev_dif_angle) * ANGULAR_DERIVATIVE_CONSTAT;
+    //cout<<ANGULAR_DERIVATIVE_CONSTAT<<" "<<ANGULAR_PROPORTIONAL_CONSTANT<<" "<<ANGULAR_INTEGRAL_CONSTANT<<endl;
+    //Change the vel depending on the angular diference
+    response.linear.x = -LINEAR_CONSTANT * finalLinearVelByDif(abs(dif)) ;
+    response.linear.x *= inverted ? -1 : 1;
+    prev_dif_angle = dif;
     return response;
 }
 
@@ -55,7 +93,7 @@ geometry_msgs::msg::Twist Kinematic::orient_to_msg(Vector3 objective){
         dif += M_PI;
         dif = wrapToPI(dif);
      }
-    response.angular.z = dif * ANGULAR_CONSTANT/3;
+    response.angular.z = dif * ANGULAR_PROPORTIONAL_CONSTANT;
     return response;
 }
 

@@ -17,13 +17,15 @@ from launch.conditions import IfCondition
 
 def generate_launch_description():
         #Spawn the goal transform
+        ##Posiciones importantes para el movimiento y estrategia
     attack_goal = Node(
                 package='tf2_ros',
                 executable='static_transform_publisher',
                 output = "screen",
                 name='goal_tf',
+                ## x, y, z, orientacion y relacion hijo padre
                 arguments=[
-                    "0.72",
+                    "0.75", 
                     "0.0",
                     "0.0",     
                     "0",
@@ -39,7 +41,7 @@ def generate_launch_description():
                 output="screen",
                 name='own_goal',
                 arguments=[
-                    "-0.72",
+                    "-0.75",
                     "0.0",
                     "0.0",
                     "0",

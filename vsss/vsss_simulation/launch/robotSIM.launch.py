@@ -13,6 +13,9 @@ def generate_launch_description():
     robot_name = DeclareLaunchArgument(
         "robot_name", default_value="robot1", description="Robot Name"
     )
+
+
+
     robot_StartPosition = DeclareLaunchArgument(
         "robot_starting_pos", default_value="0.0", description="Posicion Inicial X"
     )

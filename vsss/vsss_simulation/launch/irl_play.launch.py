@@ -13,7 +13,7 @@ from launch.substitutions import Command, TextSubstitution, PathJoinSubstitution
 
 def generate_launch_description():
     
-    robot_count = 1
+    robot_count = 2
     robot_controllers = []
     pkg_name = "vsss_simulation"
 
@@ -52,7 +52,13 @@ def generate_launch_description():
                 )
             )
         )
+    params_server = Node(
+            package = pkg_name,
+            executable = "global_parameter_server_node",
+            name = "global_parameter_server_node",
+            output="screen"
+        )
 
     
-    return LaunchDescription([strategiest_side, StaticPoints, Strat, *robot_controllers])
+    return LaunchDescription([params_server, strategiest_side, StaticPoints, Strat, *robot_controllers ])
     

@@ -12,7 +12,7 @@ def generate_launch_description():
         Node(
             package= pkg_name,
             executable='robot_tcp_client_node.py',
-            name='robot1_tcp_client',
+            name='robot2_tcp_client',
             output='screen',
             parameters=[robots_params]
          ),

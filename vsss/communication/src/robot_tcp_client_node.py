@@ -8,6 +8,10 @@ import socket
 import struct
 import math
 
+import time
+
+from std_msgs.msg import Float32
+
 
 class RobotTCPClient:
     def __init__(self, robot_ip, robot_port):
@@ -59,6 +63,12 @@ class SingleRobotTCPNode(Node):
     def __init__(self):
         super().__init__('single_robot_tcp_node')
         # Parameters should be loaded from external YAML config via ROS2 launch or CLI
+
+
+
+        self.exec_time_pub = self.create_publisher(Float32, 'comm/timer_exec_time', 10)
+        
+
         
         self.get_logger().info(f"Waiting to Start")
         self.declare_parameter('robot_name', 'robot1')
@@ -78,6 +88,8 @@ class SingleRobotTCPNode(Node):
         self.create_subscription(Twist, topic, self.cmd_vel_callback, 10)
         self.get_logger().info(f"Subscribed to {topic} for {name} ({ip}:{port})")
 
+        self.start = time.perf_counter()
+
     def destroy_node(self):
         # Ensure the TCP client is closed when the node is destroyed
 
@@ -90,12 +102,21 @@ class SingleRobotTCPNode(Node):
 
 
     def cmd_vel_callback(self, msg):
+
+
         rpm_left, rpm_right = twist_to_rpm(msg)
         if(math.isnan(rpm_right) or math.isnan(rpm_left)):
             return
         sent = self.client.send_floats(rpm_left, rpm_right)
 
         self.get_logger().info(f"L={rpm_left:.2f} R={rpm_right:.2f}")
+
+        elapsed = time.perf_counter() - self.start
+        try:
+            self.exec_time_pub.publish(Float32(data=elapsed))
+            self.start = time.perf_counter()
+        except Exception:
+            pass
         
 
 def main(args=None):

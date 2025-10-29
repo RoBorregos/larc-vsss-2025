@@ -16,6 +16,8 @@ find_package(rclpy REQUIRED)
 find_package(urdf REQUIRED)
 find_package(visualization_msgs REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
+find_package(ament_lint_auto REQUIRED) 
+find_package(ament_lint_common REQUIRED)
 
 
 
@@ -50,6 +52,7 @@ add_executable(RobotController scripts/RobotController.cpp)
 add_executable(VectorGrapher scripts/VectorGrapher.cpp)
 add_executable(Strategist scripts/Strategist.cpp)
 add_executable(RobotActionVisualizer scripts/RobotActionVisualizer.cpp)
+add_executable(global_parameter_server_node scripts/global_parameter_server_node.cpp)
 
 add_library(MsgConvert src/vsss_simulation/MsgConvert.cpp)
 add_library(Kinematic src/vsss_simulation/Kinematic.cpp)
@@ -57,6 +60,8 @@ add_library(MathU src/vsss_simulation/MathU.cpp)
 add_library(Line src/vsss_simulation/Line.cpp)
 add_library(UnivectorF src/vsss_simulation/UnivectorF.cpp)
 add_library(Polygon src/vsss_simulation/Polygon.cpp)
+
+
 # Expose package include dir on libraries so consumers inherit it.
 target_include_directories(Kinematic PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -97,6 +102,8 @@ target_link_libraries(Strategist Polygon Kinematic Line ${cpp_typesupport_target
 ament_target_dependencies(RobotActionVisualizer rclcpp visualization_msgs std_msgs nav_msgs tf2)
 target_link_libraries(RobotActionVisualizer ${cpp_typesupport_target} )
 
+ament_target_dependencies(global_parameter_server_node rclcpp)
+
 ament_target_dependencies(MsgConvert tf2 tf2_geometry_msgs nav_msgs)
 ament_target_dependencies(Kinematic tf2 tf2_geometry_msgs)
 
@@ -113,7 +120,7 @@ ament_target_dependencies(Polygon tf2)
 
 target_compile_features(simulation_spawn PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 
-install(TARGETS simulation_spawn RobotController VectorGrapher Strategist RobotActionVisualizer
+install(TARGETS simulation_spawn RobotController VectorGrapher Strategist RobotActionVisualizer global_parameter_server_node
   DESTINATION lib/${PROJECT_NAME})
 
 # Install Python executables

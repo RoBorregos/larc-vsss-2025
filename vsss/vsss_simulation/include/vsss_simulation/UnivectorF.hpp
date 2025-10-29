@@ -11,16 +11,19 @@ using namespace std;
 
 
 
-float phiH(float rho,  float theta, bool cw);    //Hyperbolic angle
+float phiH(float rho,  float theta, bool cw, float de, float kr)  ;   //Hyperbolic angle
 
 
-float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory) ; // Move to Goal
 
-Vector3 getImagePos(Kinematic main, Kinematic obst);    //Posible Position of enemy position;
+float phiTuf(float theta, Vector3 p ,Vector3 b,  Line& trajectory, float de, float kr) ; // Move to Goal
 
-float phiAuf(Kinematic main, Kinematic enemy );         //Angle Phi 
 
-float phiCompose(float ball_c, float enemy_c, float distance_);
+Vector3 getImagePos(Kinematic main, Kinematic obst, float ko);   //Posible Position of enemy position;
+
+float phiAuf(Kinematic main, Kinematic enemy, float ko);         //Angle Phi 
+
+float phiCompose(float ball_c, float enemy_c, float distance_, float d_min, float delta__);
+
 
 
     /*
