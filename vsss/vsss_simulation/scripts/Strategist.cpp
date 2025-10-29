@@ -163,7 +163,7 @@ private:
             RCLCPP_INFO(this->get_logger(), "Could not transform own goal ends: %s", ex.what());
             return;
         }
-        own_goal.getOrigin().setX(own_goal.getOrigin().getX() + (field_side ? 1 : -1) * defender_width/2); //Little offset because the goal is the line between the field and the goal
+        own_goal.getOrigin().setX(own_goal.getOrigin().getX() + (field_side ? 1 : -1) * (defender_width/2 + 0.04)); //Little offset because the goal is the line between the field and the goal
         Vector3 upper_end = own_goal.getOrigin() + vertical_dif;
         Vector3 lower_end = own_goal.getOrigin() - vertical_dif;
 

@@ -10,7 +10,7 @@ class DefaultContoller(Node):
         
         #Declare Parameter
         self.declare_parameter('linear_vel',0.2)
-        self.declare_parameter('angular_vel', 0.5)
+        self.declare_parameter('angular_vel', 0.3)
 
         # Current velocity values
         self.linear_vel = self.get_parameter('linear_vel').value

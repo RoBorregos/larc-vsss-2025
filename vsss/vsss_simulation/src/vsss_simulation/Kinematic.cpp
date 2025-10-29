@@ -6,21 +6,16 @@ using namespace tf2;
 //Change of gear depenging on the angulr diference
 float finalLinearVelByDif(float dif){
 
-    // if(dif > M_PI*3/4){
-    //     return 0.2;
-    // }else if( dif > M_PI/4){
-    //     return 0.4;
-    // }else if(dif > M_PI/7){
-    //     return 0.6;
-    // }else{
-    //     return 1;
-    // }
-    float val = (M_PI)/ abs(dif);
-    if(val < 0.2){
+    if(dif > M_PI*3/4){
         return 0.2;
+    }else if( dif > M_PI/2){
+        return 0.4;
+    }else if(dif > M_PI/7){
+        return 0.6;
     }else{
-        return val;
+        return 1;
     }
+
 }
 
 Kinematic::Kinematic(){}
@@ -46,6 +41,7 @@ void Kinematic::setTrans(geometry_msgs::msg::TransformStamped t){
     prevTime = newTime;
     if(velocity.length() < 1e-6)
         velocity = Vector3(0,0,0);
+    
 }
 
 
@@ -63,6 +59,10 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
 
     float dif = dif_vector(objective, transform);
     geometry_msgs::msg::Twist response;
+    if(isnan(dif)){
+        cout<<"Is the dif_vector"<<endl;
+        return response;
+    }
     if(inverted){
         dif += M_PI;
         dif = wrapToPI(dif);
@@ -83,17 +83,32 @@ geometry_msgs::msg::Twist Kinematic::result_to_msg(Vector3 objective, int type){
     response.linear.x = -LINEAR_CONSTANT * finalLinearVelByDif(abs(dif)) ;
     response.linear.x *= inverted ? -1 : 1;
     prev_dif_angle = dif;
+    if(isnan(dif)){
+        cout<<"Here is"<<endl;
+    }
     return response;
 }
 
 geometry_msgs::msg::Twist Kinematic::orient_to_msg(Vector3 objective){
     float dif = dif_vector(objective, transform);
     geometry_msgs::msg::Twist response;
-     if(abs(dif) > M_PI/2){
+    if(isnan(dif)){
+        cout<<"Is the dif_vector"<<endl;
+        return response;
+    }
+
+    if(inverted){
         dif += M_PI;
         dif = wrapToPI(dif);
-     }
-    response.angular.z = dif * ANGULAR_PROPORTIONAL_CONSTANT;
+    }
+    if(abs(dif) > M_PI*3/5){
+        inverted =! inverted;
+    }
+
+    //PID shit
+    acumulative_dif_angle = (dif +prev_dif_angle )/2;
+    response.angular.z = dif*ANGULAR_PROPORTIONAL_CONSTANT + (acumulative_dif_angle) * ANGULAR_INTEGRAL_CONSTANT + (dif - prev_dif_angle) * ANGULAR_DERIVATIVE_CONSTAT;
+    prev_dif_angle = dif;
     return response;
 }
 

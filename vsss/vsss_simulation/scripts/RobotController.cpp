@@ -30,7 +30,7 @@ float defender_height = 0.7f;
 
 
 //FrontSquare on the front and the back of the robot
-vector<Vector3> FrontSquare = Rectangle(Vector3(0.035,0,0), 0.015, 0.04);
+vector<Vector3> FrontSquare = Rectangle(Vector3(0.035,0,0), 0.015, 0.045);
 vector<Vector3> BackSquare = Rectangle(Vector3(-0.035,0,0), 0.015, 0.04);
 //there was an idea about the use of static transforms. but they seem over engennier for the same hardcoded values
 
@@ -219,10 +219,9 @@ class Robot_Controller : public rclcpp::Node
 
         Transform self_transform = robots[id].transform;
         //if the objective is near, just achieve its rotation
-        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.06){
+        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.065){
           Vector3 tieso(0,1,0);
           self_vel_pub->publish(robots[id].orient_to_msg(tieso));
-          //cout<<"Tiesing"<<endl;
           return;
 
         }
@@ -230,7 +229,8 @@ class Robot_Controller : public rclcpp::Node
         float theta_obj ;
 
         //attack with angle or just achieve a position (attack or defend)
-        if(type== 1){
+        Vector3 objective_distance = robots[id].transform.getOrigin() - objective_position;
+        if(type== 1 && objective_distance.length() > 0.12 && (objective_distance.x() < 0) != field_side){
           Line optimalPath (objective_position, theta);
           //Get angle considering the ball as the objective;
           Vector3 robot_2_obj = self_transform.getOrigin() - objective_position; 
@@ -240,28 +240,25 @@ class Robot_Controller : public rclcpp::Node
           //transform the angle to a vector
           vector2ball =  Theta2Vector(theta_obj);
 
-          if(robots.size() <= 1){
-            //Publish if no enemy to search
-            self_vel_pub->publish(robots[id].result_to_msg(vector2ball, type));
-
-            auto msg = std::make_unique<geometry_msgs::msg::PoseStamped>();
-
-            msg->header.stamp = this->now();
-            vector_2_pose(msg, robots[id].transform.getOrigin(), theta_obj);
-            robot_direction->publish(move(msg));
-
-
-            return;
-          }
-          
-
-
         }else{
           vector2ball = (objective_position - self_transform.getOrigin()).normalize();
           theta_obj = atan2(vector2ball[1], vector2ball[0]);
+
         }
         
+        if(robots.size() <= 1){
+          //Publish if no enemy to search
+          self_vel_pub->publish(robots[id].result_to_msg(vector2ball, type));
 
+          auto msg = std::make_unique<geometry_msgs::msg::PoseStamped>();
+
+          msg->header.stamp = this->now();
+          vector_2_pose(msg, robots[id].transform.getOrigin(), theta_obj);
+          robot_direction->publish(move(msg));
+
+
+          return;
+        }
         //Look up for nearest enemy
         int nearObstID = 0;
         
@@ -307,10 +304,9 @@ class Robot_Controller : public rclcpp::Node
 
 
         auto msg = std::make_unique<geometry_msgs::msg::PoseStamped>();
-
-          msg->header.stamp = this->now();
-          vector_2_pose(msg, robots[id].transform.getOrigin(), joined);
-          robot_direction->publish(move(msg));
+        msg->header.stamp = this->now();
+        vector_2_pose(msg, robots[id].transform.getOrigin(), joined);
+        robot_direction->publish(move(msg));
         
         //Needs Function to get union of theta_obj and theta_enemy
       // Avoid Each Obst

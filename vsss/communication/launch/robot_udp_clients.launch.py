@@ -23,5 +23,12 @@ def generate_launch_description():
            output='screen',
            parameters=[robots_params]
         ),
+        Node(
+           package= pkg_name,
+           executable='robot_udp_client_node.py',
+           name='robot3_tcp_client',
+           output='screen',
+           parameters=[robots_params]
+        ),
         ##ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args --remap /cmd_vel:=/robot1/cmd_vel
     ])
