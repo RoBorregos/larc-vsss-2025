@@ -92,8 +92,8 @@ patterns = {
     ("yellow", "blue", "pink"): 6,
 }
 
-yellow_team = []
-darkblue_team = [1]
+yellow_team = [6]
+darkblue_team = []
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -249,8 +249,7 @@ real_field_coors = [[0,0],
 clicked_points = []
 coors_clicked = []
 
-robot_capacity = 1
-# robot_capacity = len(yellow_team) + len(darkblue_team)
+robot_capacity = len(yellow_team) + len(darkblue_team)
 
 def nothing(x):
     pass
@@ -493,7 +492,7 @@ class CameraDetections(Node):
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in contours:
                 area = cv2.contourArea(cnt)
-                if area > 2000:
+                if area > 3000:
                     M = cv2.moments(cnt)
                     if M["m00"] != 0:
                         cx = int(M["m10"] / M["m00"])
@@ -555,6 +554,12 @@ class CameraDetections(Node):
                         right_marker = c
 
                 robot_id = patterns.get((team, left_marker, right_marker), None)
+
+                self.get_logger().info(f"Pattern detected: team={team}, left={left_marker}, right={right_marker}")
+                # self.get_logger().info(f"Available patterns: {list(patterns.keys())}")
+                self.get_logger().info("ID -> " + str(robot_id))
+    
+
                 self.get_logger().info("ID -> " + str(robot_id))
                 # self.get_logger().info(" -> " + len(detected_robots))
                 #initial list of detected robots
@@ -564,7 +569,7 @@ class CameraDetections(Node):
                     self.get_logger().info("ENTRE")
                     if robot_id is not None and not in_past:
                         self.get_logger().info("ENTRE2")
-                        self.get_logger().info(f"{type(team)}")
+                        self.get_logger().info("Yellow team" + str(yellow_team[0]))
                         if robot_id in yellow_team:
                             self.get_logger().info("ENTRE3")
                             robot_detected = robot(robot_id, team, position, angle)
@@ -577,6 +582,7 @@ class CameraDetections(Node):
                             self.get_logger().info("ID metido-> " + str(robot_id))
                             return robot_detected
                     elif robot_id is not None and in_past:
+                        self.get_logger().info("ENTRE4")
                         if robot_id in yellow_team or robot_id in darkblue_team:
                             bot = robot(robot_id, team, position, angle)
                             return bot
@@ -636,7 +642,7 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         # Dibuja el bounding box
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
                         # text = f"{x_cm}, {y_cm}"
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
