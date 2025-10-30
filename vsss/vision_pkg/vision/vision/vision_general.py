@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import os
-
+import time
 # Añadir estas líneas al inicio, antes de import cv2
 os.environ['OPENCV_VIDEOIO_PRIORITY_MSMF'] = '0'
 os.environ['OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS'] = '0'
@@ -336,7 +336,7 @@ def getHomography(img, realCoor, save_dir=None):
     H, _ = cv2.findHomography(pxCoors, realCoors, cv2.RANSAC, 5.0)
     
     # EXPANDIR puntos para más campo de visión
-    expansion_factor = 1.0 # 40% más área
+    expansion_factor = 1.2 # 40% más área
     
     # Calcular centro de los puntos
     center_x = np.mean(pxCoors[:, 0])
@@ -616,7 +616,10 @@ class CameraDetections(Node):
             self.get_logger().warn("No image received yet (model part)")
             return None
         frame = self.image.copy()
+        start_time = time.time()
         results = self.yolo_model(frame, verbose=False, classes=0)
+        inference_time = time.time() - start_time
+        self.get_logger().info(f"Inference time: {inference_time*1000:.2f} ms")
         if results is not None:
             robots_present = [] #robots per frame
             for result in results:
