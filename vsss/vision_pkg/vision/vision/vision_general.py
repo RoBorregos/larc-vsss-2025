@@ -70,30 +70,30 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 2,
-    ("darkblue", "blue", "red"): 6,
-    ("darkblue", "red", "green"): 2,
-    ("darkblue", "blue", "green"): 3,
+    ("darkblue", "green", "red"): 8,
+    ("darkblue", "blue", "red"): 3,
+    ("darkblue", "red", "green"): 8,
+    ("darkblue", "blue", "green"): 33,
     ("darkblue", "pink", "green"): 42,
-    ("darkblue", "red", "blue"): 6,
-    ("darkblue", "green", "blue"): 3,
-    ("darkblue", "pink", "blue"): 8,
+    ("darkblue", "red", "blue"): 3,
+    ("darkblue", "green", "blue"): 33,
+    ("darkblue", "pink", "blue"): 2,
     ("darkblue", "green", "pink"): 42,
-    ("darkblue", "blue", "pink"): 8,
-    ("yellow", "green", "red"): 11,
+    ("darkblue", "blue", "pink"): 2,
+    ("yellow", "green", "red"): 1,
     ("yellow", "blue", "red"): 12,
-    ("yellow", "red", "green"): 11,
+    ("yellow", "red", "green"): 1,
     ("yellow", "blue", "green"): 5,
     ("yellow", "pink", "green"): 4,
     ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 5,
-    ("yellow", "pink", "blue"): 1,
+    ("yellow", "pink", "blue"): 11,
     ("yellow", "green", "pink"): 4,
-    ("yellow", "blue", "pink"): 1,
+    ("yellow", "blue", "pink"): 11,
 }
 
-yellow_team = [11]
-darkblue_team = [8, 6]
+yellow_team = [1]
+darkblue_team = [3, 2]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
