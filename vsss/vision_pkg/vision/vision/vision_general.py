@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 import os
-
+import time
 # Añadir estas líneas al inicio, antes de import cv2
 os.environ['OPENCV_VIDEOIO_PRIORITY_MSMF'] = '0'
 os.environ['OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS'] = '0'
 os.environ['GDK_SYNCHRONIZE'] = '1'
 # Add these new environment variables
 os.environ['QT_X11_NO_MITSHM'] = '1'
-
 
 import cv2
 
@@ -71,30 +70,30 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 2,
-    ("darkblue", "blue", "red"): 1,
-    ("darkblue", "red", "green"): 2,
-    ("darkblue", "blue", "green"): 42,
+    ("darkblue", "green", "red"): 8,
+    ("darkblue", "blue", "red"): 3,
+    ("darkblue", "red", "green"): 8,
+    ("darkblue", "blue", "green"): 33,
     ("darkblue", "pink", "green"): 42,
-    ("darkblue", "red", "blue"): 1,
-    ("darkblue", "green", "blue"): 7,
-    ("darkblue", "pink", "blue"): 3,
+    ("darkblue", "red", "blue"): 3,
+    ("darkblue", "green", "blue"): 33,
+    ("darkblue", "pink", "blue"): 2,
     ("darkblue", "green", "pink"): 42,
-    ("darkblue", "blue", "pink"): 3,
-    ("yellow", "green", "red"): 11,
+    ("darkblue", "blue", "pink"): 2,
+    ("yellow", "green", "red"): 1,
     ("yellow", "blue", "red"): 12,
-    ("yellow", "red", "green"): 13,
+    ("yellow", "red", "green"): 1,
     ("yellow", "blue", "green"): 5,
     ("yellow", "pink", "green"): 4,
     ("yellow", "red", "blue"): 12,
     ("yellow", "green", "blue"): 5,
-    ("yellow", "pink", "blue"): 6,
+    ("yellow", "pink", "blue"): 11,
     ("yellow", "green", "pink"): 4,
-    ("yellow", "blue", "pink"): 6,
+    ("yellow", "blue", "pink"): 11,
 }
 
-yellow_team = [1, 2, 3]
-darkblue_team = [4, 5, 6]
+yellow_team = [1]
+darkblue_team = [3, 2]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -337,7 +336,7 @@ def getHomography(img, realCoor, save_dir=None):
     H, _ = cv2.findHomography(pxCoors, realCoors, cv2.RANSAC, 5.0)
     
     # EXPANDIR puntos para más campo de visión
-    expansion_factor = 1.4  # 40% más área
+    expansion_factor = 1.2 # 40% más área
     
     # Calcular centro de los puntos
     center_x = np.mean(pxCoors[:, 0])
@@ -390,7 +389,7 @@ def get_eucladian(pt1, pt2):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 2)
+        self.video_id = self.declare_parameter("Video_ID", 0)
 
         # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
@@ -493,7 +492,7 @@ class CameraDetections(Node):
             contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for cnt in contours:
                 area = cv2.contourArea(cnt)
-                if area > 2000:
+                if area > 3000:
                     M = cv2.moments(cnt)
                     if M["m00"] != 0:
                         cx = int(M["m10"] / M["m00"])
@@ -555,6 +554,12 @@ class CameraDetections(Node):
                         right_marker = c
 
                 robot_id = patterns.get((team, left_marker, right_marker), None)
+
+                self.get_logger().info(f"Pattern detected: team={team}, left={left_marker}, right={right_marker}")
+                # self.get_logger().info(f"Available patterns: {list(patterns.keys())}")
+                self.get_logger().info("ID -> " + str(robot_id))
+    
+
                 self.get_logger().info("ID -> " + str(robot_id))
                 # self.get_logger().info(" -> " + len(detected_robots))
                 #initial list of detected robots
@@ -564,7 +569,7 @@ class CameraDetections(Node):
                     self.get_logger().info("ENTRE")
                     if robot_id is not None and not in_past:
                         self.get_logger().info("ENTRE2")
-                        self.get_logger().info(f"{type(team)}")
+                        self.get_logger().info("Yellow team" + str(yellow_team[0]))
                         if robot_id in yellow_team:
                             self.get_logger().info("ENTRE3")
                             robot_detected = robot(robot_id, team, position, angle)
@@ -577,6 +582,7 @@ class CameraDetections(Node):
                             self.get_logger().info("ID metido-> " + str(robot_id))
                             return robot_detected
                     elif robot_id is not None and in_past:
+                        self.get_logger().info("ENTRE4")
                         if robot_id in yellow_team or robot_id in darkblue_team:
                             bot = robot(robot_id, team, position, angle)
                             return bot
@@ -610,7 +616,10 @@ class CameraDetections(Node):
             self.get_logger().warn("No image received yet (model part)")
             return None
         frame = self.image.copy()
+        start_time = time.time()
         results = self.yolo_model(frame, verbose=False, classes=0)
+        inference_time = time.time() - start_time
+        self.get_logger().info(f"Inference time: {inference_time*1000:.2f} ms")
         if results is not None:
             robots_present = [] #robots per frame
             for result in results:
@@ -636,7 +645,7 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         # Dibuja el bounding box
-                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
                         # text = f"{x_cm}, {y_cm}"
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
@@ -669,14 +678,14 @@ class CameraDetections(Node):
 
     def ball_detection(self, img):
         frame = img.copy()
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        h, s, v = cv2.split(hsv)
+        #hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        #h, s, v = cv2.split(hsv)
 
         # Bajar brillo
-        v = np.clip(v - 40, 0, 255)
+        #v = np.clip(v - 40, 0, 255)
 
-        hsv_darker = cv2.merge([h, s, v])
-        frame = cv2.cvtColor(hsv_darker, cv2.COLOR_HSV2BGR)
+        #hsv_darker = cv2.merge([h, s, v])
+        #frame = cv2.cvtColor(hsv_darker, cv2.COLOR_HSV2BGR)
 
         yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)
         U = yuv[:, :, 1]
@@ -686,11 +695,11 @@ class CameraDetections(Node):
 
         # Filtrado
         # quita puntitos de ruido
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+        #mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
         # rellena agujeros pequeños dentro de la pelota
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
+        #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
         # suavizado pequeño para bordes más lisos
-        mask = cv2.medianBlur(mask, 5)
+        #mask = cv2.medianBlur(mask, 5)
         # cv2.imshow("Mask", mask)
         cv2.waitKey(1)
         
@@ -702,7 +711,7 @@ class CameraDetections(Node):
         for cnt in contours:
             if len(cnt) >= 4: 
                 area = cv2.contourArea(cnt)
-                if area > 10 and area < 10000:  # se ajusta dependiendo del tamaño esperado
+                if area > 10 and area < 1000:  # se ajusta dependiendo del tamaño esperado
                     ellipse = cv2.fitEllipse(cnt)
                     possible_ellipses.append(ellipse)
                     
@@ -735,7 +744,7 @@ class CameraDetections(Node):
         else:
             self.last_center = None
             self.get_logger().info("Ball not detected")
-        # cv2.imshow("YES", frame)
+        cv2.imshow("YES", frame)
         cv2.waitKey(1)
         
 def main(args=None):
