@@ -82,7 +82,7 @@ patterns = {
     ("darkblue", "blue", "pink"): 8,
     ("yellow", "green", "red"): 11,
     ("yellow", "blue", "red"): 12,
-    ("yellow", "red", "green"): 13,
+    ("yellow", "red", "green"): 11,
     ("yellow", "blue", "green"): 5,
     ("yellow", "pink", "green"): 4,
     ("yellow", "red", "blue"): 12,
@@ -92,8 +92,8 @@ patterns = {
     ("yellow", "blue", "pink"): 1,
 }
 
-yellow_team = [1]
-darkblue_team = []
+yellow_team = [11]
+darkblue_team = [8, 6]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -336,7 +336,7 @@ def getHomography(img, realCoor, save_dir=None):
     H, _ = cv2.findHomography(pxCoors, realCoors, cv2.RANSAC, 5.0)
     
     # EXPANDIR puntos para más campo de visión
-    expansion_factor = 1.4  # 40% más área
+    expansion_factor = 1.0 # 40% más área
     
     # Calcular centro de los puntos
     center_x = np.mean(pxCoors[:, 0])
@@ -642,7 +642,7 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         # Dibuja el bounding box
-                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
                         # text = f"{x_cm}, {y_cm}"
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
@@ -675,14 +675,14 @@ class CameraDetections(Node):
 
     def ball_detection(self, img):
         frame = img.copy()
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-        h, s, v = cv2.split(hsv)
+        #hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        #h, s, v = cv2.split(hsv)
 
         # Bajar brillo
-        v = np.clip(v - 40, 0, 255)
+        #v = np.clip(v - 40, 0, 255)
 
-        hsv_darker = cv2.merge([h, s, v])
-        frame = cv2.cvtColor(hsv_darker, cv2.COLOR_HSV2BGR)
+        #hsv_darker = cv2.merge([h, s, v])
+        #frame = cv2.cvtColor(hsv_darker, cv2.COLOR_HSV2BGR)
 
         yuv = cv2.cvtColor(frame, cv2.COLOR_BGR2YUV)
         U = yuv[:, :, 1]
@@ -692,11 +692,11 @@ class CameraDetections(Node):
 
         # Filtrado
         # quita puntitos de ruido
-        mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
+        #mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
         # rellena agujeros pequeños dentro de la pelota
-        mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
+        #mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
         # suavizado pequeño para bordes más lisos
-        mask = cv2.medianBlur(mask, 5)
+        #mask = cv2.medianBlur(mask, 5)
         # cv2.imshow("Mask", mask)
         cv2.waitKey(1)
         
@@ -708,7 +708,7 @@ class CameraDetections(Node):
         for cnt in contours:
             if len(cnt) >= 4: 
                 area = cv2.contourArea(cnt)
-                if area > 10 and area < 10000:  # se ajusta dependiendo del tamaño esperado
+                if area > 10 and area < 1000:  # se ajusta dependiendo del tamaño esperado
                     ellipse = cv2.fitEllipse(cnt)
                     possible_ellipses.append(ellipse)
                     
@@ -741,7 +741,7 @@ class CameraDetections(Node):
         else:
             self.last_center = None
             self.get_logger().info("Ball not detected")
-        # cv2.imshow("YES", frame)
+        cv2.imshow("YES", frame)
         cv2.waitKey(1)
         
 def main(args=None):
