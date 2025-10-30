@@ -92,8 +92,8 @@ patterns = {
     ("yellow", "blue", "pink"): 11,
 }
 
-yellow_team = [1]
-darkblue_team = [3, 2]
+yellow_team = [1, 11, 12]
+darkblue_team = [2, 8, 3]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -336,7 +336,7 @@ def getHomography(img, realCoor, save_dir=None):
     H, _ = cv2.findHomography(pxCoors, realCoors, cv2.RANSAC, 5.0)
     
     # EXPANDIR puntos para más campo de visión
-    expansion_factor = 1.2 # 40% más área
+    expansion_factor = 1.3 # 40% más área
     
     # Calcular centro de los puntos
     center_x = np.mean(pxCoors[:, 0])
@@ -389,7 +389,7 @@ def get_eucladian(pt1, pt2):
 class CameraDetections(Node):
     def __init__(self):
         super().__init__('camera_detections')
-        self.video_id = self.declare_parameter("Video_ID", 0)
+        self.video_id = self.declare_parameter("Video_ID", 2)
 
         # self.get_logger().info("Camera id taken")
         self.cap = cv2.VideoCapture(self.video_id.value)
@@ -709,9 +709,9 @@ class CameraDetections(Node):
         possible_ellipses = []
 
         for cnt in contours:
-            if len(cnt) >= 4: 
+            if len(cnt) >= 5: 
                 area = cv2.contourArea(cnt)
-                if area > 10 and area < 1000:  # se ajusta dependiendo del tamaño esperado
+                if area > 50 and area < 300:  # se ajusta dependiendo del tamaño esperado
                     ellipse = cv2.fitEllipse(cnt)
                     possible_ellipses.append(ellipse)
                     
