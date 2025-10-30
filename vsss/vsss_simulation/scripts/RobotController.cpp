@@ -30,8 +30,8 @@ float defender_height = 0.7f;
 
 
 //FrontSquare on the front and the back of the robot
-vector<Vector3> FrontSquare = Rectangle(Vector3(0.035,0,0), 0.015, 0.045);
-vector<Vector3> BackSquare = Rectangle(Vector3(-0.035,0,0), 0.015, 0.04);
+vector<Vector3> FrontSquare = Rectangle(Vector3(0.035,0,0), 0.025, 0.04);
+vector<Vector3> BackSquare = Rectangle(Vector3(-0.035,0,0), 0.025, 0.04);
 //there was an idea about the use of static transforms. but they seem over engennier for the same hardcoded values
 
 vector<Vector3> field = Rectangle(Vector3(0,0,0), field_width, field_height);
@@ -219,7 +219,7 @@ class Robot_Controller : public rclcpp::Node
 
         Transform self_transform = robots[id].transform;
         //if the objective is near, just achieve its rotation
-        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.065){
+        if(type == 2 && (objective_position - self_transform.getOrigin()).length()< 0.04){
           Vector3 tieso(0,1,0);
           self_vel_pub->publish(robots[id].orient_to_msg(tieso));
           return;

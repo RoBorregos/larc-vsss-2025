@@ -122,7 +122,7 @@ private:
         Line trayectory(ball.transform.getOrigin(), attacker_goal  );
         
         vsss_simulation::msg::RobotAction attacker_msg;
-        if((ball.transform.getOrigin().x() < 0) != field_side){
+        if((ball.transform.getOrigin().x() < 0) != field_side ||( robots[support_ID].getOrigin() - ball.transform.getOrigin()).length() > 0.35){
             attacker_msg.type.data = 1;
             attacker_msg.objective.set__x(ball.transform.getOrigin().x());
             attacker_msg.objective.set__y(ball.transform.getOrigin().y());

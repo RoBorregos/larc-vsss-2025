@@ -2,8 +2,6 @@
 import os
 import time
 # Añadir estas líneas al inicio, antes de import cv2
-os.environ['OPENCV_VIDEOIO_PRIORITY_MSMF'] = '0'
-os.environ['OPENCV_VIDEOIO_MSMF_ENABLE_HW_TRANSFORMS'] = '0'
 os.environ['GDK_SYNCHRONIZE'] = '1'
 # Add these new environment variables
 os.environ['QT_X11_NO_MITSHM'] = '1'
@@ -70,30 +68,30 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 8,
-    ("darkblue", "blue", "red"): 3,
-    ("darkblue", "red", "green"): 8,
-    ("darkblue", "blue", "green"): 33,
-    ("darkblue", "pink", "green"): 42,
-    ("darkblue", "red", "blue"): 3,
-    ("darkblue", "green", "blue"): 33,
-    ("darkblue", "pink", "blue"): 2,
-    ("darkblue", "green", "pink"): 42,
-    ("darkblue", "blue", "pink"): 2,
-    ("yellow", "green", "red"): 1,
-    ("yellow", "blue", "red"): 12,
-    ("yellow", "red", "green"): 1,
-    ("yellow", "blue", "green"): 5,
-    ("yellow", "pink", "green"): 4,
-    ("yellow", "red", "blue"): 12,
-    ("yellow", "green", "blue"): 5,
-    ("yellow", "pink", "blue"): 11,
-    ("yellow", "green", "pink"): 4,
-    ("yellow", "blue", "pink"): 11,
+    ("darkblue", "green", "red"): 4, 
+    ("darkblue", "blue", "red"): 5, #3
+    ("darkblue", "red", "green"): 4,
+    ("darkblue", "blue", "green"): 0, #1
+    ("darkblue", "pink", "green"): 6,
+    ("darkblue", "red", "blue"): 5, #3
+    ("darkblue", "green", "blue"): 0, #1
+    ("darkblue", "pink", "blue"): 0, #2
+    ("darkblue", "green", "pink"): 6,
+    ("darkblue", "blue", "pink"): 0, #2
+    ("yellow", "green", "red"): 2, #2
+    ("yellow", "blue", "red"): 3, #3
+    ("yellow", "red", "green"): 2, #2
+    ("yellow", "blue", "green"): 0,
+    ("yellow", "pink", "green"): 0,
+    ("yellow", "red", "blue"): 3, #3
+    ("yellow", "green", "blue"): 0,
+    ("yellow", "pink", "blue"): 1, #1
+    ("yellow", "green", "pink"): 0,
+    ("yellow", "blue", "pink"): 1, #1
 }
 
-yellow_team = [1, 11, 12]
-darkblue_team = [2, 8, 3]
+yellow_team = [1, 2, 3]
+darkblue_team = []
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -510,14 +508,30 @@ class CameraDetections(Node):
         #get the team from the largest area color contour
         try:
             team = sorted(darkblue_yellow, key= lambda x: x[1], reverse=True)[0][0]
+            if team == "yellow":
+                team_sorted = sorted([(x, y, c, area) for (x, y, c, area) in centers if c in ["yellow"]], key=lambda x: x[3], reverse=True)
+                if len(team_sorted) >= 2:
+                    secondary_color = team_sorted[1]
+                    filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow", "green"]]
+                    id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:1]
+                    id_colors.append(secondary_color)
+                else:
+                    #get the secondary two colors
+                    filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
+                    #get the largesr color areas to get the two actual secondary plates and avoid noise
+                    id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
+            else:
+                #get the secondary two colors
+                    filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
+                    #get the largesr color areas to get the two actual secondary plates and avoid noise
+                    id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
         except:
             team = "yellow"
+            team_sorted = sorted([(x, y, c, area) for (x, y, c, area) in centers if c in ["yellow"]])
+            filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
+            #get the largesr color areas to get the two actual secondary plates and avoid noise
+            id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
 
-        #get the secondary two colors
-        filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
-        #get the largesr color areas to get the two actual secondary plates and avoid noise
-        id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
-        
         angle = None
         if len(id_colors) == 2:
             (x1, y1, c1, a1), (x2, y2, c2, a2) = id_colors
