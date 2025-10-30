@@ -229,8 +229,10 @@ class Robot_Controller : public rclcpp::Node
         float theta_obj ;
 
         //attack with angle or just achieve a position (attack or defend)
-        Vector3 objective_distance = robots[id].transform.getOrigin() - objective_position;
-        if(type== 1 && objective_distance.length() > 0.12 && (objective_distance.x() < 0) != field_side){
+        Vector3 objective_distance = objective_position - robots[id].transform.getOrigin() ;
+        Vector3 robot_front = quatRotate(robots[id].transform.getRotation(), Vector3(1,0,0));
+        float rotational_diference_to_objective = robot_front.dot(objective_distance);
+        if(type== 1 && !(rotational_diference_to_objective < M_PI/8 && type== 1 && objective_distance.length() < 0.25)){
           Line optimalPath (objective_position, theta);
           //Get angle considering the ball as the objective;
           Vector3 robot_2_obj = self_transform.getOrigin() - objective_position; 
@@ -241,6 +243,7 @@ class Robot_Controller : public rclcpp::Node
           vector2ball =  Theta2Vector(theta_obj);
 
         }else{
+          //if here, attacking recklessly if type =1 
           vector2ball = (objective_position - self_transform.getOrigin()).normalize();
           theta_obj = atan2(vector2ball[1], vector2ball[0]);
 
