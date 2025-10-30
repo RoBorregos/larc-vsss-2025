@@ -49,6 +49,8 @@ pair<int, Vector3> Line::Intersect(Line other){
     float t  =over / down;
     if(0 <= t && t <= 1){
         return pair<int, Vector3>(1, Init + r * t);
+    }else{
+        return pair<int, Vector3> (3, Vector3());
     }
 }
 

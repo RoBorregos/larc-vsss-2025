@@ -10,7 +10,7 @@ float finalLinearVelByDif(float dif){
         return 0.2;
     }else if( dif > M_PI/2){
         return 0.4;
-    }else if(dif > M_PI/7){
+    }else if(dif > M_PI/8){
         return 0.6;
     }else{
         return 1;
