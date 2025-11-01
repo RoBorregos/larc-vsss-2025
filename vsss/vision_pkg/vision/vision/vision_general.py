@@ -68,30 +68,30 @@ draw_colors = {
 }
 
 patterns = {
-    ("darkblue", "green", "red"): 4, 
-    ("darkblue", "blue", "red"): 5, #3
-    ("darkblue", "red", "green"): 4,
-    ("darkblue", "blue", "green"): 0, #1
-    ("darkblue", "pink", "green"): 6,
-    ("darkblue", "red", "blue"): 5, #3
-    ("darkblue", "green", "blue"): 0, #1
-    ("darkblue", "pink", "blue"): 0, #2
-    ("darkblue", "green", "pink"): 6,
-    ("darkblue", "blue", "pink"): 0, #2
-    ("yellow", "green", "red"): 2, #2
-    ("yellow", "blue", "red"): 3, #3
-    ("yellow", "red", "green"): 2, #2
+    ("darkblue", "green", "red"): 0, 
+    ("darkblue", "blue", "red"): 3, #3
+    ("darkblue", "red", "green"): 0,
+    ("darkblue", "blue", "green"): 1, #1
+    ("darkblue", "pink", "green"): 0,
+    ("darkblue", "red", "blue"): 3, #3
+    ("darkblue", "green", "blue"): 1, #1
+    ("darkblue", "pink", "blue"): 2, #2
+    ("darkblue", "green", "pink"): 0,
+    ("darkblue", "blue", "pink"): 2, #2
+    ("yellow", "green", "red"): 0, #2
+    ("yellow", "blue", "red"): 5, #3#
+    ("yellow", "red", "green"): 0, #2
     ("yellow", "blue", "green"): 0,
-    ("yellow", "pink", "green"): 0,
-    ("yellow", "red", "blue"): 3, #3
+    ("yellow", "pink", "green"): 6,#
+    ("yellow", "red", "blue"): 5, #3#
     ("yellow", "green", "blue"): 0,
-    ("yellow", "pink", "blue"): 1, #1
-    ("yellow", "green", "pink"): 0,
-    ("yellow", "blue", "pink"): 1, #1
+    ("yellow", "pink", "blue"):4, #1#
+    ("yellow", "green", "pink"): 6,#
+    ("yellow", "blue", "pink"): 4, #1#
 }
 
-yellow_team = [1, 2, 3]
-darkblue_team = []
+yellow_team = [5]
+darkblue_team = [1, 2, 3]
 
 def circular_mean(angles):
     a = sum(math.sin(math.radians(angle)) for angle in angles)
@@ -503,11 +503,12 @@ class CameraDetections(Node):
         darkblue_yellow = []
         for (x, y, c, area) in centers:
             if c in ["darkblue", "yellow"]:
-                 darkblue_yellow.append((c, area))
+                 darkblue_yellow.append((c, area, x, y))
                  
         #get the team from the largest area color contour
         try:
-            team = sorted(darkblue_yellow, key= lambda x: x[1], reverse=True)[0][0]
+            team_info = sorted(darkblue_yellow, key= lambda x: x[1], reverse=True)[0]
+            team = team_info[0]
             if team == "yellow":
                 team_sorted = sorted([(x, y, c, area) for (x, y, c, area) in centers if c in ["yellow"]], key=lambda x: x[3], reverse=True)
                 if len(team_sorted) >= 2:
@@ -520,17 +521,43 @@ class CameraDetections(Node):
                     filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
                     #get the largesr color areas to get the two actual secondary plates and avoid noise
                     id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
+                    if len(id_colors) >= 2 and len(filtered_centers) >= 3:
+                        if get_eucladian([id_colors[0][0], id_colors[0][1]], [id_colors[1][0], id_colors[1][1]]) < 80:
+                            id_colors.remove(id_colors[1])
+                            id_colors.append(sorted(filtered_centers, key=lambda x: x[3], reverse=True)[2])
+                            if len(filtered_centers) >= 4:
+                                if get_eucladian([id_colors[0][0], id_colors[0][1]], [team_info[2], team_info[3]]) < 80:
+                                    id_colors.remove(id_colors[0])
+                                    id_colors.append(sorted(filtered_centers, key=lambda x: x[3], reverse=True)[3])
+                                elif get_eucladian([id_colors[1][0], id_colors[1][1]], [team_info[2], team_info[3]]) < 80:
+                                    id_colors.remove(id_colors[1]) 
+                                    id_colors.append(sorted(filtered_centers, key=lambda x: x[3], reverse=True)[3])
+                        if get_eucladian([id_colors[0][0], id_colors[0][1]], [team_info[2], team_info[3]]) < 80:
+                            id_colors.remove(id_colors[0])
+                            id_colors.append(sorted(filtered_centers, key=lambda x: x[3], reverse=True)[2])
+                        elif get_eucladian([id_colors[1][0], id_colors[1][1]], [team_info[2], team_info[3]]) < 80:
+                            id_colors.remove(id_colors[1]) 
+                            id_colors.append(sorted(filtered_centers, key=lambda x: x[3], reverse=True)[2])
+                        
             else:
                 #get the secondary two colors
                     filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
                     #get the largesr color areas to get the two actual secondary plates and avoid noise
                     id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
+                    if len(id_colors) >= 2 and len(filtered_centers) >= 3:
+                        if get_eucladian([id_colors[0][0], id_colors[0][1]], [id_colors[1][0], id_colors[1][1]]) < 80:
+                            id_colors.remove(id_colors[1])
+                            id_colors.append(sorted(filtered_centers, key=lambda x: x[3], reverse=True)[2])
         except:
+
             team = "yellow"
-            team_sorted = sorted([(x, y, c, area) for (x, y, c, area) in centers if c in ["yellow"]])
             filtered_centers = [(x, y, c, area) for (x, y, c, area) in centers if c not in ["darkblue", "yellow"]]
             #get the largesr color areas to get the two actual secondary plates and avoid noise
             id_colors = sorted(filtered_centers, key=lambda x: x[3], reverse=True)[:2]
+            if len(id_colors) >= 2 and len(filtered_centers) >= 3:
+                if get_eucladian([id_colors[0][0], id_colors[0][1]], [id_colors[1][0], id_colors[1][1]]) < 80:
+                    id_colors.remove(id_colors[1])
+                    id_colors.append(sorted(filtered_centers, key=lambda x: x[3], reverse=True)[2])
 
         angle = None
         if len(id_colors) == 2:
@@ -583,7 +610,6 @@ class CameraDetections(Node):
                     self.get_logger().info("ENTRE")
                     if robot_id is not None and not in_past:
                         self.get_logger().info("ENTRE2")
-                        self.get_logger().info("Yellow team" + str(yellow_team[0]))
                         if robot_id in yellow_team:
                             self.get_logger().info("ENTRE3")
                             robot_detected = robot(robot_id, team, position, angle)
