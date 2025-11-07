@@ -30,8 +30,8 @@ float defender_height = 0.7f;
 
 
 //FrontSquare on the front and the back of the robot
-vector<Vector3> FrontSquare = Rectangle(Vector3(0.035,0,0), 0.025, 0.04);
-vector<Vector3> BackSquare = Rectangle(Vector3(-0.035,0,0), 0.025, 0.04);
+vector<Vector3> FrontSquare = Rectangle(Vector3(0.04,0,0), 0.035, 0.055);
+vector<Vector3> BackSquare = Rectangle(Vector3(-0.04,0,0), 0.035, 0.055);
 //there was an idea about the use of static transforms. but they seem over engennier for the same hardcoded values
 
 vector<Vector3> field = Rectangle(Vector3(0,0,0), field_width, field_height);
@@ -232,7 +232,7 @@ class Robot_Controller : public rclcpp::Node
         Vector3 objective_distance = objective_position - robots[id].transform.getOrigin() ;
         Vector3 robot_front = quatRotate(robots[id].transform.getRotation(), Vector3(1,0,0));
         float rotational_diference_to_objective = robot_front.dot(objective_distance);
-        if(type== 1 && !(rotational_diference_to_objective < M_PI/8 && type== 1 && objective_distance.length() < 0.25)){
+        if(type== 1 && !(rotational_diference_to_objective < M_PI/9 && type== 1 && objective_distance.length() < 0.35)){
           Line optimalPath (objective_position, theta);
           //Get angle considering the ball as the objective;
           Vector3 robot_2_obj = self_transform.getOrigin() - objective_position; 

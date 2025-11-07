@@ -78,19 +78,19 @@ patterns = {
     ("darkblue", "pink", "blue"): 2, #2
     ("darkblue", "green", "pink"): 0,
     ("darkblue", "blue", "pink"): 2, #2
-    ("yellow", "green", "red"): 0, #2
-    ("yellow", "blue", "red"): 5, #3#
-    ("yellow", "red", "green"): 0, #2
+    ("yellow", "green", "red"): 5, #2
+    ("yellow", "blue", "red"): 0, #3#
+    ("yellow", "red", "green"): 5, #2
     ("yellow", "blue", "green"): 0,
-    ("yellow", "pink", "green"): 6,#
-    ("yellow", "red", "blue"): 5, #3#
+    ("yellow", "pink", "green"): 4,#
+    ("yellow", "red", "blue"): 0, #3#
     ("yellow", "green", "blue"): 0,
-    ("yellow", "pink", "blue"):4, #1#
-    ("yellow", "green", "pink"): 6,#
-    ("yellow", "blue", "pink"): 4, #1#
+    ("yellow", "pink", "blue"):6, #1#
+    ("yellow", "green", "pink"): 4,#
+    ("yellow", "blue", "pink"): 6, #1#
 }
 
-yellow_team = [5]
+yellow_team = [4, 5, 6]
 darkblue_team = [1, 2, 3]
 
 def circular_mean(angles):
@@ -685,7 +685,7 @@ class CameraDetections(Node):
                         y_cm = y_field / 100
 
                         # Dibuja el bounding box
-                        cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                         #Convert to field coordinates
                         # text = f"{x_cm}, {y_cm}"
                         # cv2.putText(frame, text, (int(x_center), int(y_center)),cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2)
